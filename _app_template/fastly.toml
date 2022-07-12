@@ -1,0 +1,9 @@
+# This file describes a Fastly Compute@Edge package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = [""]
+description = "TinyGo Compute@Edge example"
+language = "other"
+manifest_version = 2
+name = "tinygo-example"
+service_id = ""

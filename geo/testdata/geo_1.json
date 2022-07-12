@@ -1,0 +1,21 @@
+{
+	"as_name": "?",
+	"as_number": 0,
+	"area_code": 0,
+	"city": "贵州",
+	"conn_speed": "broadband",
+	"conn_type": "wired",
+	"continent": "AS",
+	"country_code": "CN",
+	"country_code3": "CHN",
+	"country_name": "china",
+	"gmt_offset": 800,
+	"latitude": 23.13,
+	"longitude": 113.24,
+	"metro_code": 156196,
+	"postal_code": "510000",
+	"proxy_description": "?",
+	"proxy_type": "?",
+	"region": "GD",
+	"utc_offset": 800
+}
