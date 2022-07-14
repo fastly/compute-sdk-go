@@ -1,0 +1,223 @@
+{
+  "name": "Compute TinyGo SDK",
+  "modules": {
+    "hello_world" : {
+      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -wasm-abi=generic -o ./_integration_tests/fixtures/hello_world/hello_world.wasm ./_integration_tests/fixtures/hello_world && (cd ./_integration_tests/fixtures/hello_world && fastly compute pack --verbose --wasm-binary ./hello_world.wasm)",
+      "fastly_toml_path": "./_integration_tests/fixtures/hello_world/fastly.toml",
+      "wasm_path": "./_integration_tests/fixtures/hello_world/hello_world.wasm",
+      "pkg_path": "./_integration_tests/fixtures/hello_world/pkg/hello-world.tar.gz",
+      "tests": {
+        "POST /hello": {
+          "environments": ["viceroy"],
+          "downstream_request": {
+            "method": "POST",
+            "pathname": "/hello"
+          },
+          "downstream_response": {
+            "status": 200,
+            "body": "Hello, TinyGo!"
+          }
+        }
+      }
+    },
+
+    "request_downstream" : {
+      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -wasm-abi=generic -o ./_integration_tests/fixtures/request_downstream/request_downstream.wasm ./_integration_tests/fixtures/request_downstream && (cd ./_integration_tests/fixtures/request_downstream && fastly compute pack --verbose --wasm-binary ./request_downstream.wasm)",
+      "fastly_toml_path": "./_integration_tests/fixtures/request_downstream/fastly.toml",
+      "wasm_path": "./_integration_tests/fixtures/request_downstream/request_downstream.wasm",
+      "pkg_path": "./_integration_tests/fixtures/request_downstream/pkg/request-downstream.tar.gz",
+      "tests": {
+        "POST /hello": {
+          "environments": ["viceroy"],
+          "downstream_request": {
+            "method": "POST",
+            "pathname": "/hello",
+            "headers": {
+              "Host": "example.org",
+              "DownstreamName": "DownstreamValue"
+            },
+            "body": "downstream request!"
+          },
+          "downstream_response": {
+            "status": 200,
+            "headers": {
+              "Host": "example.org",
+              "DownstreamName": "DownstreamValue"
+            },
+            "body": "downstream request!"
+          }
+        }
+      }
+    },
+
+    "async_select" : {
+      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -wasm-abi=generic -o ./_integration_tests/fixtures/async_select/async_select.wasm ./_integration_tests/fixtures/async_select && (cd ./_integration_tests/fixtures/async_select && fastly compute pack --verbose --wasm-binary ./async_select.wasm)",
+      "fastly_toml_path": "./_integration_tests/fixtures/async_select/fastly.toml",
+      "wasm_path": "./_integration_tests/fixtures/async_select/async_select.wasm",
+      "pkg_path": "./_integration_tests/fixtures/async_select/pkg/async-select.tar.gz",
+      "tests": {
+        "POST /hello": {
+          "environments": ["viceroy"],
+          "downstream_request": {
+            "method": "POST",
+            "pathname": "/hello"
+          },
+          "downstream_response": {
+            "status": 200,
+            "headers": {
+              "FooName": "FooValue",
+              "BarName": "BarValue"
+            },
+            "body": "pong"
+          }
+        }
+      }
+    },
+
+    "byte_repeater" : {
+      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -wasm-abi=generic -o ./_integration_tests/fixtures/byte_repeater/byte_repeater.wasm ./_integration_tests/fixtures/byte_repeater && (cd ./_integration_tests/fixtures/byte_repeater && fastly compute pack --verbose --wasm-binary ./byte_repeater.wasm)",
+      "fastly_toml_path": "./_integration_tests/fixtures/byte_repeater/fastly.toml",
+      "wasm_path": "./_integration_tests/fixtures/byte_repeater/byte_repeater.wasm",
+      "pkg_path": "./_integration_tests/fixtures/byte_repeater/pkg/byte-repeater.tar.gz",
+      "tests": {
+        "GET /": {
+          "environments": ["viceroy"],
+          "downstream_request": {
+            "method": "GET",
+            "pathname": "/"
+          },
+          "downstream_response": {
+            "status": 200,
+            "body": [
+              "11223344",
+              "5566778899001122\n\n"
+            ]
+          }
+        }
+      }
+    },
+
+
+    "edge_dictionary" : {
+      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -wasm-abi=generic -o ./_integration_tests/fixtures/edge_dictionary/edge_dictionary.wasm ./_integration_tests/fixtures/edge_dictionary && (cd ./_integration_tests/fixtures/edge_dictionary && fastly compute pack --verbose --wasm-binary ./edge_dictionary.wasm)",
+      "fastly_toml_path": "./_integration_tests/fixtures/edge_dictionary/fastly.toml",
+      "wasm_path": "./_integration_tests/fixtures/edge_dictionary/edge_dictionary.wasm",
+      "pkg_path": "./_integration_tests/fixtures/edge_dictionary/pkg/edge-dictionary.tar.gz",
+      "tests": {
+        "POST /": {
+          "environments": ["viceroy"],
+          "downstream_request": {
+            "method": "POST",
+            "pathname": "/",
+            "body": "What is the Fastly Twitter?"
+          },
+          "downstream_response": {
+            "status": 200,
+            "body": "https://twitter.com/fastly"
+          }
+        }
+      }
+    },
+
+    "request_upstream" : {
+      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -wasm-abi=generic -o ./_integration_tests/fixtures/request_upstream/request_upstream.wasm ./_integration_tests/fixtures/request_upstream && (cd ./_integration_tests/fixtures/request_upstream && fastly compute pack --verbose --wasm-binary ./request_upstream.wasm)",
+      "fastly_toml_path": "./_integration_tests/fixtures/request_upstream/fastly.toml",
+      "wasm_path": "./_integration_tests/fixtures/request_upstream/request_upstream.wasm",
+      "pkg_path": "./_integration_tests/fixtures/request_upstream/pkg/request-upstream.tar.gz",
+      "tests": {
+        "POST /hello": {
+          "environments": ["viceroy"],
+          "downstream_request": {
+            "method": "POST",
+            "pathname": "/hello"
+          },
+          "downstream_response": {
+            "status": 200,
+            "body": "Hello from Origin",
+            "headers": {
+              "OriginHeader": "OriginValue",
+              "x-cat": "meow, nyan, mrrow, miau"
+            }
+          }
+        }
+      }
+    },
+
+    "rtlog" : {
+      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -wasm-abi=generic -o ./_integration_tests/fixtures/rtlog/rtlog.wasm ./_integration_tests/fixtures/rtlog && (cd ./_integration_tests/fixtures/rtlog && fastly compute pack --verbose --wasm-binary ./rtlog.wasm)",
+      "fastly_toml_path": "./_integration_tests/fixtures/rtlog/fastly.toml",
+      "wasm_path": "./_integration_tests/fixtures/rtlog/rtlog.wasm",
+      "pkg_path": "./_integration_tests/fixtures/rtlog/pkg/rtlog.tar.gz",
+      "tests": {
+        "GET /": {
+          "environments": ["viceroy"],
+          "downstream_request": {
+            "method": "GET",
+            "pathname": "/"
+          },
+          "downstream_response": {
+            "status": 200
+          },
+          "logs": [
+            "os.Stdout can be streamed",
+            "os.Stderr can be streamed",
+            "ComputeLog :: Hello!"
+          ]
+        }
+      }
+    },
+
+    "status" : {
+      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -wasm-abi=generic -o ./_integration_tests/fixtures/status/status.wasm ./_integration_tests/fixtures/status && (cd ./_integration_tests/fixtures/status && fastly compute pack --verbose --wasm-binary ./status.wasm)",
+      "fastly_toml_path": "./_integration_tests/fixtures/status/fastly.toml",
+      "wasm_path": "./_integration_tests/fixtures/status/status.wasm",
+      "pkg_path": "./_integration_tests/fixtures/status/pkg/status.tar.gz",
+      "tests": {
+        "POST /hello": {
+          "environments": ["viceroy"],
+          "downstream_request": {
+            "method": "POST",
+            "pathname": "/hello"
+          },
+          "downstream_response": {
+            "status": 401,
+            "body": "Unauthorized"
+          }
+        }
+      }
+    },
+
+    "streaming_close" : {
+      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -wasm-abi=generic -o ./_integration_tests/fixtures/streaming_close/streaming_close.wasm ./_integration_tests/fixtures/streaming_close && (cd ./_integration_tests/fixtures/streaming_close && fastly compute pack --verbose --wasm-binary ./streaming_close.wasm)",
+      "fastly_toml_path": "./_integration_tests/fixtures/streaming_close/fastly.toml",
+      "wasm_path": "./_integration_tests/fixtures/streaming_close/streaming_close.wasm",
+      "pkg_path": "./_integration_tests/fixtures/streaming_close/pkg/streaming-close.tar.gz",
+      "tests": {
+        "GET /": {
+          "environments": ["viceroy"],
+          "downstream_request": {
+            "method": "GET",
+            "pathname": "/"
+          },
+          "downstream_response": {
+            "status": 200,
+            "body": [
+              "wll",
+              " smth\n"
+            ]
+          },
+          "local_upstream_requests": [
+            {
+              "method": "POST",
+              "pathname": "/example",
+              "headers": {
+                "Vowels-Removed": "2"
+              },
+              "timing": "afterDownstreamRequest" 
+            }
+          ]
+        }
+      }
+    }
+  }
+}

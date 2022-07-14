@@ -1,0 +1,28 @@
+# This file describes a Fastly Compute@Edge package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["aturner+ecp@fastly.com"]
+description = ""
+language = "other"
+manifest_version = 2
+name = "edge_dictionary"
+service_id = ""
+
+[local_server]
+
+  [local_server.backends]
+
+    [local_server.backends.TheOrigin]
+      url = "https://compute-sdk-test-backend.edgecompute.app/"
+
+    [local_server.backends.TheOrigin2]
+      url = "https://compute-sdk-test-backend.edgecompute.app/"
+
+    [local_server.backends.example_backend]
+      url = "https://example.org/"
+
+  [local_server.dictionaries]
+
+    [local_server.dictionaries.edge_dictionary]
+      file = "./_integration_tests/fixtures/edge_dictionary/edge_dictionary.json"
+      format = "json"
