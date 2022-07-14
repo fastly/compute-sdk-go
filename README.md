@@ -1,4 +1,4 @@
-# compute-tinygo
+# compute-sdk-go
 
 Experimental Go SDK for building [Compute@Edge](https://www.fastly.com/products/edge-compute/serverless) applications with [TinyGo](https://tinygo.org/).
 
@@ -38,7 +38,7 @@ fmt.Printf("request received: %s\n", r.URL.String())
 
 ## Recommended Packages
 
-TinyGo is still a new project, which has yet to get a version `1.0.0`. Therefore, the project is incomplete, but in its current state can still handle a lot of tasks on Compute@Edge. For example, [some languages features of Go are still missing](https://tinygo.org/docs/reference/lang-support/), such as Reflection support, which is used for things like parsing JSON using the Go standard library. To help with your adoption of `compute-tinygo`, here are some recommended packages to help with some of the current missing language features:
+TinyGo is still a new project, which has yet to get a version `1.0.0`. Therefore, the project is incomplete, but in its current state can still handle a lot of tasks on Compute@Edge. For example, [some languages features of Go are still missing](https://tinygo.org/docs/reference/lang-support/), such as Reflection support, which is used for things like parsing JSON using the Go standard library. To help with your adoption of `compute-sdk-go`, here are some recommended packages to help with some of the current missing language features:
 
 ### JSON Parsing
 
