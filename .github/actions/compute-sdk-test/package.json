@@ -1,0 +1,27 @@
+{
+  "name": "compute-sdk-test",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npm run build:worker && npm run build:index",
+    "build:index": "ncc build index.js --license licenses.txt",
+    "build:worker": "ncc build compute-test-worker.js && mv dist/index.js dist/compute-test-worker.js"
+  },
+  "license": "APACHE-2.0",
+  "dependencies": {
+    "@actions/core": "^1.1.0",
+    "@actions/github": "^1.1.0",
+    "better-logging": "^4.5.1",
+    "chalk": "^4.1.2",
+    "comlink": "^4.3.1",
+    "is-port-reachable": "^3.0.0",
+    "log-symbols": "^5.0.0",
+    "ncc": "^0.3.6",
+    "node-fetch": "^2.6.1",
+    "p-limit": "^4.0.0",
+    "p-wait-for": "^3.1.0"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.31.1"
+  }
+}

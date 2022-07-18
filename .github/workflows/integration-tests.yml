@@ -9,16 +9,8 @@ jobs:
     steps:
       - name: Checkout fastly/compute-sdk-go
         uses: actions/checkout@v2
-      - name: Checkout fastly/compute-sdk-ci-github-action
-        uses: actions/checkout@v2
-        with:
-          repository: fastly/compute-sdk-ci-github-action
-          ref: refs/heads/torch2424-tinygo-ci-fix
-          ssh-key: ${{ secrets.COMPUTE_SDK_GITHUB_ACTION_CI_PRIVATE_SSH_KEY }}
-          persist-credentials: false
-          path: ./compute-sdk-ci-github-action
       - uses: ./.github/actions/bootstrap-integration-test
-      - name: Check our bootstrap dependencies wre installed correctly, and in our $PATH
+      - name: Check our bootstrap dependencies were installed correctly, and in our $PATH
         run: |
           fastly version
           viceroy --version
@@ -28,7 +20,7 @@ jobs:
         with:
          go-version: '1.17' 
       - name: compute-sdk-go Integration Tests Job
-        uses: ./compute-sdk-ci-github-action/compute-sdk-test # Uses an action in the root directory
+        uses: ./.github/actions/compute-sdk-test
         id: sdktest
         with:
           config: './_integration_tests/sdk-test-config.json'
@@ -41,14 +33,6 @@ jobs:
     steps:
       - name: Checkout fastly/compute-sdk-go
         uses: actions/checkout@v2
-      - name: Checkout fastly/compute-sdk-ci-github-action
-        uses: actions/checkout@v2
-        with:
-          repository: fastly/compute-sdk-ci-github-action
-          ref: refs/heads/torch2424-tinygo-ci-fix
-          ssh-key: ${{ secrets.COMPUTE_SDK_GITHUB_ACTION_CI_PRIVATE_SSH_KEY }}
-          persist-credentials: false
-          path: ./compute-sdk-ci-github-action
       - uses: ./.github/actions/bootstrap-integration-test
       - name: Check our bootstrap dependencies were installed correctly, and in our $PATH
         run: |
@@ -60,7 +44,7 @@ jobs:
         with:
           go-version: '1.16' 
       - name: compute-sdk-go Integration Tests Job
-        uses: ./compute-sdk-ci-github-action/compute-sdk-test # Uses an action in the root directory
+        uses: ./.github/actions/compute-sdk-test
         id: sdktest
         with:
           config: './_integration_tests/sdk-test-config.json'
