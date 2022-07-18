@@ -16,9 +16,9 @@ runs:
         echo "$HOME/bin" >> $GITHUB_PATH
       shell: "bash"
     - run: |
-        echo "Install TinyGo 0.23.0..."
-        wget https://github.com/tinygo-org/tinygo/releases/download/v0.23.0/tinygo_0.23.0_amd64.deb
-        echo "7d11ed3d88e0e594e0e746c260c38cc34f225bdc860493005f79e14089b96b2ed2c1bcb62434dc19674dbd9761514770da5b8e4278e369fa492772ce97a1f57b tinygo_0.23.0_amd64.deb" | sha512sum --check
-        sudo dpkg -i tinygo_0.23.0_amd64.deb
+        echo "Install TinyGo 0.24.0..."
+        wget https://github.com/tinygo-org/tinygo/releases/download/v0.24.0/tinygo_0.24.0_amd64.deb
+        echo "f9366fafa4b281a6874f17017053f9223a2222521c2084f50cc323a976f8f34848a13a31b4d60ddd24a3ab04d56ae5fd8c9445aa2b42245bbb3037c894452ae1 tinygo_0.24.0_amd64.deb" | sha512sum --check
+        sudo dpkg -i tinygo_0.24.0_amd64.deb
         echo "/usr/local/tinygo/bin" >> $GITHUB_PATH
       shell: "bash"
