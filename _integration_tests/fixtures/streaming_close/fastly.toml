@@ -1,7 +1,7 @@
 # This file describes a Fastly Compute@Edge package. To learn more visit:
 # https://developer.fastly.com/reference/fastly-toml/
 
-authors = ["aturner+ecp@fastly.com"]
+authors = ["oss@fastly.com"]
 description = ""
 language = "other"
 manifest_version = 2
