@@ -1,0 +1,24 @@
+name: "Bootstrap Integration Test"
+description: "Sets up an environment for our integration tests"
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        echo "Install Fastly CLI 3.0.0"
+        wget https://github.com/fastly/cli/releases/download/v3.0.0/fastly_3.0.0_linux_amd64.deb
+        sudo apt install ./fastly_3.0.0_linux_amd64.deb
+      shell: "bash"
+    - run: |
+        echo "Install Viceroy 0.2.14..."
+        wget https://github.com/fastly/Viceroy/releases/download/v0.2.14/viceroy_v0.2.14_linux-amd64.tar.gz
+        mkdir -p $HOME/bin
+        tar -xzf viceroy_v0.2.14_linux-amd64.tar.gz --directory $HOME/bin
+        echo "$HOME/bin" >> $GITHUB_PATH
+      shell: "bash"
+    - run: |
+        echo "Install TinyGo 0.24.0..."
+        wget https://github.com/tinygo-org/tinygo/releases/download/v0.24.0/tinygo_0.24.0_amd64.deb
+        echo "f9366fafa4b281a6874f17017053f9223a2222521c2084f50cc323a976f8f34848a13a31b4d60ddd24a3ab04d56ae5fd8c9445aa2b42245bbb3037c894452ae1 tinygo_0.24.0_amd64.deb" | sha512sum --check
+        sudo dpkg -i tinygo_0.24.0_amd64.deb
+        echo "/usr/local/tinygo/bin" >> $GITHUB_PATH
+      shell: "bash"
