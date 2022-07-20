@@ -10,7 +10,7 @@ jobs:
       - name: Checkout fastly/compute-sdk-go
         uses: actions/checkout@v2
       - uses: ./.github/actions/bootstrap-integration-test
-      - name: Check our bootstrap dependencies wre installed correctly, and in our $PATH
+      - name: Check our bootstrap dependencies were installed correctly, and in our $PATH
         run: |
           fastly version
           viceroy --version
