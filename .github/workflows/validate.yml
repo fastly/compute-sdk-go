@@ -14,6 +14,14 @@ jobs:
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@2022.1.1
           staticcheck ./...
+      - name: nilness
+        run: |
+          go install golang.org/x/tools/go/analysis/passes/nilness/cmd/nilness@latest
+          nilness ./...
+      - name: ineffassign
+        run: |
+          go install github.com/gordonklaus/ineffassign@latest
+          ineffassign ./...
   test:
     needs: [lint]
     runs-on: ubuntu-latest
