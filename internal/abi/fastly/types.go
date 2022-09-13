@@ -249,12 +249,15 @@ const (
 	cacheOverrideTagPCI                  cacheOverrideTag = 0b0000_1000 // $pci
 )
 
+// These limits are configurable for the Rust SDK but constants for the Go one.
+// See https://docs.rs/fastly/latest/fastly/limits/index.html
+
 const (
 	methodMaxLen          = 1024
 	headerNameMaxLen      = 1024
 	headerValueMaxLen     = 65536
 	dictionaryValueMaxLen = 8192 // https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
-	defaultBufferLen      = 10 * 1024
+	defaultBufferLen      = 16 * 1024
 )
 
 // CacheOverrideOptions collects specific, caching-related options for outbound
