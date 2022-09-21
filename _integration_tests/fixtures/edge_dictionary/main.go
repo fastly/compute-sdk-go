@@ -14,15 +14,13 @@ func main() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, _ *fsthttp.Request) {
 		d, err := edgedict.Open("edge_dictionary")
 		if err != nil {
-			w.WriteHeader(fsthttp.StatusInternalServerError)
-			fmt.Fprintln(w, err)
+			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
 			return
 		}
 
 		twitter, err := d.Get("twitter")
 		if err != nil {
-			w.WriteHeader(fsthttp.StatusInternalServerError)
-			fmt.Fprintln(w, err)
+			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
 			return
 		}
 

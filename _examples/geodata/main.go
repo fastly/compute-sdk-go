@@ -16,8 +16,7 @@ func main() {
 		ip := net.ParseIP(r.RemoteAddr)
 		g, err := geo.Lookup(ip)
 		if err != nil {
-			w.WriteHeader(fsthttp.StatusInternalServerError)
-			fmt.Fprintln(w, err.Error())
+			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
 			return
 		}
 

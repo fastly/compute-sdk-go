@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
@@ -28,8 +27,7 @@ func main() {
 		// named "httpbin" and pointing to "https://httpbin.org".
 		resp, err := r.Send(ctx, "httpbin")
 		if err != nil {
-			w.WriteHeader(fsthttp.StatusBadGateway)
-			fmt.Fprintln(w, err.Error())
+			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
 			return
 		}
 

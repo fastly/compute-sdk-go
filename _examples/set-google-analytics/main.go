@@ -17,8 +17,7 @@ func main() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
 		resp, err := r.Send(ctx, "backend")
 		if err != nil {
-			w.WriteHeader(fsthttp.StatusBadGateway)
-			fmt.Fprintln(w, err.Error())
+			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
 			return
 		}
 		c, err := r.Cookie("_ga")

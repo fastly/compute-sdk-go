@@ -4,14 +4,12 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
 )
 
 func main() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		w.WriteHeader(401)
-		fmt.Fprintf(w, "Unauthorized")
+		fsthttp.Error(w, "Unauthorized", fsthttp.StatusUnauthorized)
 	})
 }
