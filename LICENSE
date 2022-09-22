@@ -219,6 +219,7 @@ Software.
 
 For fsthttp/status.go:
 For fsthttp/methods.go:
+For fsthttp/helpers.go:
 
 Copyright (c) 2009 The Go Authors. All rights reserved.
 

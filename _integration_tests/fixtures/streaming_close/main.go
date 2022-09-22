@@ -5,7 +5,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"io"
 	"log"
 	"strconv"
@@ -25,16 +24,14 @@ func main() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
 		req, err := fsthttp.NewRequest("GET", "https://compute-sdk-test-backend.edgecompute.app/streaming_close", nil)
 		if err != nil {
-			w.WriteHeader(fsthttp.StatusInternalServerError)
-			fmt.Fprintln(w, err)
+			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
 			return
 		}
 
 		req.CacheOptions.Pass = true
 		resp, err := req.Send(ctx, "TheOrigin")
 		if err != nil {
-			w.WriteHeader(fsthttp.StatusBadGateway)
-			fmt.Fprintln(w, err)
+			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
 			return
 		}
 
@@ -48,8 +45,7 @@ func main() {
 			}
 
 			if err != nil {
-				w.WriteHeader(fsthttp.StatusBadGateway)
-				fmt.Fprintln(w, err)
+				fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
 				return
 			}
 

@@ -26,8 +26,7 @@ func main() {
 
 		resp, err := r.Send(ctx, "backend")
 		if err != nil {
-			w.WriteHeader(fsthttp.StatusBadGateway)
-			fmt.Fprintln(w, err.Error())
+			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
 			return
 		}
 

@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
@@ -15,8 +14,7 @@ func main() {
 		// Create our upstream request
 		req, err := fsthttp.NewRequest("GET", "https://compute-sdk-test-backend.edgecompute.app/request_upstream", nil)
 		if err != nil {
-			w.WriteHeader(fsthttp.StatusBadGateway)
-			fmt.Fprintln(w, err)
+			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
 			return
 		}
 
@@ -29,8 +27,7 @@ func main() {
 		// named "TheOrigin" and pointing to "http://provider.org/TheURL".
 		resp, err := req.Send(ctx, "TheOrigin")
 		if err != nil {
-			w.WriteHeader(fsthttp.StatusBadGateway)
-			fmt.Fprintln(w, err)
+			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
 			return
 		}
 

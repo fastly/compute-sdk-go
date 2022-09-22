@@ -181,7 +181,7 @@
           },
           "downstream_response": {
             "status": 401,
-            "body": "Unauthorized"
+            "body": "Unauthorized\n"
           }
         }
       }
