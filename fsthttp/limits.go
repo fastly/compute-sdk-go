@@ -8,8 +8,8 @@ var Limits = limits{}
 type limits struct {
 }
 
-// GetMaxHeaderNameLen gets the header name limit
-func (limits) GetMaxHeaderNameLen() int {
+// MaxHeaderNameLen gets the header name limit
+func (limits) MaxHeaderNameLen() int {
 	return fastly.MaxHeaderNameLen
 }
 
@@ -18,8 +18,8 @@ func (limits) SetMaxHeaderNameLen(len int) {
 	fastly.MaxHeaderNameLen = len
 }
 
-// GetMaxHeaderValueLen gets the header value limit
-func (limits) GetMaxHeaderValueLen() int {
+// MaxHeaderValueLen gets the header value limit
+func (limits) MaxHeaderValueLen() int {
 	return fastly.MaxHeaderValueLen
 }
 
@@ -28,8 +28,8 @@ func (limits) SetMaxHeaderValueLen(len int) {
 	fastly.MaxHeaderValueLen = len
 }
 
-// GetMaxMethodLen gets the request method limit
-func (limits) GetMaxMethodLen() int {
+// MaxMethodLen gets the request method limit
+func (limits) MaxMethodLen() int {
 	return fastly.MaxMethodLen
 }
 
@@ -38,8 +38,8 @@ func (limits) SetMaxMethodLen(len int) {
 	fastly.MaxMethodLen = len
 }
 
-// GetMaxURLLen gets the request URL limit
-func (limits) GetMaxURLLen() int {
+// MaxURLLen gets the request URL limit
+func (limits) MaxURLLen() int {
 	return fastly.MaxURLLen
 }
 
