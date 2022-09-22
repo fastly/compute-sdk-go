@@ -252,10 +252,18 @@ const (
 // These limits are configurable for the Rust SDK but constants for the Go one.
 // See https://docs.rs/fastly/latest/fastly/limits/index.html
 
+var (
+	// MaxHeaderNameLen is the header name limit
+	MaxHeaderNameLen = 8192
+	// MaxHeaderValueLen is the header value limit
+	MaxHeaderValueLen = 8192
+	// MaxMethodLen is the method limit
+	MaxMethodLen = 1024
+	// MaxURLLen is the url limit
+	MaxURLLen = 1024
+)
+
 const (
-	methodMaxLen          = 1024
-	headerNameMaxLen      = 1024
-	headerValueMaxLen     = 65536
 	dictionaryValueMaxLen = 8192 // https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
 	defaultBufferLen      = 16 * 1024
 )
