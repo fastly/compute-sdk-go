@@ -19,11 +19,13 @@ func init() {
 	fastlyABIInit(1)
 }
 
-// (module $fastly_abi
-//   (@interface func (export "init")
-//     (param $abi_version u64)
-//     (result $err $fastly_status))
-// )
+// witx:
+//
+//	(module $fastly_abi
+//	 (@interface func (export "init")
+//	   (param $abi_version u64)
+//	   (result $err $fastly_status))
+//	)
 //
 //go:wasm-module fastly_abi
 //export init
@@ -36,28 +38,30 @@ func fastlyABIInit(abiVersion prim.U64) FastlyStatus
 //	return fastlyABIInit(version).toError()
 //}
 
-// (module $fastly_uap
-//   (@interface func (export "parse")
-//     (param $user_agent string)
+// witx:
 //
-//     (param $family (@witx pointer char8))
-//     (param $family_len (@witx usize))
-//     (param $family_nwritten_out (@witx pointer (@witx usize)))
+//	(module $fastly_uap
+//	 (@interface func (export "parse")
+//	   (param $user_agent string)
 //
-//     (param $major (@witx pointer char8))
-//     (param $major_len (@witx usize))
-//     (param $major_nwritten_out (@witx pointer (@witx usize)))
+//	   (param $family (@witx pointer char8))
+//	   (param $family_len (@witx usize))
+//	   (param $family_nwritten_out (@witx pointer (@witx usize)))
 //
-//     (param $minor (@witx pointer char8))
-//     (param $minor_len (@witx usize))
-//     (param $minor_nwritten_out (@witx pointer (@witx usize)))
+//	   (param $major (@witx pointer char8))
+//	   (param $major_len (@witx usize))
+//	   (param $major_nwritten_out (@witx pointer (@witx usize)))
 //
-//     (param $patch (@witx pointer char8))
-//     (param $patch_len (@witx usize))
-//     (param $patch_nwritten_out (@witx pointer (@witx usize)))
+//	   (param $minor (@witx pointer char8))
+//	   (param $minor_len (@witx usize))
+//	   (param $minor_nwritten_out (@witx pointer (@witx usize)))
 //
-//     (result $err $fastly_status)
-//   )
+//	   (param $patch (@witx pointer char8))
+//	   (param $patch_len (@witx usize))
+//	   (param $patch_nwritten_out (@witx pointer (@witx usize)))
+//
+//	   (result $err $fastly_status)
+//	 )
 //
 //go:wasm-module fastly_uap
 //export parse
@@ -134,11 +138,13 @@ type HTTPBody struct {
 	closable bool
 }
 
-//   (@interface func (export "append")
-//     (param $dest $body_handle)
-//     (param $src $body_handle)
-//     (result $err $fastly_status)
-//   )
+// witx:
+//
+//	(@interface func (export "append")
+//	  (param $dest $body_handle)
+//	  (param $src $body_handle)
+//	  (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_body
 //export append
@@ -160,10 +166,12 @@ func (b *HTTPBody) Append(other *HTTPBody) error {
 	return nil
 }
 
-//   (@interface func (export "new")
-//     (result $err $fastly_status)
-//     (result $h $body_handle)
-//   )
+// witx:
+//
+//	(@interface func (export "new")
+//	  (result $err $fastly_status)
+//	  (result $h $body_handle)
+//	)
 //
 //go:wasm-module fastly_http_body
 //export new
@@ -185,13 +193,15 @@ func NewHTTPBody() (*HTTPBody, error) {
 	return &b, nil
 }
 
-//   (@interface func (export "read")
-//     (param $h $body_handle)
-//     (param $buf (@witx pointer u8))
-//     (param $buf_len (@witx usize))
-//     (result $err $fastly_status)
-//     (result $nread (@witx usize))
-//   )
+// witx:
+//
+//	(@interface func (export "read")
+//	  (param $h $body_handle)
+//	  (param $buf (@witx pointer u8))
+//	  (param $buf_len (@witx usize))
+//	  (result $err $fastly_status)
+//	  (result $nread (@witx usize))
+//	)
 //
 //go:wasm-module fastly_http_body
 //export read
@@ -224,13 +234,15 @@ func (b *HTTPBody) Read(p []byte) (int, error) {
 	return n, nil
 }
 
-//   (@interface func (export "write")
-//     (param $h $body_handle)
-//     (param $buf (array u8))
-//     (param $end $body_write_end)
-//     (result $err $fastly_status)
-//     (result $nwritten (@witx usize))
-//   )
+// witx:
+//
+//	(@interface func (export "write")
+//	  (param $h $body_handle)
+//	  (param $buf (array u8))
+//	  (param $end $body_write_end)
+//	  (result $err $fastly_status)
+//	  (result $nwritten (@witx usize))
+//	)
 //
 //go:wasm-module fastly_http_body
 //export write
@@ -260,10 +272,13 @@ func (b *HTTPBody) Write(p []byte) (n int, err error) {
 	return n, err
 }
 
-//   (@interface func (export "close")
-//     (param $h $body_handle)
-//     (result $err $fastly_status)
-//   )
+// witx:
+//
+//	(@interface func (export "close")
+//	  (param $h $body_handle)
+//	  (result $err $fastly_status)
+//	)
+//
 // )
 //
 //go:wasm-module fastly_http_body
@@ -292,10 +307,12 @@ type LogEndpoint struct {
 	h endpointHandle
 }
 
-//   (@interface func (export "endpoint_get")
-//     (param $name (array u8))
-//     (result $err $fastly_status)
-//     (result $endpoint_handle_out $endpoint_handle))
+// witx:
+//
+//	(@interface func (export "endpoint_get")
+//	  (param $name (array u8))
+//	  (result $err $fastly_status)
+//	  (result $endpoint_handle_out $endpoint_handle))
 //
 //go:wasm-module fastly_log
 //export endpoint_get
@@ -319,11 +336,14 @@ func GetLogEndpoint(name string) (*LogEndpoint, error) {
 	return &e, nil
 }
 
-//   (@interface func (export "write")
-//     (param $h $endpoint_handle)
-//     (param $msg (array u8))
-//     (result $err $fastly_status)
-//     (result $nwritten_out (@witx usize)))
+// witx:
+//
+//	(@interface func (export "write")
+//	  (param $h $endpoint_handle)
+//	  (param $msg (array u8))
+//	  (result $err $fastly_status)
+//	  (result $nwritten_out (@witx usize)))
+//
 // )
 //
 //go:wasm-module fastly_log
@@ -360,11 +380,13 @@ type HTTPRequest struct {
 	h requestHandle
 }
 
-//     (@interface func (export "body_downstream_get")
-//       (result $err $fastly_status)
-//       (result $req $request_handle)
-//       (result $body $body_handle)
-//     )
+// witx:
+//
+//	(@interface func (export "body_downstream_get")
+//	  (result $err $fastly_status)
+//	  (result $req $request_handle)
+//	  (result $body $body_handle)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export body_downstream_get
@@ -391,13 +413,15 @@ func BodyDownstreamGet() (*HTTPRequest, *HTTPBody, error) {
 	return &HTTPRequest{h: rh}, &HTTPBody{h: bh}, nil
 }
 
-//     (@interface func (export "cache_override_set")
-//       (param $h $request_handle)
-//       (param $tag $cache_override_tag)
-//       (param $ttl u32)
-//       (param $stale_while_revalidate u32)
-//       (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "cache_override_set")
+//	  (param $h $request_handle)
+//	  (param $tag $cache_override_tag)
+//	  (param $ttl u32)
+//	  (param $stale_while_revalidate u32)
+//	  (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export cache_override_set
@@ -410,14 +434,16 @@ func fastlyHTTPReqCacheOverrideSet(
 	staleWhileRevalidate prim.U32,
 ) FastlyStatus
 
-//     (@interface func (export "cache_override_v2_set")
-//       (param $h $request_handle)
-//       (param $tag $cache_override_tag)
-//       (param $ttl u32)
-//       (param $stale_while_revalidate u32)
-//       (param $sk (array u8))
-//       (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "cache_override_v2_set")
+//	  (param $h $request_handle)
+//	  (param $tag $cache_override_tag)
+//	  (param $ttl u32)
+//	  (param $stale_while_revalidate u32)
+//	  (param $sk (array u8))
+//	  (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export cache_override_v2_set
@@ -459,12 +485,14 @@ func (r *HTTPRequest) SetCacheOverride(options CacheOverrideOptions) error {
 	).toError()
 }
 
-//     (@interface func (export "downstream_client_ip_addr")
-//        ;; must be a 16-byte array
-//        (param $addr_octets_out (@witx pointer char8))
-//        (result $err $fastly_status)
-//        (result $nwritten_out (@witx usize))
-//     )
+// witx:
+//
+//	(@interface func (export "downstream_client_ip_addr")
+//	   ;; must be a 16-byte array
+//	   (param $addr_octets_out (@witx pointer char8))
+//	   (result $err $fastly_status)
+//	   (result $nwritten_out (@witx usize))
+//	)
 //
 //go:wasm-module fastly_http_req
 //export downstream_client_ip_addr
@@ -488,12 +516,14 @@ func DownstreamClientIPAddr() (net.IP, error) {
 	return net.IP(buf.AsBytes()), nil
 }
 
-//     (@interface func (export "downstream_tls_cipher_openssl_name")
-//        (param $cipher_out (@witx pointer char8))
-//        (param $cipher_max_len (@witx usize))
-//        (param $nwritten_out (@witx pointer (@witx usize)))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "downstream_tls_cipher_openssl_name")
+//	   (param $cipher_out (@witx pointer char8))
+//	   (param $cipher_max_len (@witx usize))
+//	   (param $nwritten_out (@witx pointer (@witx usize)))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export downstream_tls_cipher_openssl_name
@@ -519,12 +549,14 @@ func DownstreamTLSCipherOpenSSLName() (string, error) {
 	return buf.ToString(), nil
 }
 
-//     (@interface func (export "downstream_tls_protocol")
-//        (param $protocol_out (@witx pointer char8))
-//        (param $protocol_max_len (@witx usize))
-//        (param $nwritten_out (@witx pointer (@witx usize)))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "downstream_tls_protocol")
+//	   (param $protocol_out (@witx pointer char8))
+//	   (param $protocol_max_len (@witx usize))
+//	   (param $nwritten_out (@witx pointer (@witx usize)))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export downstream_tls_protocol
@@ -550,12 +582,14 @@ func DownstreamTLSProtocol() (string, error) {
 	return buf.ToString(), nil
 }
 
-//     (@interface func (export "downstream_tls_client_hello")
-//        (param $chello_out (@witx pointer char8))
-//        (param $chello_max_len (@witx usize))
-//        (param $nwritten_out (@witx pointer (@witx usize)))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "downstream_tls_client_hello")
+//	   (param $chello_out (@witx pointer char8))
+//	   (param $chello_max_len (@witx usize))
+//	   (param $nwritten_out (@witx pointer (@witx usize)))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export downstream_tls_client_hello
@@ -581,10 +615,12 @@ func DownstreamTLSClientHello() ([]byte, error) {
 	return buf.AsBytes(), nil
 }
 
-//     (@interface func (export "new")
-//       (result $err $fastly_status)
-//       (result $h $request_handle)
-//     )
+// witx:
+//
+//	(@interface func (export "new")
+//	  (result $err $fastly_status)
+//	  (result $h $request_handle)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export new
@@ -606,15 +642,17 @@ func NewHTTPRequest() (*HTTPRequest, error) {
 	return &r, nil
 }
 
-//     (@interface func (export "header_names_get")
-//       (param $h $request_handle)
-//       (param $buf (@witx pointer char8))
-//       (param $buf_len (@witx usize))
-//       (param $cursor $multi_value_cursor)
-//       (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
-//       (param $nwritten_out (@witx pointer (@witx usize)))
-//       (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "header_names_get")
+//	  (param $h $request_handle)
+//	  (param $buf (@witx pointer char8))
+//	  (param $buf_len (@witx usize))
+//	  (param $cursor $multi_value_cursor)
+//	  (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
+//	  (param $nwritten_out (@witx pointer (@witx usize)))
+//	  (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export header_names_get
@@ -651,14 +689,16 @@ func (r *HTTPRequest) GetHeaderNames() *Values {
 	return newValues(adapter, MaxHeaderNameLen)
 }
 
-//     (@interface func (export "original_header_names_get")
-//       (param $buf (@witx pointer char8))
-//       (param $buf_len (@witx usize))
-//       (param $cursor $multi_value_cursor)
-//       (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
-//       (param $nwritten_out (@witx pointer (@witx usize)))
-//       (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "original_header_names_get")
+//	  (param $buf (@witx pointer char8))
+//	  (param $buf_len (@witx usize))
+//	  (param $cursor $multi_value_cursor)
+//	  (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
+//	  (param $nwritten_out (@witx pointer (@witx usize)))
+//	  (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export original_header_names_get
@@ -693,10 +733,12 @@ func GetOriginalHeaderNames() *Values {
 	return newValues(adapter, MaxHeaderNameLen)
 }
 
-//     (@interface func (export "original_header_count")
-//       (result $err $fastly_status)
-//       (result $count u32)
-//     )
+// witx:
+//
+//	(@interface func (export "original_header_count")
+//	  (result $err $fastly_status)
+//	  (result $count u32)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export original_header_count
@@ -718,14 +760,16 @@ func GetOriginalHeaderCount() (int, error) {
 	return int(count), nil
 }
 
-//     (@interface func (export "header_value_get")
-//        (param $h $request_handle)
-//        (param $name (array u8))
-//        (param $value (@witx pointer char8))
-//        (param $value_max_len (@witx usize))
-//        (param $nwritten_out (@witx pointer (@witx usize)))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "header_value_get")
+//	   (param $h $request_handle)
+//	   (param $name (array u8))
+//	   (param $value (@witx pointer char8))
+//	   (param $value_max_len (@witx usize))
+//	   (param $nwritten_out (@witx pointer (@witx usize)))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export header_value_get
@@ -755,16 +799,18 @@ func (r *HTTPRequest) GetHeaderValue(name string) (string, error) {
 	return buf.ToString(), nil
 }
 
-//     (@interface func (export "header_values_get")
-//        (param $h $request_handle)
-//        (param $name (array u8))
-//        (param $buf (@witx pointer char8))
-//        (param $buf_len (@witx usize))
-//        (param $cursor $multi_value_cursor)
-//        (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
-//        (param $nwritten_out (@witx pointer (@witx usize)))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "header_values_get")
+//	   (param $h $request_handle)
+//	   (param $name (array u8))
+//	   (param $buf (@witx pointer char8))
+//	   (param $buf_len (@witx usize))
+//	   (param $cursor $multi_value_cursor)
+//	   (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
+//	   (param $nwritten_out (@witx pointer (@witx usize)))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export header_values_get
@@ -803,12 +849,14 @@ func (r *HTTPRequest) GetHeaderValues(name string) *Values {
 	return newValues(adapter, MaxHeaderValueLen)
 }
 
-//     (@interface func (export "header_values_set")
-//        (param $h $request_handle)
-//        (param $name (array u8))
-//        (param $values (array char8)) ;; contains multiple values separated by \0
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "header_values_set")
+//	   (param $h $request_handle)
+//	   (param $name (array u8))
+//	   (param $values (array char8)) ;; contains multiple values separated by \0
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export header_values_set
@@ -834,12 +882,14 @@ func (r *HTTPRequest) SetHeaderValues(name string, values []string) error {
 	).toError()
 }
 
-//     (@interface func (export "header_insert")
-//        (param $h $request_handle)
-//        (param $name (array u8))
-//        (param $value (array u8))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "header_insert")
+//	   (param $h $request_handle)
+//	   (param $name (array u8))
+//	   (param $value (array u8))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export header_insert
@@ -859,12 +909,14 @@ func (r *HTTPRequest) InsertHeader(name, value string) error {
 	).toError()
 }
 
-//     (@interface func (export "header_append")
-//        (param $h $request_handle)
-//        (param $name (array u8))
-//        (param $value (array u8))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "header_append")
+//	   (param $h $request_handle)
+//	   (param $name (array u8))
+//	   (param $value (array u8))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export header_append
@@ -886,11 +938,13 @@ func (r *HTTPRequest) AppendHeader(name, value string) error {
 	).toError()
 }
 
-//     (@interface func (export "header_remove")
-//        (param $h $request_handle)
-//        (param $name (array u8))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "header_remove")
+//	   (param $h $request_handle)
+//	   (param $name (array u8))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export header_remove
@@ -908,13 +962,15 @@ func (r *HTTPRequest) RemoveHeader(name string) error {
 	).toError()
 }
 
-//     (@interface func (export "method_get")
-//        (param $h $request_handle)
-//        (param $buf (@witx pointer char8))
-//        (param $buf_len (@witx usize))
-//        (param $nwritten_out (@witx pointer (@witx usize)))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "method_get")
+//	   (param $h $request_handle)
+//	   (param $buf (@witx pointer char8))
+//	   (param $buf_len (@witx usize))
+//	   (param $nwritten_out (@witx pointer (@witx usize)))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export method_get
@@ -941,11 +997,13 @@ func (r *HTTPRequest) GetMethod() (string, error) {
 	return buf.ToString(), nil
 }
 
-//     (@interface func (export "method_set")
-//        (param $h $request_handle)
-//        (param $method string)
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "method_set")
+//	   (param $h $request_handle)
+//	   (param $method string)
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export method_set
@@ -963,13 +1021,15 @@ func (r *HTTPRequest) SetMethod(method string) error {
 	).toError()
 }
 
-//     (@interface func (export "uri_get")
-//        (param $h $request_handle)
-//        (param $buf (@witx pointer char8))
-//        (param $buf_len (@witx usize))
-//        (param $nwritten_out (@witx pointer (@witx usize)))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "uri_get")
+//	   (param $h $request_handle)
+//	   (param $buf (@witx pointer char8))
+//	   (param $buf_len (@witx usize))
+//	   (param $nwritten_out (@witx pointer (@witx usize)))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export uri_get
@@ -996,11 +1056,13 @@ func (r *HTTPRequest) GetURI() (string, error) {
 	return buf.ToString(), nil
 }
 
-//     (@interface func (export "uri_set")
-//        (param $h $request_handle)
-//        (param $uri string)
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "uri_set")
+//	   (param $h $request_handle)
+//	   (param $uri string)
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export uri_set
@@ -1018,11 +1080,13 @@ func (r *HTTPRequest) SetURI(uri string) error {
 	).toError()
 }
 
-//     (@interface func (export "version_get")
-//        (param $h $request_handle)
-//        (result $err $fastly_status)
-//        (result $version $http_version)
-//     )
+// witx:
+//
+//	(@interface func (export "version_get")
+//	   (param $h $request_handle)
+//	   (result $err $fastly_status)
+//	   (result $version $http_version)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export version_get
@@ -1045,11 +1109,13 @@ func (r *HTTPRequest) GetVersion() (proto string, major, minor int, err error) {
 	return v.splat()
 }
 
-//     (@interface func (export "version_set")
-//        (param $h $request_handle)
-//        (param $version $http_version)
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "version_set")
+//	   (param $h $request_handle)
+//	   (param $version $http_version)
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export version_set
@@ -1067,14 +1133,16 @@ func (r *HTTPRequest) SetVersion(v HTTPVersion) error {
 	).toError()
 }
 
-//     (@interface func (export "send")
-//        (param $h $request_handle)
-//        (param $b $body_handle)
-//        (param $backend string)
-//        (result $err $fastly_status)
-//        (result $resp $response_handle)
-//        (result $resp_body $body_handle)
-//     )
+// witx:
+//
+//	(@interface func (export "send")
+//	   (param $h $request_handle)
+//	   (param $b $body_handle)
+//	   (param $backend string)
+//	   (result $err $fastly_status)
+//	   (result $resp $response_handle)
+//	   (result $resp_body $body_handle)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export send
@@ -1109,13 +1177,15 @@ func (r *HTTPRequest) Send(requestBody *HTTPBody, backend string) (response *HTT
 	return &resp, &respBody, nil
 }
 
-//     (@interface func (export "send_async")
-//        (param $h $request_handle)
-//        (param $b $body_handle)
-//        (param $backend string)
-//        (result $err $fastly_status)
-//        (result $pending_req $pending_request_handle)
-//     )
+// witx:
+//
+//	(@interface func (export "send_async")
+//	   (param $h $request_handle)
+//	   (param $b $body_handle)
+//	   (param $backend string)
+//	   (result $err $fastly_status)
+//	   (result $pending_req $pending_request_handle)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export send_async
@@ -1151,13 +1221,15 @@ func (r *HTTPRequest) SendAsync(requestBody *HTTPBody, backend string) (*Pending
 	return &pendingReq, nil
 }
 
-//     (@interface func (export "send_async_streaming")
-//        (param $h $request_handle)
-//        (param $b $body_handle)
-//        (param $backend string)
-//        (result $err $fastly_status)
-//        (result $pending_req $pending_request_handle)
-//     )
+// witx:
+//
+//	(@interface func (export "send_async_streaming")
+//	   (param $h $request_handle)
+//	   (param $b $body_handle)
+//	   (param $backend string)
+//	   (result $err $fastly_status)
+//	   (result $pending_req $pending_request_handle)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export send_async_streaming
@@ -1190,13 +1262,15 @@ func (r *HTTPRequest) SendAsyncStreaming(requestBody *HTTPBody, backend string) 
 	return &pendingReq, nil
 }
 
-//     (@interface func (export "pending_req_poll")
-//        (param $h $pending_request_handle)
-//        (result $err $fastly_status)
-//        (result $is_done u32)
-//        (result $resp $response_handle)
-//        (result $resp_body $body_handle)
-//     )
+// witx:
+//
+//	(@interface func (export "pending_req_poll")
+//	   (param $h $pending_request_handle)
+//	   (result $err $fastly_status)
+//	   (result $is_done u32)
+//	   (result $resp $response_handle)
+//	   (result $resp_body $body_handle)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export pending_req_poll
@@ -1230,12 +1304,14 @@ func (r *PendingRequest) Poll() (done bool, response *HTTPResponse, responseBody
 	return isDone > 0, &resp, &respBody, nil
 }
 
-//     (@interface func (export "pending_req_wait")
-//        (param $h $pending_request_handle)
-//        (result $err $fastly_status)
-//        (result $resp $response_handle)
-//        (result $resp_body $body_handle)
-//     )
+// witx:
+//
+//	(@interface func (export "pending_req_wait")
+//	   (param $h $pending_request_handle)
+//	   (result $err $fastly_status)
+//	   (result $resp $response_handle)
+//	   (result $resp_body $body_handle)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export pending_req_wait
@@ -1270,13 +1346,15 @@ func (r *PendingRequest) Wait() (response *HTTPResponse, responseBody *HTTPBody,
 	return resp, respBody, nil
 }
 
-//     (@interface func (export "pending_req_select")
-//        (param $hs (array $pending_request_handle))
-//        (result $err $fastly_status)
-//        (result $done_idx u32)
-//        (result $resp $response_handle)
-//        (result $resp_body $body_handle)
-//     )
+// witx:
+//
+//	(@interface func (export "pending_req_select")
+//	   (param $hs (array $pending_request_handle))
+//	   (result $err $fastly_status)
+//	   (result $done_idx u32)
+//	   (result $resp $response_handle)
+//	   (result $resp_body $body_handle)
+//	)
 //
 //go:wasm-module fastly_http_req
 //export pending_req_select
@@ -1323,11 +1401,13 @@ func PendingRequestSelect(reqs ...*PendingRequest) (index int, done *PendingRequ
 	return int(doneIdx), reqs[doneIdx], resp, respBody, nil
 }
 
-//     (@interface func (export "auto_decompress_response_set")
-//        (param $h $request_handle)
-//        (param $encodings $content_encodings)
-//        (result $err (expected (error $fastly_status)))
-//     )
+// witx:
+//
+//	(@interface func (export "auto_decompress_response_set")
+//	   (param $h $request_handle)
+//	   (param $encodings $content_encodings)
+//	   (result $err (expected (error $fastly_status)))
+//	)
 //
 //go:wasm-module fastly_http_req
 //export auto_decompress_response_set
@@ -1352,11 +1432,13 @@ func (r *HTTPRequest) SetAutoDecompressResponse(options AutoDecompressResponseOp
 	).toError()
 }
 
-//    (@interface func (export "framing_headers_mode_set")
-//         (param $h $request_handle)
-//         (param $mode $framing_headers_mode)
-//         (result $err (expected (error $fastly_status)))
-//     )
+// witx:
+//
+//	(@interface func (export "framing_headers_mode_set")
+//	     (param $h $request_handle)
+//	     (param $mode $framing_headers_mode)
+//	     (result $err (expected (error $fastly_status)))
+//	 )
 //
 //go:wasm-module fastly_http_req
 //export framing_headers_mode_set
@@ -1378,11 +1460,13 @@ func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
 	).toError()
 }
 
-// (module $fastly_http_resp
-//     (@interface func (export "new")
-//       (result $err $fastly_status)
-//       (result $h $response_handle)
-//     )
+// witx:
+//
+//	(module $fastly_http_resp
+//	   (@interface func (export "new")
+//	     (result $err $fastly_status)
+//	     (result $h $response_handle)
+//	   )
 //
 //go:wasm-module fastly_http_resp
 //export new
@@ -1410,17 +1494,19 @@ func NewHTTPResponse() (*HTTPResponse, error) {
 	return &resp, nil
 }
 
-//     ;; The following directly mirror header & version methods on req
+// witx:
 //
-//     (@interface func (export "header_names_get")
-//       (param $h $response_handle)
-//       (param $buf (@witx pointer char8))
-//       (param $buf_len (@witx usize))
-//       (param $cursor $multi_value_cursor)
-//       (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
-//       (param $nwritten_out (@witx pointer (@witx usize)))
-//       (result $err $fastly_status)
-//     )
+//	;; The following directly mirror header & version methods on req
+//
+//	(@interface func (export "header_names_get")
+//	  (param $h $response_handle)
+//	  (param $buf (@witx pointer char8))
+//	  (param $buf_len (@witx usize))
+//	  (param $cursor $multi_value_cursor)
+//	  (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
+//	  (param $nwritten_out (@witx pointer (@witx usize)))
+//	  (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_resp
 //export header_names_get
@@ -1457,15 +1543,16 @@ func (r *HTTPResponse) GetHeaderNames() *Values {
 	return newValues(adapter, MaxHeaderNameLen)
 }
 
+// witx:
 //
-//     (@interface func (export "header_value_get")
-//        (param $h $response_handle)
-//        (param $name (array u8))
-//        (param $value (@witx pointer char8))
-//        (param $value_max_len (@witx usize))
-//        (param $nwritten_out (@witx pointer (@witx usize)))
-//        (result $err $fastly_status)
-//     )
+//	(@interface func (export "header_value_get")
+//	   (param $h $response_handle)
+//	   (param $name (array u8))
+//	   (param $value (@witx pointer char8))
+//	   (param $value_max_len (@witx usize))
+//	   (param $nwritten_out (@witx pointer (@witx usize)))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_resp
 //export header_value_get
@@ -1495,17 +1582,18 @@ func (r *HTTPResponse) GetHeaderValue(name string) (string, error) {
 	return buf.ToString(), nil
 }
 
+// witx:
 //
-//     (@interface func (export "header_values_get")
-//        (param $h $response_handle)
-//        (param $name (array u8))
-//        (param $buf (@witx pointer char8))
-//        (param $buf_len (@witx usize))
-//        (param $cursor $multi_value_cursor)
-//        (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
-//        (param $nwritten_out (@witx pointer (@witx usize)))
-//        (result $err $fastly_status)
-//     )
+//	(@interface func (export "header_values_get")
+//	   (param $h $response_handle)
+//	   (param $name (array u8))
+//	   (param $buf (@witx pointer char8))
+//	   (param $buf_len (@witx usize))
+//	   (param $cursor $multi_value_cursor)
+//	   (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
+//	   (param $nwritten_out (@witx pointer (@witx usize)))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_resp
 //export header_values_get
@@ -1544,13 +1632,14 @@ func (r *HTTPResponse) GetHeaderValues(name string) *Values {
 	return newValues(adapter, MaxHeaderValueLen)
 }
 
+// witx:
 //
-//     (@interface func (export "header_values_set")
-//        (param $h $response_handle)
-//        (param $name (array u8))
-//        (param $values (array char8)) ;; contains multiple values separated by \0
-//        (result $err $fastly_status)
-//     )
+//	(@interface func (export "header_values_set")
+//	   (param $h $response_handle)
+//	   (param $name (array u8))
+//	   (param $values (array char8)) ;; contains multiple values separated by \0
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_resp
 //export header_values_set
@@ -1578,12 +1667,14 @@ func (r *HTTPResponse) SetHeaderValues(name string, values []string) error {
 	).toError()
 }
 
-//     (@interface func (export "header_insert")
-//        (param $h $response_handle)
-//        (param $name (array u8))
-//        (param $value (array u8))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "header_insert")
+//	   (param $h $response_handle)
+//	   (param $name (array u8))
+//	   (param $value (array u8))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_resp
 //export header_insert
@@ -1607,12 +1698,14 @@ func (r *HTTPResponse) InsertHeader(name, value string) error {
 	).toError()
 }
 
-//     (@interface func (export "header_append")
-//        (param $h $response_handle)
-//        (param $name (array u8))
-//        (param $value (array u8))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "header_append")
+//	   (param $h $response_handle)
+//	   (param $name (array u8))
+//	   (param $value (array u8))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_resp
 //export header_append
@@ -1634,11 +1727,13 @@ func (r *HTTPResponse) AppendHeader(name, value string) error {
 	).toError()
 }
 
-//     (@interface func (export "header_remove")
-//        (param $h $response_handle)
-//        (param $name (array u8))
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "header_remove")
+//	   (param $h $response_handle)
+//	   (param $name (array u8))
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_resp
 //export header_remove
@@ -1656,11 +1751,13 @@ func (r *HTTPResponse) RemoveHeader(name string) error {
 	).toError()
 }
 
-//     (@interface func (export "version_get")
-//        (param $h $response_handle)
-//        (result $err $fastly_status)
-//        (result $version $http_version)
-//     )
+// witx:
+//
+//	(@interface func (export "version_get")
+//	   (param $h $response_handle)
+//	   (result $err $fastly_status)
+//	   (result $version $http_version)
+//	)
 //
 //go:wasm-module fastly_http_resp
 //export version_get
@@ -1683,11 +1780,13 @@ func (r *HTTPResponse) GetVersion() (proto string, major, minor int, err error) 
 	return v.splat()
 }
 
-//     (@interface func (export "version_set")
-//        (param $h $response_handle)
-//        (param $version $http_version)
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "version_set")
+//	   (param $h $response_handle)
+//	   (param $version $http_version)
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_resp
 //export version_set
@@ -1705,12 +1804,14 @@ func (r *HTTPResponse) SetVersion(v HTTPVersion) error {
 	).toError()
 }
 
-//     (@interface func (export "send_downstream")
-//        (param $h $response_handle)
-//        (param $b $body_handle)
-//        (param $streaming u32)
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "send_downstream")
+//	   (param $h $response_handle)
+//	   (param $b $body_handle)
+//	   (param $streaming u32)
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_resp
 //export send_downstream
@@ -1745,11 +1846,13 @@ func (r *HTTPResponse) SendDownstream(responseBody *HTTPBody, stream bool) error
 	return nil
 }
 
-//     (@interface func (export "status_get")
-//        (param $h $response_handle)
-//        (result $err $fastly_status)
-//        (result $status $http_status)
-//     )
+// witx:
+//
+//	(@interface func (export "status_get")
+//	   (param $h $response_handle)
+//	   (result $err $fastly_status)
+//	   (result $status $http_status)
+//	)
 //
 //go:wasm-module fastly_http_resp
 //export status_get
@@ -1772,11 +1875,13 @@ func (r *HTTPResponse) GetStatusCode() (int, error) {
 	return int(status), nil
 }
 
-//     (@interface func (export "status_set")
-//        (param $h $response_handle)
-//        (param $status $http_status)
-//        (result $err $fastly_status)
-//     )
+// witx:
+//
+//	(@interface func (export "status_set")
+//	   (param $h $response_handle)
+//	   (param $status $http_status)
+//	   (result $err $fastly_status)
+//	)
 //
 //go:wasm-module fastly_http_resp
 //export status_set
@@ -1795,11 +1900,13 @@ func (r *HTTPResponse) SetStatusCode(code int) error {
 	).toError()
 }
 
-//    (@interface func (export "framing_headers_mode_set")
-//         (param $h $response_handle)
-//         (param $mode $framing_headers_mode)
-//         (result $err (expected (error $fastly_status)))
-//     )
+// witx:
+//
+//	(@interface func (export "framing_headers_mode_set")
+//	     (param $h $response_handle)
+//	     (param $mode $framing_headers_mode)
+//	     (result $err (expected (error $fastly_status)))
+//	 )
 //
 //go:wasm-module fastly_http_resp
 //export framing_headers_mode_set
@@ -1821,12 +1928,14 @@ func (r *HTTPResponse) SetFramingHeadersMode(manual bool) error {
 	).toError()
 }
 
-// (module $fastly_dictionary
-//     (@interface func (export "open")
-//        (param $name string)
-//        (result $err $fastly_status)
-//        (result $h $dictionary_handle)
-//     )
+// witx:
+//
+//	(module $fastly_dictionary
+//	   (@interface func (export "open")
+//	      (param $name string)
+//	      (result $err $fastly_status)
+//	      (result $h $dictionary_handle)
+//	   )
 //
 //go:wasm-module fastly_dictionary
 //export open
@@ -1857,14 +1966,16 @@ func OpenDictionary(name string) (*Dictionary, error) {
 	return &d, nil
 }
 
-//     (@interface func (export "get")
-//        (param $h $dictionary_handle)
-//        (param $key string)
-//        (param $value (@witx pointer char8))
-//        (param $value_max_len (@witx usize))
-//        (result $err $fastly_status)
-//        (result $nwritten (@witx usize))
-//     )
+// witx:
+//
+//	(@interface func (export "get")
+//	   (param $h $dictionary_handle)
+//	   (param $key string)
+//	   (param $value (@witx pointer char8))
+//	   (param $value_max_len (@witx usize))
+//	   (result $err $fastly_status)
+//	   (result $nwritten (@witx usize))
+//	)
 //
 //go:wasm-module fastly_dictionary
 //export get
@@ -1893,16 +2004,20 @@ func (d *Dictionary) Get(key string) (string, error) {
 	return buf.ToString(), nil
 }
 
-// (module $fastly_geo
-//    (@interface func (export "lookup")
-//       (param $addr_octets (@witx pointer (@witx char8)))
-//       (param $addr_len (@witx usize))
-//       (param $buf (@witx pointer (@witx char8)))
-//       (param $buf_len (@witx usize))
-//       (param $nwritten_out (@witx pointer (@witx usize)))
-//       (result $err (expected (error $fastly_status)))
-//    )
+// witx:
+//
+//	(module $fastly_geo
+//	  (@interface func (export "lookup")
+//	     (param $addr_octets (@witx pointer (@witx char8)))
+//	     (param $addr_len (@witx usize))
+//	     (param $buf (@witx pointer (@witx char8)))
+//	     (param $buf_len (@witx usize))
+//	     (param $nwritten_out (@witx pointer (@witx usize)))
+//	     (result $err (expected (error $fastly_status)))
+//	  )
+//
 // )
+//
 //go:wasm-module fastly_geo
 //export lookup
 //go:noescape

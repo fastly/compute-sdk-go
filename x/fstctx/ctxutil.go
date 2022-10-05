@@ -32,11 +32,11 @@ func WithDeadline(parent context.Context, d time.Time) (context.Context, context
 // Canceling this context releases resources associated with it, so code should
 // call cancel as soon as the operations running in this Context complete:
 //
-// 	func slowOperationWithTimeout(ctx context.Context) (Result, error) {
-// 		ctx, cancel := fstctx.WithTimeout(ctx, 100*time.Millisecond)
-// 		defer cancel()  // releases resources if slowOperation completes before timeout elapses
-// 		return slowOperation(ctx)
-// 	}
+//	func slowOperationWithTimeout(ctx context.Context) (Result, error) {
+//		ctx, cancel := fstctx.WithTimeout(ctx, 100*time.Millisecond)
+//		defer cancel()  // releases resources if slowOperation completes before timeout elapses
+//		return slowOperation(ctx)
+//	}
 func WithTimeout(parent context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(parent)
 	go func() {

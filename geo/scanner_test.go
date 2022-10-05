@@ -62,9 +62,9 @@ func TestParseEdgeCases(t *testing.T) {
 			want:  Geo{AsName: "😎 Networks"},
 		},
 		{
-			name: "lots of whitespace",
+			name:  "lots of whitespace",
 			input: `{"as_name": "Foo",	` + "\n\n" + `			  "metro_code": 92       }     `,
-			want: Geo{AsName: "Foo", MetroCode: 92},
+			want:  Geo{AsName: "Foo", MetroCode: 92},
 		},
 		{
 			name:  "key is not a string",
