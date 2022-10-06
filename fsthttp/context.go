@@ -5,6 +5,7 @@ import "context"
 type (
 	requestContextKey        struct{}
 	responseWriterContextKey struct{}
+	responseContextKey       struct{}
 )
 
 // RequestFromContext returns the fsthttp.Request associated with the
@@ -27,4 +28,15 @@ func ResponseWriterFromContext(ctx context.Context) ResponseWriter {
 
 func contextWithResponseWriter(ctx context.Context, w ResponseWriter) context.Context {
 	return context.WithValue(ctx, responseWriterContextKey{}, w)
+}
+
+// ResponseFromContext returns the fsthttp.Response associated with the
+// context, if any.
+func ResponseFromContext(ctx context.Context) *Response {
+	resp, _ := ctx.Value(responseContextKey{}).(*Response)
+	return resp
+}
+
+func contextWithResponse(ctx context.Context, resp *Response) context.Context {
+	return context.WithValue(ctx, responseContextKey{}, resp)
 }
