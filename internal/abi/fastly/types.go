@@ -17,6 +17,7 @@ type handle uintptr
 // FastlyStatus models a response status enum.
 type FastlyStatus uint32
 
+// witx:
 //    (typename $fastly_status
 //    	(enum u32
 //          $ok
@@ -147,7 +148,8 @@ func IsFastlyError(err error) (FastlyStatus, bool) {
 // HTTPVersion describes an HTTP protocol version.
 type HTTPVersion uint32
 
-// (typename $http_version
+// witx:
+//  (typename $http_version
 // 	(enum u32
 // 	  $http_09
 // 	  $http_10
@@ -189,13 +191,17 @@ func (v HTTPVersion) splat() (proto string, major, minor int, err error) {
 	}
 }
 
-// (typename $http_status u16)
+// witx:
+//
+//	(typename $http_status u16)
 type httpStatus uint16
 
-// (typename $body_write_end
-// 	(enum u32
-// 	  $back
-// 	  $front))
+// witx:
+//
+//	 (typename $body_write_end
+//		(enum u32
+//		  $back
+//		  $front))
 type bodyWriteEnd uint32
 
 const (
@@ -203,28 +209,44 @@ const (
 	bodyWriteEndFront bodyWriteEnd = 1 // $front
 )
 
-// (typename $body_handle (handle))
+// witx:
+//
+//	(typename $body_handle (handle))
 type bodyHandle handle
 
-// (typename $request_handle (handle))
+// witx:
+//
+//	(typename $request_handle (handle))
 type requestHandle handle
 
-// (typename $response_handle (handle))
+// witx:
+//
+//	(typename $response_handle (handle))
 type responseHandle handle
 
-// (typename $pending_request_handle (handle))
+// witx:
+//
+//	(typename $pending_request_handle (handle))
 type pendingRequestHandle handle
 
-// (typename $endpoint_handle (handle))
+// witx:
+//
+//	(typename $endpoint_handle (handle))
 type endpointHandle handle
 
-// (typename $dictionary_handle (handle))
+// witx:
+//
+//	(typename $dictionary_handle (handle))
 type dictionaryHandle handle
 
-// (typename $multi_value_cursor u32)
+// witx:
+//
+//	(typename $multi_value_cursor u32)
 type multiValueCursor uint32
 
-// (typename $multi_value_cursor_result s64)
+// witx:
+//
+//	(typename $multi_value_cursor_result s64)
 type multiValueCursorResult int64
 
 // -1 represents "finished", non-negative represents a $multi_value_cursor:
@@ -232,13 +254,15 @@ func (r multiValueCursorResult) isFinished() bool { return r < 0 }
 
 func (r multiValueCursorResult) toCursor() multiValueCursor { return multiValueCursor(r) }
 
-// (typename $cache_override_tag
-// 	(flags u32
-// 	  $none
-// 	  $pass
-// 	  $ttl
-// 	  $stale_while_revalidate
-// 	  $pci))
+// witx:
+//
+//	 (typename $cache_override_tag
+//		(flags u32
+//		  $none
+//		  $pass
+//		  $ttl
+//		  $stale_while_revalidate
+//		  $pci))
 type cacheOverrideTag uint32
 
 const (
@@ -406,9 +430,11 @@ func (v *Values) Bytes() []byte {
 	return v.value
 }
 
-// (typename $content_encodings
-//    (flags (@witx repr u32)
-//        $gzip))
+// witx:
+//
+//	(typename $content_encodings
+//	  (flags (@witx repr u32)
+//	      $gzip))
 type contentEncodings prim.U32
 
 const (
@@ -422,10 +448,12 @@ type AutoDecompressResponseOptions struct {
 	Gzip bool
 }
 
-// (typename $framing_headers_mode
-//     (enum (@witx tag u32)
-//         $automatic
-//         $manually_from_headers))
+// witx:
+//
+//	(typename $framing_headers_mode
+//	   (enum (@witx tag u32)
+//	       $automatic
+//	       $manually_from_headers))
 type framingHeadersMode prim.U32
 
 const (
