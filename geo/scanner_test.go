@@ -152,8 +152,43 @@ func TestParseTestdata(t *testing.T) {
 	}
 }
 
-func TestParseFuzz(t *testing.T) {
-	t.Parallel()
+func FuzzParseGeoJSON(f *testing.F) {
+	matches, err := filepath.Glob("testdata/*.json")
+	if err != nil {
+		f.Fatal(err)
+	}
 
-	t.Skip("TODO")
+	for _, file := range matches {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			f.Fatal(err)
+		}
+		f.Add(data)
+	}
+
+	f.Fuzz(func(t *testing.T, data []byte) {
+		g, err := parseGeoJSON(data)
+
+		var g2 Geo
+		err2 := json.Unmarshal(data, &g2)
+
+		if err != nil && err2 != nil {
+			return
+		}
+
+		if err != nil && err2 == nil {
+			// parseGeoJSON failed to parse "valid" json, but that's expected because it only knows about a limited subset
+			return
+		}
+
+		if err == nil && err2 != nil {
+			t.Errorf("parseGeoJSON parsed invalid json blob")
+		}
+
+		if err == nil && err2 == nil {
+			if *g != g2 {
+				t.Errorf("fuzzer found parsing mismatch: %#v != %#v", *g, g2)
+			}
+		}
+	})
 }
