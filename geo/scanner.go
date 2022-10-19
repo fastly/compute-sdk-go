@@ -182,6 +182,12 @@ func (s *scanner) scanNumber() token {
 func (s *scanner) scanString() token {
 	ch := s.next()
 	for ch != '"' {
+		if ch == nul {
+			// null bytes not allowed in JSON strings
+			// because next will return 0 for EOF, this also handled unterminated strings
+			s.tokPos = -1
+			return tokenError
+		}
 		if ch == '\\' {
 			ch = s.next()
 			switch ch {
