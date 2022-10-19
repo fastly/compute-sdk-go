@@ -108,6 +108,7 @@ func parseGeoJSON(buf []byte) (*Geo, error) {
 		case "utc_offset":
 			g.UTCOffset, err = s.decodeInt()
 		default:
+			// unknown key
 			s.skipValue()
 		}
 		if err != nil {
