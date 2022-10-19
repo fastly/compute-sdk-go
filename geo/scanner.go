@@ -27,7 +27,7 @@ const (
 	tokenString
 )
 
-var tokensString = map[token]string{
+var tokensString = [...]string{
 	tokenError:       "Error",
 	tokenEOF:         "EOF",
 	tokenArrayStart:  "ArrayStart",
@@ -41,6 +41,9 @@ var tokensString = map[token]string{
 }
 
 func (tok token) String() string {
+	if int(tok) > len(tokensString) {
+		return "UnknownToken"
+	}
 	return tokensString[tok]
 }
 
