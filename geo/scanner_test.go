@@ -71,27 +71,26 @@ func TestParseEdgeCases(t *testing.T) {
 			input: `{92: "metro_code"}`,
 			err:   true,
 		},
-		// TODO
-		//{
-		//	name:  "too many colons",
-		//	input: `{"as_name":: "Foo", "metro_code": 92}`,
-		//	err:   true,
-		//},
-		//{
-		//	name:  "too many commas",
-		//	input: `{"as_name": "Foo",, "metro_code": 92}`,
-		//	err:   true,
-		//},
-		//{
-		//	name:  "wrong delimiter",
-		//	input: `{"as_name", "Foo": "metro_code": 92}`,
-		//	err:   true,
-		//},
-		//{
-		//	name:  "misplaced comma",
-		//	input: `{, "as_name": "foo"}`,
-		//	err:   true,
-		//},
+		{
+			name:  "too many colons",
+			input: `{"as_name":: "Foo", "metro_code": 92}`,
+			err:   true,
+		},
+		{
+			name:  "too many commas",
+			input: `{"as_name": "Foo",, "metro_code": 92}`,
+			err:   true,
+		},
+		{
+			name:  "wrong delimiter",
+			input: `{"as_name", "Foo": "metro_code": 92}`,
+			err:   true,
+		},
+		{
+			name:  "misplaced comma",
+			input: `{, "as_name": "foo"}`,
+			err:   true,
+		},
 		{
 			name:  "unknown key array",
 			input: `{"as_name": "Foo", "something_else": [[[]]], "metro_code": 92}`,

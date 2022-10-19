@@ -49,19 +49,26 @@ func parseGeoJSON(buf []byte) (*Geo, error) {
 
 	s := newScanner(buf)
 	if tok := s.scan(); tok != tokenObjectStart {
-		return nil, fmt.Errorf("unexpected JSON type %s", tok)
+		return nil, fmt.Errorf("unexpected JSON type at start of buffer %s", tok)
 	}
 
 	var g Geo
-	for tok := s.scan(); tok != tokenObjectEnd; tok = s.scan() {
+	for tok := s.scan(); tok != tokenObjectEnd; {
+		if tok != tokenString {
+			return nil, fmt.Errorf("expected quoted object key, got %s", tok)
+		}
+
 		key, err := s.decodeString()
 		if err != nil {
 			return nil, err
 		}
 
-		if tok := s.scan(); tok <= tokenEOF {
-			return nil, fmt.Errorf("unexpected JSON type %s", tok)
+		if tok = s.scan(); tok != tokenColon {
+			return nil, fmt.Errorf("expected colon after hash key, got %s", tok)
 		}
+
+		// advance the scanner; the various decode functions will verify it's the correct type
+		s.scan()
 
 		switch key {
 		case "as_name":
@@ -106,10 +113,21 @@ func parseGeoJSON(buf []byte) (*Geo, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		tok = s.scan()
+		if tok != tokenComma && tok != tokenObjectEnd {
+			return nil, fmt.Errorf("unexpected JSON token after value, got %v", tok)
+		}
+		if tok == tokenComma {
+			tok = s.scan()
+			if tok != tokenString {
+				return nil, fmt.Errorf("unexpected JSON token after comma, got %v", tok)
+			}
+		}
 	}
 
 	if tok := s.scan(); tok != tokenEOF {
-		return nil, fmt.Errorf("unexpected JSON type %s", tok)
+		return nil, fmt.Errorf("unexpected JSON type at end of object %s", tok)
 	}
 
 	return &g, nil

@@ -20,6 +20,8 @@ const (
 	tokenArrayEnd
 	tokenArrayStart
 	tokenBool
+	tokenColon
+	tokenComma
 	tokenNumber
 	tokenNull
 	tokenObjectEnd
@@ -33,6 +35,8 @@ var tokensString = [...]string{
 	tokenArrayStart:  "ArrayStart",
 	tokenArrayEnd:    "ArrayEnd",
 	tokenBool:        "Bool",
+	tokenColon:       "Colon",
+	tokenComma:       "Comma",
 	tokenNumber:      "Number",
 	tokenNull:        "Null",
 	tokenObjectStart: "ObjectStart",
@@ -101,63 +105,63 @@ func newScanner(buf []byte) *scanner {
 func isSpace(ch byte) bool { return ch == '\t' || ch == '\n' || ch == '\r' || ch == ' ' }
 
 func (s *scanner) scan() token {
-	for {
-		ch := s.next()
+	ch := s.next()
 
-		for isSpace(ch) {
-			ch = s.next()
-		}
-
-		s.tokPos = s.srcPos - 1
-
-		var tok token
-		switch ch {
-		case nul:
-			tok = tokenEOF
-		case '[':
-			tok = s.stack.push(tokenArrayStart)
-		case ']':
-			if s.stack.pop() == tokenArrayStart {
-				tok = tokenArrayEnd
-			}
-		case '{':
-			tok = s.stack.push(tokenObjectStart)
-		case '}':
-			if s.stack.pop() == tokenObjectStart {
-				tok = tokenObjectEnd
-			}
-		case '"':
-			tok = s.scanString()
-		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-':
-			tok = s.scanNumber()
-		case ',', ':':
-			continue
-		default:
-			var i int
-			switch ch {
-			case 'f':
-				i = len("alse")
-				tok = tokenBool
-			case 'n':
-				i = len("ull")
-				tok = tokenNull
-			case 't':
-				i = len("rue")
-				tok = tokenBool
-			}
-			if s.srcPos+i > s.srcEnd {
-				tok = tokenError
-				s.tokPos = -1
-			} else {
-				s.srcPos += i
-			}
-		}
-
-		s.tokEnd = s.srcPos
-		s.token = tok
-
-		return tok
+	for isSpace(ch) {
+		ch = s.next()
 	}
+
+	s.tokPos = s.srcPos - 1
+
+	var tok token
+	switch ch {
+	case nul:
+		tok = tokenEOF
+	case '[':
+		tok = s.stack.push(tokenArrayStart)
+	case ']':
+		if s.stack.pop() == tokenArrayStart {
+			tok = tokenArrayEnd
+		}
+	case '{':
+		tok = s.stack.push(tokenObjectStart)
+	case '}':
+		if s.stack.pop() == tokenObjectStart {
+			tok = tokenObjectEnd
+		}
+	case '"':
+		tok = s.scanString()
+	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-':
+		tok = s.scanNumber()
+	case ',':
+		tok = tokenComma
+	case ':':
+		tok = tokenColon
+	default:
+		var i int
+		switch ch {
+		case 'f':
+			i = len("alse")
+			tok = tokenBool
+		case 'n':
+			i = len("ull")
+			tok = tokenNull
+		case 't':
+			i = len("rue")
+			tok = tokenBool
+		}
+		if s.srcPos+i > s.srcEnd {
+			tok = tokenError
+			s.tokPos = -1
+		} else {
+			s.srcPos += i
+		}
+	}
+
+	s.tokEnd = s.srcPos
+	s.token = tok
+
+	return tok
 }
 
 func (s *scanner) scanNumber() token {
