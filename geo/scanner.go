@@ -150,7 +150,7 @@ func (s *scanner) scan() token {
 			i = len("rue")
 			tok = tokenBool
 		}
-		if s.srcPos+i > s.srcEnd {
+		if s.srcPos+i > len(s.srcBuf) {
 			tok = tokenError
 			s.tokPos = -1
 		} else {
@@ -220,7 +220,7 @@ func (s *scanner) skipValue() {
 }
 
 func (s *scanner) next() byte {
-	if s.srcPos >= s.srcEnd {
+	if s.srcPos < 0 || s.srcPos >= len(s.srcBuf) {
 		return nul
 	}
 	ch := s.srcBuf[s.srcPos]
