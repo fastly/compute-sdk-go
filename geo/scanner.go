@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"unsafe"
 )
 
 // Sentinel to mark EOF.
@@ -232,7 +233,11 @@ func (s *scanner) tokenString() string {
 	if s.tokPos < 0 {
 		return ""
 	}
-	return string(s.srcBuf[s.tokPos:s.tokEnd])
+	return unsafeSliceToString(s.srcBuf[s.tokPos:s.tokEnd])
+}
+
+func unsafeSliceToString(bs []byte) string {
+	return *(*string)(unsafe.Pointer(&bs))
 }
 
 func (s *scanner) decodeInt() (int, error) {
