@@ -180,29 +180,47 @@ func (s *scanner) scanNumber() token {
 	}
 }
 
+var validEscape = [256]bool{
+	'"': true, '\\': true, '/': true, 'b': true, 'f': true, 'n': true, 'r': true, 't': true, 'u': true,
+}
+
 func (s *scanner) scanString() token {
-	ch := s.next()
-	for ch != '"' {
+
+	var escape bool
+
+	if s.srcPos >= len(s.srcBuf) {
+		s.tokPos = -1
+		return tokenError
+	}
+
+	for i, ch := range s.srcBuf[s.srcPos+1:] {
 		if ch == nul {
 			// null bytes not allowed in JSON strings
 			// because next will return 0 for EOF, this also handled unterminated strings
 			s.tokPos = -1
 			return tokenError
 		}
+		if ch == '"' {
+			s.srcPos += i + 2
+			return tokenString
+		}
+
 		if ch == '\\' {
-			ch = s.next()
-			switch ch {
-			case '"', '\\', '/', 'b', 'f', 'n', 'r', 't':
-			case 'u':
-			default:
+			escape = true
+			continue
+		}
+
+		if escape {
+			if !validEscape[ch] {
 				s.tokPos = -1
 				return tokenError
 			}
-		} else {
-			ch = s.next()
+			escape = false
 		}
 	}
-	return tokenString
+
+	s.tokPos = -1
+	return tokenError
 }
 
 func (s *scanner) skipValue() {
