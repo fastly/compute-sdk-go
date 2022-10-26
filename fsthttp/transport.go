@@ -9,15 +9,17 @@ import (
 // on Compute@Edge.
 //
 // Compute@Edge requests must be made to a pre-configured named backend.
-// A default backend is set when the transport is created, but
-// additional backends can be added with the AddBackend method.
+// Transport provides a mechanism for mapping hostnames to backend
+// names.  A default catchall backend is set when the Transport is
+// created, but additional host-to-backend mappings can be added with
+// the AddHostBackend method.
 //
-// This is primarily intended to adapt existing code which uses
-// configurable http.Client instances to work on Compute@Edge.  Using an
-// http.Client pulls in substantially more code, resulting in slower
-// compile times and larger binaries.  For this reason, we recommend new
-// code use the fsthttp.Request type and its Send() method directly
-// whenever possible.
+// Transport is provided primarily to adapt existing code which uses
+// http.Client instances to work on Compute@Edge.  Using an http.Client
+// pulls in substantially more code, resulting in slower compile times
+// and larger binaries.  For this reason, we recommend new code use the
+// fsthttp.Request type and its Send() method directly whenever
+// possible.
 type Transport struct {
 	defaultBackend string
 	backends       map[string]string
@@ -29,6 +31,8 @@ type Transport struct {
 }
 
 // NewTransport creates a new Transport instance with the given default
+// backend.  Any request made to a host not explicitly mapped to a
+// backend using the AddHostBackend method will be sent to the default
 // backend.
 func NewTransport(backend string) *Transport {
 	return &Transport{
@@ -37,9 +41,10 @@ func NewTransport(backend string) *Transport {
 	}
 }
 
-// AddBackend adds a new backend to the transport.
-func (t *Transport) AddBackend(name, host string) {
-	t.backends[strings.ToLower(host)] = name
+// AddHostBackend adds a new host-to-backend mapping.  Multiple hosts
+// may be mapped to the same backend.
+func (t *Transport) AddHostBackend(host, backend string) {
+	t.backends[strings.ToLower(host)] = backend
 }
 
 func (t *Transport) getBackend(host string) string {
