@@ -460,3 +460,8 @@ const (
 	framingHeadersModeAutomatic           framingHeadersMode = 0 // $automatic
 	framingHeadersModeManuallyFromHeaders framingHeadersMode = 1 // $manually_from_headers
 )
+
+// witx:
+//
+//	(typename $object_store_handle (handle))
+type objectStoreHandle handle
