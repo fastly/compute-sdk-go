@@ -2048,3 +2048,114 @@ func GeoLookup(ip net.IP) ([]byte, error) {
 
 	return buf.AsBytes(), nil
 }
+
+// witx:
+//
+//   (module $fastly_object_store
+//	   (@interface func (export "open")
+//	     (param $name string)
+//	     (result $err (expected $object_store_handle (error $fastly_status)))
+//	  )
+
+//go:wasm-module fastly_object_store
+//export open
+//go:noescape
+func fastlyObjectStoreOpen(
+	name prim.Wstring,
+	h *objectStoreHandle,
+) FastlyStatus
+
+// ObjectStore represents a Fastly object store, a collection of key/value pairs.
+// For convenience, keys and values are both modelled as Go strings.
+type ObjectStore struct {
+	h objectStoreHandle
+}
+
+// ObjectStoreOpen returns a reference to the named object store, if it exists.
+func OpenObjectStore(name string) (*ObjectStore, error) {
+	var o ObjectStore
+
+	if err := fastlyObjectStoreOpen(
+		prim.NewReadBufferFromString(name).Wstring(),
+		&o.h,
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	return &o, nil
+}
+
+// witx:
+//
+//   (@interface func (export "lookup")
+//	   (param $store $object_store_handle)
+//	   (param $key string)
+//	   (param $body_handle_out (@witx pointer $body_handle))
+//	   (result $err (expected (error $fastly_status)))
+//	)
+
+//go:wasm-module fastly_object_store
+//export lookup
+//go:noescape
+func fastlyObjectStoreLookup(
+	h objectStoreHandle,
+	key prim.Wstring,
+	b *bodyHandle,
+) FastlyStatus
+
+// Lookup returns the value for key, if it exists.
+func (o *ObjectStore) Lookup(key string) (io.Reader, error) {
+
+	body := HTTPBody{}
+
+	if err := fastlyObjectStoreLookup(
+		o.h,
+		prim.NewReadBufferFromString(key).Wstring(),
+		&body.h,
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	return &body, nil
+}
+
+// witx:
+//
+//  (@interface func (export "insert")
+//	  (param $store $object_store_handle)
+//	  (param $key string)
+//	  (param $body_handle $body_handle)
+//	  (result $err (expected (error $fastly_status)))
+//	)
+
+//go:wasm-module fastly_object_store
+//export insert
+//go:noescape
+func fastlyObjectStoreInsert(
+	h objectStoreHandle,
+	key prim.Wstring,
+	b bodyHandle,
+) FastlyStatus
+
+// Insert adds a key/value pair to the object store.
+func (o *ObjectStore) Insert(key string, value io.Reader) error {
+
+	body, err := NewHTTPBody()
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(body, value); err != nil {
+		return err
+	}
+
+	if err := fastlyObjectStoreInsert(
+		o.h,
+		prim.NewReadBufferFromString(key).Wstring(),
+		body.h,
+	).toError(); err != nil {
+		return err
+	}
+
+	return nil
+}

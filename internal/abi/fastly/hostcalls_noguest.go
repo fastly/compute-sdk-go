@@ -9,6 +9,7 @@ package fastly
 
 import (
 	"fmt"
+	"io"
 	"net"
 )
 
@@ -242,4 +243,18 @@ func (d *Dictionary) Get(key string) (string, error) {
 
 func GeoLookup(ip net.IP) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+type ObjectStore struct{}
+
+func OpenObjectStore(name string) (*ObjectStore, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (o *ObjectStore) Lookup(key string) (io.Reader, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (o *ObjectStore) Insert(key string, value io.Reader) error {
+	return fmt.Errorf("not implemented")
 }
