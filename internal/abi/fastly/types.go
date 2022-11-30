@@ -290,6 +290,8 @@ var (
 	MaxMethodLen = 1024
 	// MaxURLLen is the url limit
 	MaxURLLen = 1024
+	// InitialSecretLen is the initial size of the buffer to use for decrypting secrets
+	InitialSecretLen = 1024
 )
 
 const (
@@ -470,3 +472,10 @@ const (
 //
 //	(typename $object_store_handle (handle))
 type objectStoreHandle handle
+
+// witx:
+//
+//	(typename $secret_store_handle (handle))
+//	(typename $secret_handle (handle))
+type secretStoreHandle handle
+type secretHandle handle

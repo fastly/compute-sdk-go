@@ -2105,7 +2105,6 @@ func fastlyObjectStoreLookup(
 
 // Lookup returns the value for key, if it exists.
 func (o *ObjectStore) Lookup(key string) (io.Reader, error) {
-
 	body := HTTPBody{h: invalidBodyHandle}
 
 	if err := fastlyObjectStoreLookup(
@@ -2145,7 +2144,6 @@ func fastlyObjectStoreInsert(
 
 // Insert adds a key/value pair to the object store.
 func (o *ObjectStore) Insert(key string, value io.Reader) error {
-
 	body, err := NewHTTPBody()
 	if err != nil {
 		return err
@@ -2164,4 +2162,136 @@ func (o *ObjectStore) Insert(key string, value io.Reader) error {
 	}
 
 	return nil
+}
+
+// SecretStore represents a Fastly secret store, a collection of
+// key/value pairs for storing sensitive data.
+type SecretStore struct {
+	h secretStoreHandle
+}
+
+// Secret represents a secret value.  Data is encrypted at rest, and is
+// only decrypted upon the first call to the secret's Plaintext method.
+type Secret struct {
+	h secretHandle
+}
+
+// witx:
+//
+//   (module $fastly_secret_store
+//	   (@interface func (export "open")
+//	     (param $name string)
+//	     (result $err (expected $secret_store_handle (error $fastly_status)))
+//	  )
+
+//go:wasm-module fastly_secret_store
+//export open
+//go:noescape
+func fastlySecretStoreOpen(
+	name prim.Wstring,
+	h *secretStoreHandle,
+) FastlyStatus
+
+// OpenSecretStore returns a reference to the named secret store, if it exists.
+func OpenSecretStore(name string) (*SecretStore, error) {
+	var st SecretStore
+
+	if err := fastlySecretStoreOpen(
+		prim.NewReadBufferFromString(name).Wstring(),
+		&st.h,
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	return &st, nil
+}
+
+// witx:
+//
+//   (module $fastly_secret_store
+//     (@interface func (export "get")
+//       (param $store $secret_store_handle)
+//       (param $key string)
+//       (result $err (expected $secret_handle (error $fastly_status)))
+//     )
+//   )
+
+//go:wasm-module fastly_secret_store
+//export get
+//go:noescape
+func fastlySecretStoreGet(
+	h secretStoreHandle,
+	key prim.Wstring,
+	s *secretHandle,
+) FastlyStatus
+
+// Get returns a handle to the secret value for the given name, if it
+// exists.
+func (st *SecretStore) Get(name string) (*Secret, error) {
+	var s Secret
+
+	if err := fastlySecretStoreGet(
+		st.h,
+		prim.NewReadBufferFromString(name).Wstring(),
+		&s.h,
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
+// witx:
+//
+//   (module $fastly_secret_store
+//     (@interface func (export "plaintext")
+//       (param $secret $secret_handle)
+//       (param $buf (@witx pointer (@witx char8)))
+//       (param $buf_len (@witx usize))
+//       (param $nwritten_out (@witx pointer (@witx usize)))
+//       (result $err (expected (error $fastly_status)))
+//     )
+//   )
+
+//go:wasm-module fastly_secret_store
+//export plaintext
+//go:noescape
+func fastlySecretPlaintext(
+	h secretHandle,
+	buf *prim.Char8,
+	bufLen prim.Usize,
+	nwritten *prim.Usize,
+) FastlyStatus
+
+// Plaintext decrypts and returns the secret value as a byte slice.
+func (s *Secret) Plaintext() ([]byte, error) {
+	// Most secrets will fit into the initial secret buffer size, so
+	// we'll start with that. If it doesn't fit, we'll know the exact
+	// size of the buffer to try again.
+	buf := prim.NewWriteBuffer(InitialSecretLen)
+
+	status := fastlySecretPlaintext(
+		s.h,
+		buf.Char8Pointer(),
+		buf.Cap(),
+		buf.NPointer(),
+	)
+	if status == FastlyStatusBufLen {
+		// The buffer was too small, but it'll tell us how big it will
+		// need to be in order to fit the plaintext.
+		buf = prim.NewWriteBuffer(int(buf.NValue()))
+
+		status = fastlySecretPlaintext(
+			s.h,
+			buf.Char8Pointer(),
+			buf.Cap(),
+			buf.NPointer(),
+		)
+	}
+
+	if err := status.toError(); err != nil {
+		return nil, err
+	}
+
+	return buf.AsBytes(), nil
 }
