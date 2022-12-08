@@ -285,10 +285,11 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 			_, copyErr := io.Copy(abiReqBody, req.Body)
 			errc <- maybeWrap(copyErr, "copy body")
 			errc <- maybeWrap(req.Body.Close(), "close user body")
-			if copyErr != nil {
+			if copyErr == nil {
 				// If there was an error copying the body, we *don't* want to Close() the abi req.
 				// This tells the wasm server that the body is incomplete so it knows not to
 				// terminate the sent chunked body with a valid final chunk.
+				// Thus, only Close if copyErr == nil.
 				errc <- maybeWrap(abiReqBody.Close(), "close request body")
 			}
 		}()
