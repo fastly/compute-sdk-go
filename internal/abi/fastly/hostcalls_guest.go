@@ -2106,7 +2106,7 @@ func fastlyObjectStoreLookup(
 // Lookup returns the value for key, if it exists.
 func (o *ObjectStore) Lookup(key string) (io.Reader, error) {
 
-	body := HTTPBody{}
+	body := HTTPBody{h: invalidBodyHandle}
 
 	if err := fastlyObjectStoreLookup(
 		o.h,
@@ -2114,6 +2114,12 @@ func (o *ObjectStore) Lookup(key string) (io.Reader, error) {
 		&body.h,
 	).toError(); err != nil {
 		return nil, err
+	}
+
+	// Didn't get a valid handle back.  This means there was no key
+	// with that name.  Report this to the caller by returning `None`.
+	if body.h == invalidBodyHandle {
+		return nil, FastlyError{Status: FastlyStatusNone}
 	}
 
 	return &body, nil
