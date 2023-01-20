@@ -218,6 +218,27 @@
           ]
         }
       }
+    },
+
+    "secret_store" : {
+      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -wasm-abi=generic -o ./_integration_tests/fixtures/secret_store/secret_store.wasm ./_integration_tests/fixtures/secret_store && (cd ./_integration_tests/fixtures/secret_store && fastly compute pack --verbose --wasm-binary ./secret_store.wasm)",
+      "fastly_toml_path": "./_integration_tests/fixtures/secret_store/fastly.toml",
+      "wasm_path": "./_integration_tests/fixtures/secret_store/secret_store.wasm",
+      "pkg_path": "./_integration_tests/fixtures/secret_store/pkg/secret-store.tar.gz",
+      "tests": {
+        "POST /": {
+          "environments": ["viceroy"],
+          "downstream_request": {
+            "method": "GET",
+            "pathname": "/"
+          },
+          "downstream_response": {
+            "status": 200,
+            "body": "sssh! don't tell anyone!"
+          }
+        }
+      }
     }
+
   }
 }

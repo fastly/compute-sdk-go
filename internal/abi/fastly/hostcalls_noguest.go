@@ -258,3 +258,20 @@ func (o *ObjectStore) Lookup(key string) (io.Reader, error) {
 func (o *ObjectStore) Insert(key string, value io.Reader) error {
 	return fmt.Errorf("not implemented")
 }
+
+type (
+	SecretStore struct{}
+	Secret      struct{}
+)
+
+func OpenSecretStore(name string) (*SecretStore, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *SecretStore) Get(name string) (*Secret, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *Secret) Plaintext() ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}
