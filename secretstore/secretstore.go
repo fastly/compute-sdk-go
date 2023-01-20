@@ -11,9 +11,20 @@ var (
 	// doesn't exist.
 	ErrSecretStoreNotFound = errors.New("secret store not found")
 
+	// ErrInvalidSecretStoreName indicates that the given secret store
+	// name is invalid.
+	ErrInvalidSecretStoreName = errors.New("invalid secret store name")
+
 	// ErrSecretNotFound indicates that the named secret doesn't exist
 	// within this store.
 	ErrSecretNotFound = errors.New("secret not found")
+
+	// ErrInvalidSecretName indicates that the given secret name is
+	// invalid.
+	ErrInvalidSecretName = errors.New("invalid secret name")
+
+	// ErrUnexpected indicates than an unexpected error occurred.
+	ErrUnexpected = errors.New("unexpected error")
 )
 
 // Store represents a Fastly Secret Store
@@ -32,10 +43,16 @@ func Open(name string) (*Store, error) {
 	st, err := fastly.OpenSecretStore(name)
 	if err != nil {
 		status, ok := fastly.IsFastlyError(err)
-		if ok && status == fastly.FastlyStatusNone {
+		switch {
+		case ok && status == fastly.FastlyStatusNone:
 			return nil, ErrSecretStoreNotFound
+		case ok && status == fastly.FastlyStatusInval:
+			return nil, ErrInvalidSecretStoreName
+		case ok:
+			return nil, ErrUnexpected
+		default:
+			return nil, err
 		}
-		return nil, err
 	}
 
 	return &Store{st: st}, nil
@@ -47,10 +64,16 @@ func (st *Store) Get(name string) (*Secret, error) {
 	s, err := st.st.Get(name)
 	if err != nil {
 		status, ok := fastly.IsFastlyError(err)
-		if ok && status == fastly.FastlyStatusNone {
+		switch {
+		case ok && status == fastly.FastlyStatusNone:
 			return nil, ErrSecretNotFound
+		case ok && status == fastly.FastlyStatusInval:
+			return nil, ErrInvalidSecretName
+		case ok:
+			return nil, ErrUnexpected
+		default:
+			return nil, err
 		}
-		return nil, err
 	}
 
 	return &Secret{s: s}, nil
@@ -58,5 +81,13 @@ func (st *Store) Get(name string) (*Secret, error) {
 
 // Plaintext decrypts and returns the secret value as a byte slice.
 func (s *Secret) Plaintext() ([]byte, error) {
-	return s.s.Plaintext()
+	plaintext, err := s.s.Plaintext()
+	if err != nil {
+		_, ok := fastly.IsFastlyError(err)
+		if ok {
+			return nil, ErrUnexpected
+		}
+		return nil, err
+	}
+	return plaintext, nil
 }
