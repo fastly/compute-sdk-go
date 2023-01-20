@@ -1,0 +1,12 @@
+# This file describes a Fastly Compute@Edge package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["oss@fastly.com"]
+description = ""
+language = "go"
+manifest_version = 2
+name = "secret_store"
+service_id = ""
+
+[local_server]
+  secret_store.phrases = [{key = "my_phrase", data = "sssh! don't tell anyone!"}]
