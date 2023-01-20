@@ -8,6 +8,7 @@ package fastly
 import (
 	"bytes"
 	"fmt"
+	"math"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
 )
@@ -213,6 +214,10 @@ const (
 //
 //	(typename $body_handle (handle))
 type bodyHandle handle
+
+const (
+	invalidBodyHandle = bodyHandle(math.MaxUint32 - 1)
+)
 
 // witx:
 //

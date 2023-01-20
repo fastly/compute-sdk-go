@@ -1,10 +1,13 @@
 package objectstore
 
 import (
+	"errors"
 	"io"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
+
+var ErrKeyNotFound = errors.New("objectstore: key not found")
 
 type Entry struct {
 	io.Reader
@@ -45,9 +48,20 @@ func Open(name string) (*Store, error) {
 	return &Store{objectstore: o}, nil
 }
 
-// Lookup fetches a key from the associated object store.
+// Lookup fetches a key from the associated object store.  If the key does not
+// exist, Lookup returns the sentinel error ErrKeyNotFound.
 func (s *Store) Lookup(key string) (*Entry, error) {
 	val, err := s.objectstore.Lookup(key)
+	if err != nil {
+
+		// turn FastlyStatusNone into NotFound
+		if status, ok := fastly.IsFastlyError(err); ok && status == fastly.FastlyStatusNone {
+			return nil, ErrKeyNotFound
+		}
+
+		return nil, err
+	}
+
 	return &Entry{Reader: val}, err
 }
 
