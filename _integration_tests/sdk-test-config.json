@@ -98,11 +98,11 @@
     },
 
 
-    "edge_dictionary" : {
-      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -wasm-abi=generic -o ./_integration_tests/fixtures/edge_dictionary/edge_dictionary.wasm ./_integration_tests/fixtures/edge_dictionary && (cd ./_integration_tests/fixtures/edge_dictionary && fastly compute pack --verbose --wasm-binary ./edge_dictionary.wasm)",
-      "fastly_toml_path": "./_integration_tests/fixtures/edge_dictionary/fastly.toml",
-      "wasm_path": "./_integration_tests/fixtures/edge_dictionary/edge_dictionary.wasm",
-      "pkg_path": "./_integration_tests/fixtures/edge_dictionary/pkg/edge-dictionary.tar.gz",
+    "configstore" : {
+      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -wasm-abi=generic -o ./_integration_tests/fixtures/configstore/configstore.wasm ./_integration_tests/fixtures/configstore && (cd ./_integration_tests/fixtures/configstore && fastly compute pack --verbose --wasm-binary ./configstore.wasm)",
+      "fastly_toml_path": "./_integration_tests/fixtures/configstore/fastly.toml",
+      "wasm_path": "./_integration_tests/fixtures/configstore/configstore.wasm",
+      "pkg_path": "./_integration_tests/fixtures/configstore/pkg/configstore.tar.gz",
       "tests": {
         "POST /": {
           "environments": ["viceroy"],

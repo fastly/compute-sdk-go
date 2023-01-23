@@ -1,0 +1,49 @@
+rules:
+- id: deprecated-edgedict-dictionary
+  pattern: edgedict.Dictionary
+  fix:  configstore.Store
+  message: edgedict package is deprecated
+  languages: [go]
+  severity: ERROR
+
+- id: deprecated-edgedict-open
+  pattern: edgedict.Open($N)
+  fix:  configstore.Open($N)
+  message: edgedict package is deprecated
+  languages: [go]
+  severity: ERROR
+
+- id: deprecated-edgedict-errdictionarynotfound
+  pattern: edgedict.ErrDictionaryNotFound
+  fix: configstore.ErrStoreNotFound
+  message: edgedict package is deprecated
+  languages: [go]
+  severity: ERROR
+
+- id: deprecated-edgedict-errdictionarynameempty
+  pattern: edgedict.ErrDictionaryNameEmpty
+  fix: configstore.ErrStoreNameEmpty
+  message: edgedict package is deprecated
+  languages: [go]
+  severity: ERROR
+
+- id: deprecated-edgedict-errdictionarynameinvalid
+  pattern: edgedict.ErrDictionaryNameInvalid
+  fix: configstore.ErrStoreNameInvalid
+  message: edgedict package is deprecated
+  languages: [go]
+  severity: ERROR
+
+- id: deprecated-edgedict-errdictionarynametoolong
+  pattern: edgedict.ErrDictionaryNameTooLong
+  fix: configstore.ErrStoreNameTooLong
+  message: edgedict package is deprecated
+  languages: [go]
+  severity: ERROR
+
+- id: deprecated-edgedict-errkeynotfound
+  pattern: edgedict.ErrKeyNotFound
+  fix: configstore.ErrKeyNotFound
+  message: edgedict package is deprecated
+  languages: [go]
+  severity: ERROR
