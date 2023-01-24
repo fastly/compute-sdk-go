@@ -5,7 +5,7 @@ authors = ["oss@fastly.com"]
 description = ""
 language = "other"
 manifest_version = 2
-name = "edge_dictionary"
+name = "configstore"
 service_id = ""
 
 [local_server]
@@ -23,6 +23,6 @@ service_id = ""
 
   [local_server.dictionaries]
 
-    [local_server.dictionaries.edge_dictionary]
-      file = "./_integration_tests/fixtures/edge_dictionary/edge_dictionary.json"
+    [local_server.dictionaries.configstore]
+      file = "./_integration_tests/fixtures/configstore/configstore.json"
       format = "json"

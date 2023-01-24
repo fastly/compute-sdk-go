@@ -6,13 +6,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/fastly/compute-sdk-go/edgedict"
+	"github.com/fastly/compute-sdk-go/configstore"
 	"github.com/fastly/compute-sdk-go/fsthttp"
 )
 
 func main() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, _ *fsthttp.Request) {
-		d, err := edgedict.Open("edge_dictionary")
+		d, err := configstore.Open("configstore")
 		if err != nil {
 			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
 			return
