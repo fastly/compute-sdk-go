@@ -289,7 +289,7 @@ const (
 	// DefaultMaxMethodLen is the default method length limit
 	DefaultMaxMethodLen = 1024
 	// DefaultMaxURLLen is the default URL length limit
-	DefaultMaxURLLen = 1024
+	DefaultMaxURLLen = 8192
 
 	dictionaryValueMaxLen = 8192 // https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
 	defaultBufferLen      = 16 * 1024
