@@ -278,9 +278,6 @@ const (
 	cacheOverrideTagPCI                  cacheOverrideTag = 0b0000_1000 // $pci
 )
 
-// InitialSecretLen is the initial size of the buffer to use for decrypting secrets
-var InitialSecretLen = 1024
-
 const (
 	// DefaultMaxHeaderNameLen is the default header name length limit
 	DefaultMaxHeaderNameLen = 8192
@@ -293,6 +290,8 @@ const (
 
 	dictionaryValueMaxLen = 8192 // https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
 	defaultBufferLen      = 16 * 1024
+
+	initialSecretLen = 1024
 )
 
 // CacheOverrideOptions collects specific, caching-related options for outbound

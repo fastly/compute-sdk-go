@@ -2268,7 +2268,7 @@ func (s *Secret) Plaintext() ([]byte, error) {
 	// Most secrets will fit into the initial secret buffer size, so
 	// we'll start with that. If it doesn't fit, we'll know the exact
 	// size of the buffer to try again.
-	buf := prim.NewWriteBuffer(InitialSecretLen)
+	buf := prim.NewWriteBuffer(initialSecretLen)
 
 	status := fastlySecretPlaintext(
 		s.h,
