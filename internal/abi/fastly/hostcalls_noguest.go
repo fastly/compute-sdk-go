@@ -79,7 +79,7 @@ func NewHTTPRequest() (*HTTPRequest, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) GetHeaderNames() *Values {
+func (r *HTTPRequest) GetHeaderNames(maxHeaderNameLen int) *Values {
 	return nil
 }
 
@@ -91,11 +91,11 @@ func GetOriginalHeaderCount() (int, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) GetHeaderValue(name string) (string, error) {
+func (r *HTTPRequest) GetHeaderValue(name string, maxHeaderValueLen int) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) GetHeaderValues(name string) *Values {
+func (r *HTTPRequest) GetHeaderValues(name string, maxHeaderValueLen int) *Values {
 	return nil
 }
 
@@ -115,7 +115,7 @@ func (r *HTTPRequest) RemoveHeader(name string) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) GetMethod() (string, error) {
+func (r *HTTPRequest) GetMethod(maxMethodLen int) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
@@ -123,7 +123,7 @@ func (r *HTTPRequest) SetMethod(method string) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) GetURI() (string, error) {
+func (r *HTTPRequest) GetURI(maxURLLen int) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
@@ -179,15 +179,15 @@ func NewHTTPResponse() (*HTTPResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (r *HTTPResponse) GetHeaderNames() *Values {
+func (r *HTTPResponse) GetHeaderNames(maxHeaderNameLen int) *Values {
 	return nil
 }
 
-func (r *HTTPResponse) GetHeaderValue(name string) (string, error) {
+func (r *HTTPResponse) GetHeaderValue(name string, maxHeaderValueLen int) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
-func (r *HTTPResponse) GetHeaderValues(name string) *Values {
+func (r *HTTPResponse) GetHeaderValues(name string, maxHeaderValueLen int) *Values {
 	return nil
 }
 

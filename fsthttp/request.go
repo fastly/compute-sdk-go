@@ -13,6 +13,14 @@ import (
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
 
+// RequestLimits are the limits for the components of an HTTP request.
+var RequestLimits = Limits{
+	maxHeaderNameLen:  fastly.DefaultMaxHeaderNameLen,
+	maxHeaderValueLen: fastly.DefaultMaxHeaderValueLen,
+	maxMethodLen:      fastly.DefaultMaxMethodLen,
+	maxURLLen:         fastly.DefaultMaxURLLen,
+}
+
 // Request represents an HTTP request received by this server from a requesting
 // client, or to be sent from this server during this execution. Some fields
 // only have meaning in one context or the other.
@@ -116,12 +124,12 @@ func newClientRequest() (*Request, error) {
 		return nil, fmt.Errorf("get client request and body: %w", err)
 	}
 
-	method, err := abiReq.GetMethod()
+	method, err := abiReq.GetMethod(RequestLimits.maxMethodLen)
 	if err != nil {
 		return nil, fmt.Errorf("get method: %w", err)
 	}
 
-	uri, err := abiReq.GetURI()
+	uri, err := abiReq.GetURI(RequestLimits.maxURLLen)
 	if err != nil {
 		return nil, fmt.Errorf("get URI: %w", err)
 	}
@@ -137,10 +145,10 @@ func newClientRequest() (*Request, error) {
 	}
 
 	header := NewHeader()
-	keys := abiReq.GetHeaderNames()
+	keys := abiReq.GetHeaderNames(RequestLimits.maxHeaderNameLen)
 	for keys.Next() {
 		k := string(keys.Bytes())
-		vals := abiReq.GetHeaderValues(k)
+		vals := abiReq.GetHeaderValues(k, RequestLimits.maxHeaderValueLen)
 		for vals.Next() {
 			v := string(vals.Bytes())
 			header.Add(k, v)

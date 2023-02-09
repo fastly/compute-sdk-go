@@ -1,49 +1,49 @@
 package fsthttp
 
-import "github.com/fastly/compute-sdk-go/internal/abi/fastly"
-
 // Limits handles HTTP limits
-var Limits = limits{}
-
-type limits struct {
+type Limits struct {
+	maxHeaderNameLen  int
+	maxHeaderValueLen int
+	maxMethodLen      int
+	maxURLLen         int
 }
 
 // MaxHeaderNameLen gets the header name limit
-func (limits) MaxHeaderNameLen() int {
-	return fastly.MaxHeaderNameLen
+func (limits *Limits) MaxHeaderNameLen() int {
+	return limits.maxHeaderNameLen
 }
 
 // SetMaxHeaderNameLen sets the header name limit
-func (limits) SetMaxHeaderNameLen(len int) {
-	fastly.MaxHeaderNameLen = len
+func (limits *Limits) SetMaxHeaderNameLen(len int) {
+	limits.maxHeaderNameLen = len
 }
 
 // MaxHeaderValueLen gets the header value limit
-func (limits) MaxHeaderValueLen() int {
-	return fastly.MaxHeaderValueLen
+func (limits *Limits) MaxHeaderValueLen() int {
+	return limits.maxHeaderValueLen
 }
 
 // SetMaxHeaderValueLen sets the header value limit
-func (limits) SetMaxHeaderValueLen(len int) {
-	fastly.MaxHeaderValueLen = len
+func (limits *Limits) SetMaxHeaderValueLen(len int) {
+	limits.maxHeaderValueLen = len
 }
 
 // MaxMethodLen gets the request method limit
-func (limits) MaxMethodLen() int {
-	return fastly.MaxMethodLen
+func (limits *Limits) MaxMethodLen() int {
+	return limits.maxMethodLen
 }
 
 // SetMaxMethodLen sets the request method limit
-func (limits) SetMaxMethodLen(len int) {
-	fastly.MaxMethodLen = len
+func (limits *Limits) SetMaxMethodLen(len int) {
+	limits.maxMethodLen = len
 }
 
 // MaxURLLen gets the request URL limit
-func (limits) MaxURLLen() int {
-	return fastly.MaxURLLen
+func (limits *Limits) MaxURLLen() int {
+	return limits.maxURLLen
 }
 
 // SetMaxURLLen sets the request URL limit
-func (limits) SetMaxURLLen(len int) {
-	fastly.MaxURLLen = len
+func (limits *Limits) SetMaxURLLen(len int) {
+	limits.maxURLLen = len
 }
