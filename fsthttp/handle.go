@@ -4,8 +4,11 @@ package fsthttp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
+
+	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
 
 var (
@@ -23,11 +26,19 @@ func Serve(h Handler) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	headerTooLong := false
+
 	serveOnce.Do(func() {
 		var err error
 		clientRequest, err = newClientRequest()
 		if err != nil {
-			panic(fmt.Errorf("create client Request: %w", err))
+			status, ok := fastly.IsFastlyError(errors.Unwrap(err))
+			if ok && status == fastly.FastlyStatusBufLen {
+				headerTooLong = true
+			}
+			if !headerTooLong {
+				panic(fmt.Errorf("create client Request: %w", err))
+			}
 		}
 		clientResponseWriter, err = newResponseWriter()
 		if err != nil {
@@ -36,6 +47,11 @@ func Serve(h Handler) {
 	})
 
 	defer clientResponseWriter.Close()
+	if headerTooLong {
+		clientResponseWriter.WriteHeader(StatusRequestHeaderFieldsTooLarge)
+		clientResponseWriter.Write([]byte("Request Header Fields Too Large\n"))
+		return
+	}
 	h.ServeHTTP(ctx, clientResponseWriter, clientRequest)
 }
 
