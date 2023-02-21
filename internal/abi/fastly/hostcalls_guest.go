@@ -668,7 +668,7 @@ func fastlyHTTPReqHeaderNamesGet(
 
 // GetHeaderNames returns an iterator that yields the names of each header of
 // the request.
-func (r *HTTPRequest) GetHeaderNames() *Values {
+func (r *HTTPRequest) GetHeaderNames(maxHeaderNameLen int) *Values {
 	adapter := func(
 		buf *prim.Char8,
 		bufLen prim.Usize,
@@ -686,7 +686,7 @@ func (r *HTTPRequest) GetHeaderNames() *Values {
 		)
 	}
 
-	return newValues(adapter, MaxHeaderNameLen)
+	return newValues(adapter, maxHeaderNameLen)
 }
 
 // witx:
@@ -713,7 +713,7 @@ func fastlyHTTPReqOriginalHeaderNamesGet(
 
 // GetOriginalHeaderNames returns an iterator that yields the names of each
 // header of the singleton downstream request.
-func GetOriginalHeaderNames() *Values {
+func GetOriginalHeaderNames(maxHeaderNameLen int) *Values {
 	adapter := func(
 		buf *prim.Char8,
 		bufLen prim.Usize,
@@ -730,7 +730,7 @@ func GetOriginalHeaderNames() *Values {
 		)
 	}
 
-	return newValues(adapter, MaxHeaderNameLen)
+	return newValues(adapter, maxHeaderNameLen)
 }
 
 // witx:
@@ -784,8 +784,8 @@ func fastlyHTTPReqHeaderValueGet(
 
 // GetHeaderValue returns the first header value of the given header name on the
 // request, if any.
-func (r *HTTPRequest) GetHeaderValue(name string) (string, error) {
-	buf := prim.NewWriteBuffer(MaxHeaderValueLen)
+func (r *HTTPRequest) GetHeaderValue(name string, maxHeaderValueLen int) (string, error) {
+	buf := prim.NewWriteBuffer(maxHeaderValueLen)
 	if err := fastlyHTTPReqHeaderValueGet(
 		r.h,
 		prim.NewReadBufferFromString(name).ArrayU8(),
@@ -827,7 +827,7 @@ func fastlyHTTPReqHeaderValuesGet(
 
 // GetHeaderValues returns an iterator that yields the values for the named
 // header that are of the request.
-func (r *HTTPRequest) GetHeaderValues(name string) *Values {
+func (r *HTTPRequest) GetHeaderValues(name string, maxHeaderValueLen int) *Values {
 	adapter := func(
 		buf *prim.Char8,
 		bufLen prim.Usize,
@@ -846,7 +846,7 @@ func (r *HTTPRequest) GetHeaderValues(name string) *Values {
 		)
 	}
 
-	return newValues(adapter, MaxHeaderValueLen)
+	return newValues(adapter, maxHeaderValueLen)
 }
 
 // witx:
@@ -983,8 +983,8 @@ func fastlyHTTPReqMethodGet(
 ) FastlyStatus
 
 // GetMethod returns the HTTP method of the request.
-func (r *HTTPRequest) GetMethod() (string, error) {
-	buf := prim.NewWriteBuffer(MaxMethodLen)
+func (r *HTTPRequest) GetMethod(maxMethodLen int) (string, error) {
+	buf := prim.NewWriteBuffer(maxMethodLen)
 	if err := fastlyHTTPReqMethodGet(
 		r.h,
 		buf.Char8Pointer(),
@@ -1042,8 +1042,8 @@ func fastlyHTTPReqURIGet(
 ) FastlyStatus
 
 // GetURI returns the fully qualified URI of the request.
-func (r *HTTPRequest) GetURI() (string, error) {
-	buf := prim.NewWriteBuffer(MaxURLLen)
+func (r *HTTPRequest) GetURI(maxURLLen int) (string, error) {
+	buf := prim.NewWriteBuffer(maxURLLen)
 	if err := fastlyHTTPReqURIGet(
 		r.h,
 		buf.Char8Pointer(),
@@ -1522,7 +1522,7 @@ func fastlyHTTPRespHeaderNamesGet(
 
 // GetHeaderNames returns an iterator that yields the names of each header of
 // the response.
-func (r *HTTPResponse) GetHeaderNames() *Values {
+func (r *HTTPResponse) GetHeaderNames(maxHeaderNameLen int) *Values {
 	adapter := func(
 		buf *prim.Char8,
 		bufLen prim.Usize,
@@ -1540,7 +1540,7 @@ func (r *HTTPResponse) GetHeaderNames() *Values {
 		)
 	}
 
-	return newValues(adapter, MaxHeaderNameLen)
+	return newValues(adapter, maxHeaderNameLen)
 }
 
 // witx:
@@ -1567,8 +1567,8 @@ func fastlyHTTPRespHeaderValueGet(
 
 // GetHeaderValue returns the first header value of the given header name on the
 // response, if any.
-func (r *HTTPResponse) GetHeaderValue(name string) (string, error) {
-	buf := prim.NewWriteBuffer(MaxHeaderValueLen)
+func (r *HTTPResponse) GetHeaderValue(name string, maxHeaderValueLen int) (string, error) {
+	buf := prim.NewWriteBuffer(maxHeaderValueLen)
 	if err := fastlyHTTPRespHeaderValueGet(
 		r.h,
 		prim.NewReadBufferFromString(name).ArrayU8(),
@@ -1610,7 +1610,7 @@ func fastlyHTTPRespHeaderValuesGet(
 
 // GetHeaderValues returns an iterator that yields the values for the named
 // header that are of the response.
-func (r *HTTPResponse) GetHeaderValues(name string) *Values {
+func (r *HTTPResponse) GetHeaderValues(name string, maxHeaderValueLen int) *Values {
 	adapter := func(
 		buf *prim.Char8,
 		bufLen prim.Usize,
@@ -1629,7 +1629,7 @@ func (r *HTTPResponse) GetHeaderValues(name string) *Values {
 		)
 	}
 
-	return newValues(adapter, MaxHeaderValueLen)
+	return newValues(adapter, maxHeaderValueLen)
 }
 
 // witx:
@@ -2268,7 +2268,7 @@ func (s *Secret) Plaintext() ([]byte, error) {
 	// Most secrets will fit into the initial secret buffer size, so
 	// we'll start with that. If it doesn't fit, we'll know the exact
 	// size of the buffer to try again.
-	buf := prim.NewWriteBuffer(InitialSecretLen)
+	buf := prim.NewWriteBuffer(initialSecretLen)
 
 	status := fastlySecretPlaintext(
 		s.h,

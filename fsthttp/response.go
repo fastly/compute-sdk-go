@@ -10,6 +10,12 @@ import (
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
 
+// ResponseLimits are the limits for the components of an HTTP response.
+var ResponseLimits = Limits{
+	maxHeaderNameLen:  fastly.DefaultMaxHeaderNameLen,
+	maxHeaderValueLen: fastly.DefaultMaxHeaderValueLen,
+}
+
 // Response to an outgoing HTTP request made by this server.
 type Response struct {
 	// Request associated with the response.
@@ -40,10 +46,10 @@ func newResponse(req *Request, backend string, abiResp *fastly.HTTPResponse, abi
 	}
 
 	header := NewHeader()
-	keys := abiResp.GetHeaderNames()
+	keys := abiResp.GetHeaderNames(ResponseLimits.maxHeaderNameLen)
 	for keys.Next() {
 		k := string(keys.Bytes())
-		vals := abiResp.GetHeaderValues(k)
+		vals := abiResp.GetHeaderValues(k, ResponseLimits.maxHeaderValueLen)
 		for vals.Next() {
 			v := string(vals.Bytes())
 			header.Add(k, v)

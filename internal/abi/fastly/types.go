@@ -278,25 +278,20 @@ const (
 	cacheOverrideTagPCI                  cacheOverrideTag = 0b0000_1000 // $pci
 )
 
-// These limits are configurable for the Rust SDK but constants for the Go one.
-// See https://docs.rs/fastly/latest/fastly/limits/index.html
-
-var (
-	// MaxHeaderNameLen is the header name limit
-	MaxHeaderNameLen = 8192
-	// MaxHeaderValueLen is the header value limit
-	MaxHeaderValueLen = 8192
-	// MaxMethodLen is the method limit
-	MaxMethodLen = 1024
-	// MaxURLLen is the url limit
-	MaxURLLen = 1024
-	// InitialSecretLen is the initial size of the buffer to use for decrypting secrets
-	InitialSecretLen = 1024
-)
-
 const (
+	// DefaultMaxHeaderNameLen is the default header name length limit
+	DefaultMaxHeaderNameLen = 8192
+	// DefaultMaxHeaderValueLen is the default header value length limit
+	DefaultMaxHeaderValueLen = 8192
+	// DefaultMaxMethodLen is the default method length limit
+	DefaultMaxMethodLen = 1024
+	// DefaultMaxURLLen is the default URL length limit
+	DefaultMaxURLLen = 8192
+
 	dictionaryValueMaxLen = 8192 // https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
 	defaultBufferLen      = 16 * 1024
+
+	initialSecretLen = 1024
 )
 
 // CacheOverrideOptions collects specific, caching-related options for outbound
@@ -477,5 +472,7 @@ type objectStoreHandle handle
 //
 //	(typename $secret_store_handle (handle))
 //	(typename $secret_handle (handle))
-type secretStoreHandle handle
-type secretHandle handle
+type (
+	secretStoreHandle handle
+	secretHandle      handle
+)
