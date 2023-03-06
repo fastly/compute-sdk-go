@@ -12,7 +12,7 @@ jobs:
         run: go vet ./...
       - name: staticcheck
         run: |
-          go install honnef.co/go/tools/cmd/staticcheck@2022.1.1
+          go install honnef.co/go/tools/cmd/staticcheck@latest
           staticcheck ./...
       - name: nilness
         run: |
