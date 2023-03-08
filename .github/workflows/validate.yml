@@ -16,7 +16,7 @@ jobs:
           staticcheck ./...
       - name: nilness
         run: |
-          go install golang.org/x/tools/go/analysis/passes/nilness/cmd/nilness@latest
+          go install golang.org/x/tools/go/analysis/passes/nilness/cmd/nilness@master
           nilness ./...
       - name: ineffassign
         run: |
