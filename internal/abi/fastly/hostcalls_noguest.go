@@ -39,6 +39,10 @@ func (b *HTTPBody) Close() error {
 	return fmt.Errorf("not implemented")
 }
 
+func (b *HTTPBody) Abandon() error {
+	return fmt.Errorf("not implemented")
+}
+
 type LogEndpoint struct{}
 
 func GetLogEndpoint(name string) (*LogEndpoint, error) {

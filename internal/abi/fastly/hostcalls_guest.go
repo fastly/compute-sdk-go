@@ -274,12 +274,14 @@ func (b *HTTPBody) Write(p []byte) (n int, err error) {
 
 // witx:
 //
+//	;;; Frees the body on the host.
+//	;;;
+//	;;; For streaming bodies, this is a _successful_ stream termination, which will signal
+//	;;; via framing that the body transfer is complete.
 //	(@interface func (export "close")
 //	  (param $h $body_handle)
-//	  (result $err $fastly_status)
+//	  (result $err (expected (error $fastly_status)))
 //	)
-//
-// )
 //
 //go:wasm-module fastly_http_body
 //export close
@@ -288,7 +290,8 @@ func fastlyHTTPBodyClose(
 	h bodyHandle,
 ) FastlyStatus
 
-// Close the body. Once closed, a body cannot be used again.
+// Close the body. This indicates a successful end of the stream, as
+// opposed to the Abandon method. Once closed, a body cannot be used again.
 // Close is a no-op unless the body's "streaming bit" is set.
 func (b *HTTPBody) Close() error {
 	if !b.closable {
@@ -296,6 +299,35 @@ func (b *HTTPBody) Close() error {
 	}
 
 	return fastlyHTTPBodyClose(
+		b.h,
+	).toError()
+}
+
+// witx:
+//
+//	;;; Frees a streaming body on the host _unsuccessfully_, so that framing makes clear that
+//	;;; the body is incomplete.
+//	(@interface func (export "abandon")
+//	  (param $h $body_handle)
+//	  (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_http_body
+//export abandon
+//go:noescape
+func fastlyHTTPBodyAbandon(
+	h bodyHandle,
+) FastlyStatus
+
+// Abandon the body. This indicates an unsuccessful end of the stream,
+// as opposed to the Close method. Once closed, a body cannot be used again.
+// Abandon is a no-op unless the body's "streaming bit" is set.
+func (b *HTTPBody) Abandon() error {
+	if !b.closable {
+		return nil
+	}
+
+	return fastlyHTTPBodyAbandon(
 		b.h,
 	).toError()
 }
