@@ -15,10 +15,3 @@ runs:
         tar -xzf viceroy_v0.4.0_linux-amd64.tar.gz --directory $HOME/bin
         echo "$HOME/bin" >> $GITHUB_PATH
       shell: "bash"
-    - run: |
-        echo "Install TinyGo 0.27.0..."
-        wget https://github.com/tinygo-org/tinygo/releases/download/v0.27.0/tinygo_0.27.0_amd64.deb
-        echo "030336ec61c87083b1a933bea2bc3a139e2921f4317945fc03eea965d3963a72b28d9592dfb40e64df2620e9010caadda08205c85a98f76c49bcd1569fe8ddc3 tinygo_0.27.0_amd64.deb" | sha512sum --check
-        sudo dpkg -i tinygo_0.27.0_amd64.deb
-        echo "/usr/local/tinygo/bin" >> $GITHUB_PATH
-      shell: "bash"
