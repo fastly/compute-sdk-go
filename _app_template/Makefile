@@ -12,7 +12,7 @@ WASM ?= bin/${NAME}.wasm
 PACKAGE ?= pkg/${NAME}.tar.gz
 
 $(WASM): $(SOURCE) Makefile bin
-	env GOROOT=${GOROOT} ${TINYGO} build -target=wasi -wasm-abi=generic -gc=${GC} -scheduler=${SCHEDULER} ${ARGS} -o ${WASM} ./cmd/${NAME}
+	env GOROOT=${GOROOT} ${TINYGO} build -target=wasi -gc=${GC} -scheduler=${SCHEDULER} ${ARGS} -o ${WASM} ./cmd/${NAME}
 
 ${PACKAGE}: pkg ${WASM} fastly.toml
 	${FASTLY} compute pack --wasm-binary=${WASM}
