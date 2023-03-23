@@ -33,7 +33,8 @@ type FastlyStatus uint32
 //          $httpincomplete
 //          $none
 //          $httpheadtoolarge
-//          $httpinvalidstatus))
+//          $httpinvalidstatus
+//          $limitexceeded))
 
 const (
 	// FastlyStatusOK maps to $fastly_status $ok.
@@ -75,6 +76,9 @@ const (
 
 	// FastlyStatusHTTPInvalidStatus maps to $fastly_status $httpinvalidstatus.
 	FastlyStatusHTTPInvalidStatus FastlyStatus = 12
+
+	// FastlyStatusLimitExceeded maps to $fastly_status $limitexceeded.
+	FastlyStatusLimitExceeded FastlyStatus = 13
 )
 
 // String implements fmt.Stringer.
@@ -106,8 +110,10 @@ func (s FastlyStatus) String() string {
 		return "HTTPHeadTooLarge"
 	case FastlyStatusHTTPInvalidStatus:
 		return "HTTPInvalidStatus"
+	case FastlyStatusLimitExceeded:
+		return "LimitExceeded"
 	default:
-		return "unknown"
+		return fmt.Sprintf("FastlyStatus(%d)", s)
 	}
 }
 
