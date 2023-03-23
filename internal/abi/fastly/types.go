@@ -269,7 +269,6 @@ func (r multiValueCursorResult) toCursor() multiValueCursor { return multiValueC
 //
 //	 (typename $cache_override_tag
 //		(flags u32
-//		  $none
 //		  $pass
 //		  $ttl
 //		  $stale_while_revalidate
@@ -277,7 +276,7 @@ func (r multiValueCursorResult) toCursor() multiValueCursor { return multiValueC
 type cacheOverrideTag uint32
 
 const (
-	cacheOverrideTagNone                 cacheOverrideTag = 0b0000_0000 // $none
+	cacheOverrideTagNone                 cacheOverrideTag = 0b0000_0000
 	cacheOverrideTagPass                 cacheOverrideTag = 0b0000_0001 // $pass
 	cacheOverrideTagTTL                  cacheOverrideTag = 0b0000_0010 // $ttl
 	cacheOverrideTagStaleWhileRevalidate cacheOverrideTag = 0b0000_0100 // $stale_while_revalidate
