@@ -481,3 +481,161 @@ type (
 	secretStoreHandle handle
 	secretHandle      handle
 )
+
+// witx:
+//
+//	;;; The outcome of a cache lookup (either bare or as part of a cache transaction)
+//	(typename $cache_handle (handle))
+type cacheHandle handle
+
+// witx:
+//
+//	;;; Extensible options for cache lookup operations; currently used for both `lookup` and `transaction_lookup`.
+//	(typename $cache_lookup_options
+//	    (record
+//	        (field $request_headers $request_handle) ;; a full request handle, but used only for its headers
+//	    )
+//	)
+type cacheLookupOptions struct {
+	requestHeaders requestHandle
+}
+
+// witx:
+//
+//	(typename $cache_lookup_options_mask
+//	    (flags (@witx repr u32)
+//	        $reserved
+//	        $request_headers
+//	    )
+//	)
+type cacheLookupOptionsMask prim.U32
+
+const (
+	cacheLookupOptionsMaskReserved       cacheLookupOptionsMask = 0b0000_0001 // $reserved
+	cacheLookupOptionsMaskRequestHeaders cacheLookupOptionsMask = 0b0000_0010 // $request_headers
+)
+
+// witx:
+//
+//	(typename $cache_object_length u64)
+//	(typename $cache_duration_ns u64)
+//	(typename $cache_hit_count u64)
+//
+//	;;; Configuration for several hostcalls that write to the cache:
+//	;;; - `insert`
+//	;;; - `transaction_insert`
+//	;;; - `transaction_insert_and_stream_back`
+//	;;; - `transaction_update`
+//	;;;
+//	;;; Some options are only allowed for certain of these hostcalls; see `cache_write_options_mask`.
+//	(typename $cache_write_options
+//	    (record
+//	        (field $max_age_ns $cache_duration_ns) ;; this is a required field; there's no flag for it
+//	        (field $request_headers $request_handle) ;; a full request handle, but used only for its headers
+//	        (field $vary_rule_ptr (@witx pointer (@witx char8))) ;; a list of header names separated by spaces
+//	        (field $vary_rule_len (@witx usize))
+//	        ;; The initial age of the object in nanoseconds (default: 0).
+//	        ;;
+//	        ;; This age is used to determine the freshness lifetime of the object as well as to
+//	        ;; prioritize which variant to return if a subsequent lookup matches more than one vary rule
+//	        (field $initial_age_ns $cache_duration_ns)
+//	        (field $stale_while_revalidate_ns $cache_duration_ns)
+//	        (field $surrogate_keys_ptr (@witx pointer (@witx char8))) ;; a list of surrogate keys separated by spaces
+//	        (field $surrogate_keys_len (@witx usize))
+//	        (field $length $cache_object_length)
+//	        (field $user_metadata_ptr (@witx pointer (@witx u8)))
+//	        (field $user_metadata_len (@witx usize))
+//	    )
+//	)
+type cacheWriteOptions struct {
+	maxAgeNs               prim.U64
+	requestHeaders         requestHandle
+	varyRulePtr            *prim.Char8
+	varyRuleLen            prim.Usize
+	initialAgeNs           prim.U64
+	staleWhileRevalidateNs prim.U64
+	surrogateKeysPtr       *prim.Char8
+	surrogateKeysLen       prim.Usize
+	length                 prim.U64
+	userMetadataPtr        *prim.U8
+	userMetadataLen        prim.Usize
+}
+
+// witx:
+//
+//	(typename $cache_write_options_mask
+//	    (flags (@witx repr u32)
+//	        $reserved
+//	        $request_headers ;;; Only allowed for non-transactional `insert`
+//	        $vary_rule
+//	        $initial_age_ns
+//	        $stale_while_revalidate_ns
+//	        $surrogate_keys
+//	        $length
+//	        $user_metadata
+//	        $sensitive_data
+//	    )
+//	)
+type cacheWriteOptionsMask prim.U32
+
+const (
+	cacheWriteOptionsMaskReserved               cacheWriteOptionsMask = 1 << 0 // $reserved
+	cacheWriteOptionsMaskRequestHeaders         cacheWriteOptionsMask = 1 << 1 // $request_headers
+	cacheWriteOptionsMaskVaryRule               cacheWriteOptionsMask = 1 << 2 // $vary_rule
+	cacheWriteOptionsMaskInitialAgeNs           cacheWriteOptionsMask = 1 << 3 // $initial_age_ns
+	cacheWriteOptionsMaskStaleWhileRevalidateNs cacheWriteOptionsMask = 1 << 4 // $stale_while_revalidate_ns
+	cacheWriteOptionsMaskSurrogateKeys          cacheWriteOptionsMask = 1 << 5 // $surrogate_keys
+	cacheWriteOptionsMaskLength                 cacheWriteOptionsMask = 1 << 6 // $length
+	cacheWriteOptionsMaskUserMetadata           cacheWriteOptionsMask = 1 << 7 // $user_metadata
+	cacheWriteOptionsMaskSensitiveData          cacheWriteOptionsMask = 1 << 8 // $sensitive_data
+)
+
+// witx:
+//
+//	(typename $cache_get_body_options
+//	    (record
+//	        (field $from u64)
+//	        (field $to u64)
+//	    )
+//	)
+type cacheGetBodyOptions struct {
+	from prim.U64
+	to   prim.U64
+}
+
+// witx:
+//
+//	(typename $cache_get_body_options_mask
+//	    (flags (@witx repr u32)
+//	        $reserved
+//	        $from
+//	        $to
+//	    )
+//	)
+type cacheGetBodyOptionsMask prim.U32
+
+const (
+	cacheGetBodyOptionsMaskReserved cacheGetBodyOptionsMask = 0b0000_0001 // $reserved
+	cacheGetBodyOptionsMaskFrom     cacheGetBodyOptionsMask = 0b0000_0010 // $from
+	cacheGetBodyOptionsMaskTo       cacheGetBodyOptionsMask = 0b0000_0100 // $to
+)
+
+// witx:
+//
+//	;;; The status of this lookup (and potential transaction)
+//	(typename $cache_lookup_state
+//	    (flags (@witx repr u32)
+//	        $found ;; a cached object was found
+//	        $usable ;; the cached object is valid to use (implies $found)
+//	        $stale ;; the cached object is stale (but may or may not be valid to use)
+//	        $must_insert_or_update ;; this client is requested to insert or revalidate an object
+//	    )
+//	)
+type CacheLookupState prim.U32
+
+const (
+	CacheLookupStateFound              CacheLookupState = 0b0000_0001 // $found
+	CacheLookupStateUsable             CacheLookupState = 0b0000_0010 // $usable
+	CacheLookupStateStale              CacheLookupState = 0b0000_0100 // $stale
+	CacheLookupStateMustInsertOrUpdate CacheLookupState = 0b0000_1000 // $must_insert_or_update
+)

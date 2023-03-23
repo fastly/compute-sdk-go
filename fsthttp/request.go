@@ -277,9 +277,18 @@ func (req *Request) AddCookie(c *Cookie) {
 	}
 }
 
-// Send the request to the named backend. Requests may only be sent to backends
-// that have been preconfigured in your service, regardless of their URL. Once
-// sent, a request cannot be sent again.
+// Send the request to the named backend. Requests may only be sent to
+// backends that have been preconfigured in your service, regardless of
+// their URL. Once sent, a request cannot be sent again.
+//
+// By default, read-through caching is enabled for requests.  The HTTP
+// response received from the backend will be cached and reused for
+// subsequent requests if it meets cacheability requirements.  The
+// behavior of this automatic caching can be tuned (or disabled) via the
+// [Request]'s [CacheOptions] field.  This function provides the full
+// benefits of Fastly's purging, request collapsing, and revalidation
+// capabilities, and is recommended for most users who need to cache
+// HTTP responses.
 func (req *Request) Send(ctx context.Context, backend string) (*Response, error) {
 	if req.abi.req == nil && req.abi.body == nil {
 		//  abi request not yet constructed
