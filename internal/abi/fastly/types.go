@@ -13,7 +13,7 @@ import (
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
 )
 
-type handle uintptr
+type handle uint32
 
 // FastlyStatus models a response status enum.
 type FastlyStatus uint32

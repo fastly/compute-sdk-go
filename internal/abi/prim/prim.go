@@ -8,7 +8,7 @@ import (
 )
 
 // Usize is an unsigned integer who's size is based on the system architecture.
-type Usize uint
+type Usize uint32
 
 // Char8 is an unsigned 8 bit integer.
 type Char8 uint8
@@ -27,8 +27,8 @@ type U64 uint64
 
 // Wstring is a header for a string.
 type Wstring struct {
-	Data uintptr
-	Len  uint
+	Data uint32
+	Len  uint32
 }
 
 // ArrayU8 is a header for an array of U8.
@@ -134,24 +134,24 @@ func NewReadBufferFromBytes(buf []byte) *ReadBuffer {
 // Wstring returns the buffers data as a Wstring.
 func (b *ReadBuffer) Wstring() Wstring {
 	return Wstring{
-		Data: b.hdr.Data,
-		Len:  uint(b.hdr.Len),
+		Data: uint32(b.hdr.Data),
+		Len:  uint32(b.hdr.Len),
 	}
 }
 
 // ArrayU8 returns the buffers data as a ArrayU8.
 func (b *ReadBuffer) ArrayU8() ArrayU8 {
 	return ArrayU8{
-		Data: b.hdr.Data,
-		Len:  uint(b.hdr.Len),
+		Data: uint32(b.hdr.Data),
+		Len:  uint32(b.hdr.Len),
 	}
 }
 
 // ArrayChar8 returns the buffers data as a ArrayChar8.
 func (b *ReadBuffer) ArrayChar8() ArrayChar8 {
 	return ArrayChar8{
-		Data: b.hdr.Data,
-		Len:  uint(b.hdr.Len),
+		Data: uint32(b.hdr.Data),
+		Len:  uint32(b.hdr.Len),
 	}
 }
 

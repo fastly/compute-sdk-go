@@ -1,5 +1,5 @@
-//go:build (!tinygo.wasm && !wasi) || nofastlyhostcalls
-// +build !tinygo.wasm,!wasi nofastlyhostcalls
+//go:build (!tinygo.wasm && !wasi && !wasip1) || nofastlyhostcalls
+// +build !tinygo.wasm,!wasi,!wasip1 nofastlyhostcalls
 
 //revive:disable:exported
 
