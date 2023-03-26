@@ -6,4 +6,6 @@
 //
 // All packages in `x`, including package fstctx, should be considered
 // temporary, experimental, and unstable.
+//
+// Deprecated: Use the standard library `context` package instead.
 package fstctx
