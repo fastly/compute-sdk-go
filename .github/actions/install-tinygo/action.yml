@@ -1,0 +1,16 @@
+name: "Install TinyGo"
+description: "Installs TinyGo"
+inputs:
+  tinygo-version:
+    description: "The version of TinyGo to install"
+    required: true
+    default: "0.27.0"
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        echo "Install TinyGo ${{ inputs.tinygo-version }}..."
+        wget https://github.com/tinygo-org/tinygo/releases/download/v${{ inputs.tinygo-version }}/tinygo_${{ inputs.tinygo-version }}_amd64.deb
+        sudo dpkg -i tinygo_${{ inputs.tinygo-version }}_amd64.deb
+        echo "/usr/local/tinygo/bin" >> $GITHUB_PATH
+      shell: "bash"

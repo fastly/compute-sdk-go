@@ -9,4 +9,4 @@ name = "secret_store"
 service_id = ""
 
 [local_server]
-  secret_store.phrases = [{key = "my_phrase", data = "sssh! don't tell anyone!"}]
+  secret_stores.phrases = [{key = "my_phrase", data = "sssh! don't tell anyone!"}]
