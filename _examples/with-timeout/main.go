@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
-	"github.com/fastly/compute-sdk-go/x/fstctx"
 )
 
 func main() {
@@ -16,7 +15,7 @@ func main() {
 		begin := time.Now()
 
 		// Create a context with a 1-second timeout.
-		ctx, cancel := fstctx.WithTimeout(ctx, 1*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 		defer cancel()
 
 		// Create the request, and set pass to true, to avoid caching.
