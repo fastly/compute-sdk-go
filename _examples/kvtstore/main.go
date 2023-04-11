@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
-	kvstore "github.com/fastly/compute-sdk-go/kvstore"
+	"github.com/fastly/compute-sdk-go/kvstore"
 )
 
 func main() {
