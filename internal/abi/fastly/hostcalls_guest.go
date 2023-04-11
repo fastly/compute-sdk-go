@@ -2051,31 +2051,31 @@ func GeoLookup(ip net.IP) ([]byte, error) {
 
 // witx:
 //
-//   (module $fastly_object_store
+//   (module $fastly_kv_store
 //	   (@interface func (export "open")
 //	     (param $name string)
-//	     (result $err (expected $object_store_handle (error $fastly_status)))
+//	     (result $err (expected $kv_store_handle (error $fastly_status)))
 //	  )
 
-//go:wasm-module fastly_object_store
+//go:wasm-module fastly_kv_store
 //export open
 //go:noescape
-func fastlyObjectStoreOpen(
+func fastlyKVStoreOpen(
 	name prim.Wstring,
-	h *objectStoreHandle,
+	h *kvStoreHandle,
 ) FastlyStatus
 
-// ObjectStore represents a Fastly object store, a collection of key/value pairs.
+// KVStore represents a Fastly kv store, a collection of key/value pairs.
 // For convenience, keys and values are both modelled as Go strings.
-type ObjectStore struct {
-	h objectStoreHandle
+type KVStore struct {
+	h kvStoreHandle
 }
 
-// ObjectStoreOpen returns a reference to the named object store, if it exists.
-func OpenObjectStore(name string) (*ObjectStore, error) {
-	var o ObjectStore
+// KVStoreOpen returns a reference to the named kv store, if it exists.
+func OpenKVStore(name string) (*KVStore, error) {
+	var o KVStore
 
-	if err := fastlyObjectStoreOpen(
+	if err := fastlyKVStoreOpen(
 		prim.NewReadBufferFromString(name).Wstring(),
 		&o.h,
 	).toError(); err != nil {
@@ -2088,26 +2088,26 @@ func OpenObjectStore(name string) (*ObjectStore, error) {
 // witx:
 //
 //   (@interface func (export "lookup")
-//	   (param $store $object_store_handle)
+//	   (param $store $kv_store_handle)
 //	   (param $key string)
 //	   (param $body_handle_out (@witx pointer $body_handle))
 //	   (result $err (expected (error $fastly_status)))
 //	)
 
-//go:wasm-module fastly_object_store
+//go:wasm-module fastly_kv_store
 //export lookup
 //go:noescape
-func fastlyObjectStoreLookup(
-	h objectStoreHandle,
+func fastlyKVStoreLookup(
+	h kvStoreHandle,
 	key prim.Wstring,
 	b *bodyHandle,
 ) FastlyStatus
 
 // Lookup returns the value for key, if it exists.
-func (o *ObjectStore) Lookup(key string) (io.Reader, error) {
+func (o *KVStore) Lookup(key string) (io.Reader, error) {
 	body := HTTPBody{h: invalidBodyHandle}
 
-	if err := fastlyObjectStoreLookup(
+	if err := fastlyKVStoreLookup(
 		o.h,
 		prim.NewReadBufferFromString(key).Wstring(),
 		&body.h,
@@ -2127,23 +2127,23 @@ func (o *ObjectStore) Lookup(key string) (io.Reader, error) {
 // witx:
 //
 //  (@interface func (export "insert")
-//	  (param $store $object_store_handle)
+//	  (param $store $kv_store_handle)
 //	  (param $key string)
 //	  (param $body_handle $body_handle)
 //	  (result $err (expected (error $fastly_status)))
 //	)
 
-//go:wasm-module fastly_object_store
+//go:wasm-module fastly_kv_store
 //export insert
 //go:noescape
-func fastlyObjectStoreInsert(
-	h objectStoreHandle,
+func fastlyKVStoreInsert(
+	h kvStoreHandle,
 	key prim.Wstring,
 	b bodyHandle,
 ) FastlyStatus
 
-// Insert adds a key/value pair to the object store.
-func (o *ObjectStore) Insert(key string, value io.Reader) error {
+// Insert adds a key/value pair to the kv store.
+func (o *KVStore) Insert(key string, value io.Reader) error {
 	body, err := NewHTTPBody()
 	if err != nil {
 		return err
@@ -2153,7 +2153,7 @@ func (o *ObjectStore) Insert(key string, value io.Reader) error {
 		return err
 	}
 
-	if err := fastlyObjectStoreInsert(
+	if err := fastlyKVStoreInsert(
 		o.h,
 		prim.NewReadBufferFromString(key).Wstring(),
 		body.h,

@@ -245,17 +245,17 @@ func GeoLookup(ip net.IP) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-type ObjectStore struct{}
+type KVStore struct{}
 
-func OpenObjectStore(name string) (*ObjectStore, error) {
+func OpenKVStore(name string) (*KVStore, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (o *ObjectStore) Lookup(key string) (io.Reader, error) {
+func (o *KVStore) Lookup(key string) (io.Reader, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (o *ObjectStore) Insert(key string, value io.Reader) error {
+func (o *KVStore) Insert(key string, value io.Reader) error {
 	return fmt.Errorf("not implemented")
 }
 

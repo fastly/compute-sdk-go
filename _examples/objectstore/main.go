@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
-	"github.com/fastly/compute-sdk-go/objectstore"
+	kvstore "github.com/fastly/compute-sdk-go/kvstore"
 )
 
 func main() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		o, err := objectstore.Open("example_objectstore")
+		o, err := kvstore.Open("example_kvstore")
 		if err != nil {
 			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
 			return
@@ -31,7 +31,7 @@ func main() {
 		// We can detect when a key does not exist and supply a default value instead.
 		var reader io.Reader
 		v, err = o.Lookup("might-not-exist")
-		if err != nil && err == objectstore.ErrKeyNotFound {
+		if err != nil && err == kvstore.ErrKeyNotFound {
 			reader = strings.NewReader("default value")
 		} else if err != nil {
 			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)

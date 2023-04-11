@@ -1,4 +1,4 @@
-package objectstore
+package kvstore
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
 
-var ErrKeyNotFound = errors.New("objectstore: key not found")
+var ErrKeyNotFound = errors.New("kvstore: key not found")
 
 type Entry struct {
 	io.Reader
@@ -33,25 +33,25 @@ func (e *Entry) String() string {
 
 }
 
-// Store represents a Fastly object store
+// Store represents a Fastly kv store
 type Store struct {
-	objectstore *fastly.ObjectStore
+	kvstore *fastly.KVStore
 }
 
-// Open returns a handle to the named object store
+// Open returns a handle to the named kv store
 func Open(name string) (*Store, error) {
-	o, err := fastly.OpenObjectStore(name)
+	o, err := fastly.OpenKVStore(name)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Store{objectstore: o}, nil
+	return &Store{kvstore: o}, nil
 }
 
-// Lookup fetches a key from the associated object store.  If the key does not
+// Lookup fetches a key from the associated kv store.  If the key does not
 // exist, Lookup returns the sentinel error ErrKeyNotFound.
 func (s *Store) Lookup(key string) (*Entry, error) {
-	val, err := s.objectstore.Lookup(key)
+	val, err := s.kvstore.Lookup(key)
 	if err != nil {
 
 		// turn FastlyStatusNone into NotFound
@@ -65,8 +65,8 @@ func (s *Store) Lookup(key string) (*Entry, error) {
 	return &Entry{Reader: val}, err
 }
 
-// Insert adds a key to the associated object store.
+// Insert adds a key to the associated kv store.
 func (s *Store) Insert(key string, value io.Reader) error {
-	err := s.objectstore.Insert(key, value)
+	err := s.kvstore.Insert(key, value)
 	return err
 }
