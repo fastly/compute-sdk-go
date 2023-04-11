@@ -1,0 +1,21 @@
+rules:
+- id: deprecated-objectstore-store
+  pattern: objectstore.Store
+  fix:  kvstore.Store
+  message: objectstore package is deprecated
+  languages: [go]
+  severity: ERROR
+
+- id: deprecated-objectstore-open
+  pattern: objectstore.Open($N)
+  fix:  kvstore.Open($N)
+  message: objectstore package is deprecated
+  languages: [go]
+  severity: ERROR
+
+- id: deprecated-objectstore-errkeynotfound
+  pattern: objectstore.ErrKeyNotFound
+  fix: kvstore.ErrKeyNotFound
+  message: objectstore package is deprecated
+  languages: [go]
+  severity: ERROR
