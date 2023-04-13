@@ -99,6 +99,11 @@ type Request struct {
 	ManualFramingMode bool
 
 	sent bool // a request may only be sent once
+
+	abi struct {
+		req  *fastly.HTTPRequest
+		body *fastly.HTTPBody
+	}
 }
 
 // NewRequest constructs an outgoing request with the given HTTP method, URI,
@@ -276,7 +281,15 @@ func (req *Request) AddCookie(c *Cookie) {
 // that have been preconfigured in your service, regardless of their URL. Once
 // sent, a request cannot be sent again.
 func (req *Request) Send(ctx context.Context, backend string) (*Response, error) {
-	abiPending, abiReqBody, err := req.sendAsyncStreaming(backend)
+
+	if req.abi.req == nil && req.abi.body == nil {
+		//  abi request not yet constructed
+		if err := req.constructABIRequest(); err != nil {
+			return nil, err
+		}
+	}
+
+	abiPending, abiReqBody, err := req.sendABIRequestAsyncStreaming(backend)
 	if err != nil {
 		return nil, err
 	}
@@ -341,56 +354,66 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 	return resp, nil
 }
 
-func (req *Request) sendAsyncStreaming(backend string) (*fastly.PendingRequest, *fastly.HTTPBody, error) {
-	if req.sent {
-		return nil, nil, fmt.Errorf("request already sent")
+func (req *Request) constructABIRequest() error {
+	if req.abi.req != nil || req.abi.body != nil {
+		return fmt.Errorf("request already constructed")
 	}
 
 	abiReq, err := fastly.NewHTTPRequest()
 	if err != nil {
-		return nil, nil, fmt.Errorf("construct request: %w", err)
+		return fmt.Errorf("construct request: %w", err)
 	}
 
 	if err := abiReq.SetMethod(req.Method); err != nil {
-		return nil, nil, fmt.Errorf("set method: %w", err)
+		return fmt.Errorf("set method: %w", err)
 	}
 
 	if err := abiReq.SetURI(req.URL.String()); err != nil {
-		return nil, nil, fmt.Errorf("set URL: %w", err)
+		return fmt.Errorf("set URL: %w", err)
 	}
 
 	if err := abiReq.SetAutoDecompressResponse(fastly.AutoDecompressResponseOptions(req.DecompressResponseOptions)); err != nil {
-		return nil, nil, fmt.Errorf("set auto decompress response: %w", err)
+		return fmt.Errorf("set auto decompress response: %w", err)
 	}
 
 	if err := abiReq.SetFramingHeadersMode(req.ManualFramingMode); err != nil {
-		return nil, nil, fmt.Errorf("set framing headers mode: %w", err)
+		return fmt.Errorf("set framing headers mode: %w", err)
 	}
 
 	if err := abiReq.SetCacheOverride(fastly.CacheOverrideOptions(req.CacheOptions)); err != nil {
-		return nil, nil, fmt.Errorf("set cache options: %w", err)
+		return fmt.Errorf("set cache options: %w", err)
 	}
 
 	for _, key := range req.Header.Keys() {
 		vals := req.Header.Values(key)
 		if err := abiReq.SetHeaderValues(key, vals); err != nil {
-			return nil, nil, fmt.Errorf("set headers: %w", err)
+			return fmt.Errorf("set headers: %w", err)
 		}
 	}
 
 	abiReqBody, err := abiBodyFrom(req.Body)
 	if err != nil {
-		return nil, nil, fmt.Errorf("get body: %w", err)
+		return fmt.Errorf("get body: %w", err)
 	}
 
-	abiPending, err := abiReq.SendAsyncStreaming(abiReqBody, backend)
+	req.abi.req = abiReq
+	req.abi.body = abiReqBody
+
+	return nil
+}
+
+func (req *Request) sendABIRequestAsyncStreaming(backend string) (*fastly.PendingRequest, *fastly.HTTPBody, error) {
+	if req.sent {
+		return nil, nil, fmt.Errorf("request already sent")
+	}
+
+	abiPending, err := req.abi.req.SendAsyncStreaming(req.abi.body, backend)
 	if err != nil {
 		return nil, nil, fmt.Errorf("begin send: %w", err)
 	}
 
 	req.sent = true
-
-	return abiPending, abiReqBody, nil
+	return abiPending, req.abi.body, nil
 }
 
 // CacheOptions control caching behavior for outgoing requests.
