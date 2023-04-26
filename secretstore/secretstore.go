@@ -1,3 +1,12 @@
+// Package secretstore provides a read-only interface to Fastly
+// Compute@Edge Secret Stores.
+//
+// Secret stores are persistent, globally distributed stores for
+// secrets.  Secrets are decrypted as-needed at the edge.
+//
+// See the [Fastly Secret Store documentation] for details.
+//
+// [Fastly Secret Store documentation]: https://developer.fastly.com/learning/concepts/dynamic-config/#secret-stores
 package secretstore
 
 import (
