@@ -399,3 +399,13 @@ func (c *CacheEntry) Age() (time.Duration, error) {
 func (c *CacheEntry) Hits() (uint64, error) {
 	return 0, fmt.Errorf("not implemented")
 }
+
+type PurgeOptions struct{}
+
+func (o *PurgeOptions) SoftPurge(v bool) error {
+	return fmt.Errorf("not implemented")
+}
+
+func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
+	return fmt.Errorf("not implemented")
+}

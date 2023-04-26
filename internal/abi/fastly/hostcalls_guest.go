@@ -2908,3 +2908,38 @@ func (c *CacheEntry) Hits() (uint64, error) {
 
 	return uint64(d), nil
 }
+
+type PurgeOptions struct {
+	mask purgeOptionsMask
+	opts purgeOptions
+}
+
+func (o *PurgeOptions) SoftPurge(v bool) {
+	if v {
+		o.mask |= purgeOptionsMaskSoftPurge
+	} else {
+		o.mask &^= purgeOptionsMaskSoftPurge
+	}
+}
+
+// witx:
+//
+//	(@interface func (export "purge_surrogate_key")
+//	    (param $surrogate_key string)
+//	    (param $options_mask $purge_options_mask)
+//	    (param $options (@witx pointer $purge_options))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_purge
+//export purge_surrogate_key
+//go:noescape
+func fastlyPurgeSurrogateKey(surrogateKey prim.Wstring, mask purgeOptionsMask, opts *purgeOptions) FastlyStatus
+
+func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
+	return fastlyPurgeSurrogateKey(
+		prim.NewReadBufferFromString(surrogateKey).Wstring(),
+		opts.mask,
+		&opts.opts,
+	).toError()
+}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/fastly/compute-sdk-go/cache/core"
 	"github.com/fastly/compute-sdk-go/fsthttp"
+	"github.com/fastly/compute-sdk-go/purge"
 )
 
 func main() {
@@ -115,8 +116,11 @@ func main() {
 
 		// Purge the key from the cache.
 		case "DELETE":
-			// TODO: purge the surrogate key.
-			w.WriteHeader(fsthttp.StatusNotImplemented)
+			if err := purge.PurgeSurrogateKey(hex.EncodeToString(key), purge.PurgeOptions{}); err != nil {
+				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(fsthttp.StatusAccepted)
 
 		default:
 			w.WriteHeader(fsthttp.StatusMethodNotAllowed)

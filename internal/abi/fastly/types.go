@@ -639,3 +639,34 @@ const (
 	CacheLookupStateStale              CacheLookupState = 0b0000_0100 // $stale
 	CacheLookupStateMustInsertOrUpdate CacheLookupState = 0b0000_1000 // $must_insert_or_update
 )
+
+// witx:
+//
+//	(typename $purge_options_mask
+//	    (flags (@witx repr u32)
+//	        $soft_purge
+//	        $ret_buf ;; all ret_buf fields must be populated
+//	    )
+//	)
+type purgeOptionsMask prim.U32
+
+const (
+	purgeOptionsMaskSoftPurge purgeOptionsMask = 1 << 0 // $soft_purge
+	purgeOptionsMaskRetBuf    purgeOptionsMask = 1 << 1 // $ret_buf
+)
+
+// witx:
+//
+//	(typename $purge_options
+//	    (record
+//	        ;; JSON purge response as in https://developer.fastly.com/reference/api/purging/#purge-tag
+//	        (field $ret_buf_ptr (@witx pointer u8))
+//	        (field $ret_buf_len (@witx usize))
+//	        (field $ret_buf_nwritten_out (@witx pointer (@witx usize)))
+//	    )
+//	)
+type purgeOptions struct {
+	retBufPtr         *prim.U8
+	retBufLen         prim.Usize
+	retBufNwrittenOut *prim.Usize
+}
