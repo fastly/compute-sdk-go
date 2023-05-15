@@ -1,5 +1,16 @@
 ## Unreleased
 
+## 0.1.3 (2023-05-15)
+
+### Changed
+
+- Rename objectstore -> kvstore
+- Deprecate fstctx
+
+### Added
+
+- Add fsthttp.RequestLimits
+
 ## 0.1.2 (2023-01-30)
 
 ### Changed
