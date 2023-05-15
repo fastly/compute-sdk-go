@@ -27,10 +27,9 @@ func (e *Entry) String() string {
 		return ""
 	}
 
+	e.s = string(b)
 	e.validString = true
-
-	return string(b)
-
+	return e.s
 }
 
 // Store represents a Fastly kv store
