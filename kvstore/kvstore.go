@@ -3,7 +3,7 @@
 // KV stores provide durable storage of key/value data that is readable
 // and writable at the edge and synchronized globally.
 //
-// See the [Fastly KV store documetnation] for details.
+// See the [Fastly KV store documentation] for details.
 //
 // [Fastly KV store documentation]: https://developer.fastly.com/learning/concepts/data-stores/#kv-stores
 package kvstore
