@@ -415,7 +415,7 @@ func (req *Request) sendABIRequestAsync(backend string) (*fastly.PendingRequest,
 	// instead causes the entire body to be buffered (in this case, zero
 	// bytes) and "Content-Length: 0" to be sent instead.
 	sendFn := req.abi.req.SendAsyncStreaming
-	if req.abi.body == nil {
+	if req.Body == nil {
 		sendFn = req.abi.req.SendAsync
 	}
 
