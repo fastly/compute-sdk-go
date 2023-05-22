@@ -281,7 +281,6 @@ func (req *Request) AddCookie(c *Cookie) {
 // that have been preconfigured in your service, regardless of their URL. Once
 // sent, a request cannot be sent again.
 func (req *Request) Send(ctx context.Context, backend string) (*Response, error) {
-
 	if req.abi.req == nil && req.abi.body == nil {
 		//  abi request not yet constructed
 		if err := req.constructABIRequest(); err != nil {
@@ -289,7 +288,7 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 		}
 	}
 
-	abiPending, abiReqBody, err := req.sendABIRequestAsyncStreaming(backend)
+	abiPending, abiReqBody, err := req.sendABIRequestAsync(backend)
 	if err != nil {
 		return nil, err
 	}
@@ -402,12 +401,25 @@ func (req *Request) constructABIRequest() error {
 	return nil
 }
 
-func (req *Request) sendABIRequestAsyncStreaming(backend string) (*fastly.PendingRequest, *fastly.HTTPBody, error) {
+func (req *Request) sendABIRequestAsync(backend string) (*fastly.PendingRequest, *fastly.HTTPBody, error) {
 	if req.sent {
 		return nil, nil, fmt.Errorf("request already sent")
 	}
 
-	abiPending, err := req.abi.req.SendAsyncStreaming(req.abi.body, backend)
+	// When the request's ManualFramingMode is false, SendAsyncStreaming
+	// streams the request body to the backend using "Transfer-Encoding:
+	// chunked".  This is the default behavior we want for requests with
+	// a body.  For requests without a body, we want to avoid
+	// unnecessary chunked encoding, and have observed servers that
+	// error when seeing it in certain contexts.  Calling SendAsync
+	// instead causes the entire body to be buffered (in this case, zero
+	// bytes) and "Content-Length: 0" to be sent instead.
+	sendFn := req.abi.req.SendAsyncStreaming
+	if req.Body == nil {
+		sendFn = req.abi.req.SendAsync
+	}
+
+	abiPending, err := sendFn(req.abi.body, backend)
 	if err != nil {
 		return nil, nil, fmt.Errorf("begin send: %w", err)
 	}
