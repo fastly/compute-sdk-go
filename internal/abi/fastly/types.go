@@ -113,7 +113,7 @@ func (s FastlyStatus) String() string {
 	case FastlyStatusLimitExceeded:
 		return "LimitExceeded"
 	default:
-		return fmt.Printf("unknown error code: %d", s)
+		return fmt.Sprintf("unknown error code: %d", s)
 	}
 }
 
