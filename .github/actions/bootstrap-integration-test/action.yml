@@ -4,14 +4,14 @@ runs:
   using: "composite"
   steps:
     - run: |
-        echo "Install Fastly CLI 8.1.2"
-        wget https://github.com/fastly/cli/releases/download/v8.1.2/fastly_8.1.2_linux_amd64.deb
-        sudo apt install ./fastly_8.1.2_linux_amd64.deb
+        echo "Install Fastly CLI 10.1.0"
+        wget https://github.com/fastly/cli/releases/download/v10.1.0/fastly_10.1.0_linux_amd64.deb
+        sudo apt install ./fastly_10.1.0_linux_amd64.deb
       shell: "bash"
     - run: |
-        echo "Install Viceroy 0.4.0..."
-        wget https://github.com/fastly/Viceroy/releases/download/v0.4.0/viceroy_v0.4.0_linux-amd64.tar.gz
+        echo "Install Viceroy 0.5.1..."
+        wget https://github.com/fastly/Viceroy/releases/download/v0.5.1/viceroy_v0.5.1_linux-amd64.tar.gz
         mkdir -p $HOME/bin
-        tar -xzf viceroy_v0.4.0_linux-amd64.tar.gz --directory $HOME/bin
+        tar -xzf viceroy_v0.5.1_linux-amd64.tar.gz --directory $HOME/bin
         echo "$HOME/bin" >> $GITHUB_PATH
       shell: "bash"
