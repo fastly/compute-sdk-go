@@ -74,7 +74,7 @@ func (b *WriteBuffer) Char8Pointer() *Char8 {
 	return (*Char8)(unsafe.Pointer(b.hdr.Data))
 }
 
-// U8Pointer returns a pointer to the buffer's data as a Char8.
+// U8Pointer returns a pointer to the buffer's data as a U8.
 func (b *WriteBuffer) U8Pointer() *U8 {
 	return (*U8)(unsafe.Pointer(b.hdr.Data))
 }
@@ -158,6 +158,11 @@ func (b *ReadBuffer) ArrayChar8() ArrayChar8 {
 // Char8Pointer returns a pointer to the buffer's data as a Char8.
 func (b *ReadBuffer) Char8Pointer() *Char8 {
 	return (*Char8)(unsafe.Pointer(b.hdr.Data))
+}
+
+// U8Pointer returns a pointer to the buffer's data as a U8.
+func (b *ReadBuffer) U8Pointer() *U8 {
+	return (*U8)(unsafe.Pointer(b.hdr.Data))
 }
 
 // Len returns the length of data in the buffer as a Usize.

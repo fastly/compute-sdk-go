@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 )
 
 func ParseUserAgent(userAgent string) (family, major, minor, patch string, err error) {
@@ -36,6 +37,10 @@ func (b *HTTPBody) Write(p []byte) (n int, err error) {
 }
 
 func (b *HTTPBody) Close() error {
+	return fmt.Errorf("not implemented")
+}
+
+func (b *HTTPBody) Abandon() error {
 	return fmt.Errorf("not implemented")
 }
 
@@ -274,4 +279,133 @@ func (s *SecretStore) Get(name string) (*Secret, error) {
 
 func (s *Secret) Plaintext() ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+type (
+	CacheEntry          struct{}
+	CacheLookupOptions  struct{}
+	CacheGetBodyOptions struct{}
+	CacheWriteOptions   struct{}
+)
+
+func (o *CacheLookupOptions) SetRequest(req *HTTPRequest) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (o *CacheGetBodyOptions) From(from uint64) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (o *CacheGetBodyOptions) To(to uint64) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (o *CacheWriteOptions) MaxAge(v time.Duration) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (o *CacheWriteOptions) SetRequest(req *HTTPRequest) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (o *CacheWriteOptions) Vary(v []string) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (o *CacheWriteOptions) InitialAge(v time.Duration) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (o *CacheWriteOptions) StaleWhileRevalidate(v time.Duration) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (o *CacheWriteOptions) SurrogateKeys(v []string) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (o *CacheWriteOptions) ContentLength(v uint64) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (o *CacheWriteOptions) UserMetadata(v []byte) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (o *CacheWriteOptions) SensitiveData(v bool) error {
+	return fmt.Errorf("not implemented")
+}
+
+func CacheLookup(key []byte, opts CacheLookupOptions) (*CacheEntry, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func CacheInsert(key []byte, opts CacheWriteOptions) (*HTTPBody, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func CacheTransactionLookup(key []byte, opts CacheLookupOptions) (*CacheEntry, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (e *CacheEntry) Insert(opts CacheWriteOptions) (*HTTPBody, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (e *CacheEntry) InsertAndStreamBack(opts CacheWriteOptions) (*HTTPBody, *CacheEntry, error) {
+	return nil, nil, fmt.Errorf("not implemented")
+}
+
+func (e *CacheEntry) Update(opts CacheWriteOptions) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (e *CacheEntry) Cancel() error {
+	return fmt.Errorf("not implemented")
+}
+
+func (c *CacheEntry) Close() error {
+	return fmt.Errorf("not implemented")
+}
+
+func (c *CacheEntry) State() (CacheLookupState, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func (c *CacheEntry) UserMetadata() ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (c *CacheEntry) Body(opts CacheGetBodyOptions) (*HTTPBody, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (c *CacheEntry) Length() (uint64, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func (c *CacheEntry) MaxAge() (time.Duration, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func (c *CacheEntry) StaleWhileRevalidate() (time.Duration, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func (c *CacheEntry) Age() (time.Duration, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func (c *CacheEntry) Hits() (uint64, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+type PurgeOptions struct{}
+
+func (o *PurgeOptions) SoftPurge(v bool) error {
+	return fmt.Errorf("not implemented")
+}
+
+func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
+	return fmt.Errorf("not implemented")
 }
