@@ -1,5 +1,17 @@
 ## Unreleased
 
+## 0.1.4 (2023-05-30)
+
+### Changed
+
+- Send `Content-Length: 0` instead of  `Transfer-Encoding: chunked` for requests without a body
+
+### Added
+
+- Add Core Cache API
+- Add Purge API
+- Add package level documentation for Secret Store and KV Store APIs
+
 ## 0.1.3 (2023-05-15)
 
 ### Changed
