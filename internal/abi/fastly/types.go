@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
 )
@@ -669,4 +670,169 @@ type purgeOptions struct {
 	retBufPtr         *prim.U8
 	retBufLen         prim.Usize
 	retBufNwrittenOut *prim.Usize
+}
+
+// witx:
+//
+//   (typename $backend_config_options
+//      (flags (@witx repr u32)
+//       $reserved
+//       $host_override
+//       $connect_timeout
+//       $first_byte_timeout
+//       $between_bytes_timeout
+//       $use_ssl
+//       $ssl_min_version
+//       $ssl_max_version
+//       $cert_hostname
+//       $ca_cert
+//       $ciphers
+//       $sni_hostname
+//       $dont_pool))
+
+type backendConfigOptionsMask prim.U32
+
+const (
+	backendConfigOptionsMaskReserved            backendConfigOptionsMask = 1 << 0  // $reserved
+	backendConfigOptionsMaskHostOverride        backendConfigOptionsMask = 1 << 1  // $host_override
+	backendConfigOptionsMaskConnectTimeout      backendConfigOptionsMask = 1 << 2  // $connect_timeout
+	backendConfigOptionsMaskFirstByteTimeout    backendConfigOptionsMask = 1 << 3  // $first_byte_timeout
+	backendConfigOptionsMaskBetweenBytesTimeout backendConfigOptionsMask = 1 << 4  // $between_bytes_timeout
+	backendConfigOptionsMaskUseSSL              backendConfigOptionsMask = 1 << 5  // $use_ssl
+	backendConfigOptionsMaskSSLMinVersion       backendConfigOptionsMask = 1 << 6  // $ssl_min_version
+	backendConfigOptionsMaskSSLMaxVersion       backendConfigOptionsMask = 1 << 7  // $ssl_max_version
+	backendConfigOptionsMaskCertHostname        backendConfigOptionsMask = 1 << 8  // $cert_hostname
+	backendConfigOptionsMaskCACert              backendConfigOptionsMask = 1 << 9  // $ca_cert
+	backendConfigOptionsMaskCiphers             backendConfigOptionsMask = 1 << 10 // $ciphers
+	backendConfigOptionsMaskSNIHostname         backendConfigOptionsMask = 1 << 11 // $sni_hostame
+	backendConfigOptionsMaskDontPool            backendConfigOptionsMask = 1 << 12 // $dont_pool
+)
+
+// witx:
+//
+//  (typename $dynamic_backend_config
+//  	(record
+//  	  (field $host_override (@witx pointer (@witx char8)))
+//  	  (field $host_override_len u32)
+//  	  (field $connect_timeout_ms u32)
+//  	  (field $first_byte_timeout_ms u32)
+//  	  (field $between_bytes_timeout_ms u32)
+//  	  (field $ssl_min_version $tls_version)
+//  	  (field $ssl_max_version $tls_version)
+//  	  (field $cert_hostname (@witx pointer (@witx char8)))
+//  	  (field $cert_hostname_len u32)
+//  	  (field $ca_cert (@witx pointer (@witx char8)))
+//  	  (field $ca_cert_len u32)
+//  	  (field $ciphers (@witx pointer (@witx char8)))
+//  	  (field $ciphers_len u32)
+//  	  (field $sni_hostname (@witx pointer (@witx char8)))
+//  	  (field $sni_hostname_len u32)
+//  	  ))
+
+type backendConfigOptions struct {
+	hostOverridePtr     *prim.Char8
+	hostOverrideLen     prim.U32
+	connectTimeoutMs    prim.U32
+	firstByteTimeout    prim.U32
+	betweenBytesTimeout prim.U32
+	sslMinVersion       TLSVersion
+	sslMaxVersion       TLSVersion
+	certHostnamePtr     *prim.Char8
+	certHostnameLen     prim.U32
+	caCertPtr           *prim.Char8
+	caCertLen           prim.U32
+	ciphersPtr          *prim.Char8
+	ciphersLen          prim.U32
+	sniHostnamePtr      *prim.Char8
+	sniHostnameLen      prim.U32
+}
+
+// witx:
+//
+//	(typename $tls_version
+//	    (enum (@witx tag u32)
+//	      $tls_1
+//	      $tls_1_1
+//	      $tls_1_2
+//	      $tls_1_3))
+type TLSVersion prim.U32
+
+const (
+	TLSVersion1_0 TLSVersion = 0
+	TLSVersion1_1 TLSVersion = 1
+	TLSVersion1_2 TLSVersion = 2
+	TLSVersion1_3 TLSVersion = 3
+)
+
+type BackendConfigOptions struct {
+	mask backendConfigOptionsMask
+	opts backendConfigOptions
+}
+
+func (b *BackendConfigOptions) HostOverride(host string) {
+	b.mask |= backendConfigOptionsMaskHostOverride
+	buf := prim.NewReadBufferFromString(host)
+	b.opts.hostOverridePtr = buf.Char8Pointer()
+	b.opts.hostOverrideLen = prim.U32(buf.Len())
+}
+
+func (b *BackendConfigOptions) ConnectTimeout(t time.Duration) {
+	b.mask |= backendConfigOptionsMaskConnectTimeout
+	b.opts.connectTimeoutMs = prim.U32(t.Milliseconds())
+}
+
+func (b *BackendConfigOptions) FirstByteTimeout(t time.Duration) {
+	b.mask |= backendConfigOptionsMaskFirstByteTimeout
+	b.opts.firstByteTimeout = prim.U32(t.Milliseconds())
+}
+
+func (b *BackendConfigOptions) BetweenBytesTimeout(t time.Duration) {
+	b.mask |= backendConfigOptionsMaskBetweenBytesTimeout
+	b.opts.betweenBytesTimeout = prim.U32(t.Milliseconds())
+}
+
+func (b *BackendConfigOptions) UseSSL(v bool) {
+	if v {
+		b.mask |= backendConfigOptionsMaskUseSSL
+	} else {
+		b.mask &^= backendConfigOptionsMaskUseSSL
+	}
+}
+
+func (b *BackendConfigOptions) SSLMinVersion(v TLSVersion) {
+	b.mask |= backendConfigOptionsMaskSSLMinVersion
+	b.opts.sslMinVersion = v
+}
+
+func (b *BackendConfigOptions) SSLMaxVersion(v TLSVersion) {
+	b.mask |= backendConfigOptionsMaskSSLMaxVersion
+	b.opts.sslMaxVersion = v
+}
+
+func (b *BackendConfigOptions) CertHostname(certHostname string) {
+	b.mask |= backendConfigOptionsMaskCertHostname
+	buf := prim.NewReadBufferFromString(certHostname)
+	b.opts.certHostnamePtr = buf.Char8Pointer()
+	b.opts.certHostnameLen = prim.U32(buf.Len())
+}
+
+func (b *BackendConfigOptions) CACert(caCert string) {
+	b.mask |= backendConfigOptionsMaskCACert
+	buf := prim.NewReadBufferFromString(caCert)
+	b.opts.caCertPtr = buf.Char8Pointer()
+	b.opts.caCertLen = prim.U32(buf.Len())
+}
+
+func (b *BackendConfigOptions) Ciphers(ciphers string) {
+	b.mask |= backendConfigOptionsMaskCiphers
+	buf := prim.NewReadBufferFromString(ciphers)
+	b.opts.ciphersPtr = buf.Char8Pointer()
+	b.opts.ciphersLen = prim.U32(buf.Len())
+}
+
+func (b *BackendConfigOptions) SNIHostname(sniHostname string) {
+	b.mask |= backendConfigOptionsMaskSNIHostname
+	buf := prim.NewReadBufferFromString(sniHostname)
+	b.opts.sniHostnamePtr = buf.Char8Pointer()
+	b.opts.sniHostnameLen = prim.U32(buf.Len())
 }
