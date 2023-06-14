@@ -1496,6 +1496,33 @@ func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
 
 // witx:
 //
+//	(@interface func (export "register_dynamic_backend")
+//		(param $name_prefix string)
+//		(param $target string)
+//		(param $backend_config_mask $backend_config_options)
+//		(param $backend_configuration (@witx pointer $dynamic_backend_config))
+//		(result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_http_req
+//export register_dynamic_backend
+//go:noescape
+func fastlyRegisterDynamicBackend(name prim.Wstring, target prim.Wstring, mask backendConfigOptionsMask, opts *backendConfigOptions) FastlyStatus
+
+func RegisterDynamicBackend(name string, target string, opts *BackendConfigOptions) error {
+	if err := fastlyRegisterDynamicBackend(
+		prim.NewReadBufferFromString(name).Wstring(),
+		prim.NewReadBufferFromString(target).Wstring(),
+		opts.mask,
+		&opts.opts,
+	).toError(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// witx:
+//
 //	(module $fastly_http_resp
 //	   (@interface func (export "new")
 //	     (result $err $fastly_status)
