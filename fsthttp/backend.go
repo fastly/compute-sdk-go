@@ -21,6 +21,22 @@ type BackendOptions struct {
 	abiOpts fastly.BackendConfigOptions
 }
 
+// Backend is a fastly backend
+type Backend struct {
+	name   string
+	target string
+}
+
+// Name returns the name associated with this backend.
+func (b *Backend) Name() string {
+	return b.name
+}
+
+// Target returns the target associated with this backend.
+func (b *Backend) Target() string {
+	return b.target
+}
+
 // HostOverride sets the HTTP Host header on connections to this backend.
 func (b *BackendOptions) HostOverride(host string) *BackendOptions {
 	b.abiOpts.HostOverride(host)
@@ -88,12 +104,16 @@ func (b *BackendOptions) SNIHostname(host string) *BackendOptions {
 }
 
 // Register a new dynamic backend.
-func RegisterDynamicBackend(name string, target string, options *BackendOptions) error {
+func RegisterDynamicBackend(name string, target string, options *BackendOptions) (*Backend, error) {
 	var abiOpts *fastly.BackendConfigOptions
 	if options != nil {
 		abiOpts = &options.abiOpts
 	} else {
 		abiOpts = &fastly.BackendConfigOptions{}
 	}
-	return fastly.RegisterDynamicBackend(name, target, abiOpts)
+	b := Backend{
+		name:   name,
+		target: target,
+	}
+	return &b, fastly.RegisterDynamicBackend(name, target, abiOpts)
 }
