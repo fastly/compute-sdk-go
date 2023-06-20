@@ -119,6 +119,37 @@
       }
     },
 
+    "kvstore" : {
+      "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -o ./_integration_tests/fixtures/kvstore/kvstore.wasm ./_integration_tests/fixtures/kvstore && (cd ./_integration_tests/fixtures/kvstore && fastly compute pack --verbose --wasm-binary ./kvstore.wasm)",
+      "fastly_toml_path": "./_integration_tests/fixtures/kvstore/fastly.toml",
+      "wasm_path": "./_integration_tests/fixtures/kvstore/kvstore.wasm",
+      "pkg_path": "./_integration_tests/fixtures/kvstore/pkg/kvstore.tar.gz",
+      "tests": {
+        "GET /lookup": {
+          "environments": ["viceroy"],
+          "downstream_request": {
+            "method": "GET",
+            "pathname": "/lookup"
+          },
+          "downstream_response": {
+            "status": 200,
+            "body": "world"
+          }
+        },
+        "GET /insert": {
+          "environments": ["viceroy"],
+          "downstream_request": {
+            "method": "GET",
+            "pathname": "/insert"
+          },
+          "downstream_response": {
+            "status": 200,
+            "body": "cat"
+          }
+        }
+      }
+    },
+
     "request_upstream" : {
       "build": "tinygo build -target=wasi -scheduler=asyncify -gc=leaking -o ./_integration_tests/fixtures/request_upstream/request_upstream.wasm ./_integration_tests/fixtures/request_upstream && (cd ./_integration_tests/fixtures/request_upstream && fastly compute pack --verbose --wasm-binary ./request_upstream.wasm)",
       "fastly_toml_path": "./_integration_tests/fixtures/request_upstream/fastly.toml",
