@@ -38,15 +38,17 @@ fmt.Printf("request received: %s\n", r.URL.String())
 
 ## Recommended Packages
 
-TinyGo is still a new project, which has yet to get a version `1.0.0`. Therefore, the project is incomplete, but in its current state can still handle a lot of tasks on Compute@Edge. For example, [some languages features of Go are still missing](https://tinygo.org/docs/reference/lang-support/), such as Reflection support, which is used for things like parsing JSON using the Go standard library. To help with your adoption of `compute-sdk-go`, here are some recommended packages to help with some of the current missing language features:
+TinyGo is still a new project, which has yet to get a version `1.0.0`. Therefore, the project is incomplete, but in its current state can still handle a lot of tasks on Compute@Edge. However, [some languages features of Go are still missing](https://tinygo.org/docs/reference/lang-support/).
+
+To help with your adoption of `compute-sdk-go`, here are some recommended packages to help with some of the current missing language features:
 
 ### JSON Parsing
+
+TinyGo's  `reflect` support (which is needed by `encoding/json` among other things) is still new. While most use cases should work, for performance or other compatibility reasons you might need to consider a third-party JSON package if the standard library doesn't meet your needs.
 
 * [valyala/fastjson](https://github.com/valyala/fastjson)
 * [mailru/easyjson](https://github.com/mailru/easyjson)
 * [buger/jsonparser](https://github.com/buger/jsonparser)
-
-Additional context on JSON support in TinyGo can be found [here](https://github.com/tinygo-org/tinygo/issues/447)
 
 ## Changelog
 
