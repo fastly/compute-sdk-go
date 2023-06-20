@@ -1,4 +1,4 @@
-// Copyright 2022 Fastly, Inc.
+// Copyright 2023 Fastly, Inc.
 
 package main
 
