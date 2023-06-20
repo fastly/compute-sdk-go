@@ -471,8 +471,8 @@ const (
 
 // witx:
 //
-//	(typename $kv_store_handle (handle))
-type kvStoreHandle handle
+//	(typename $object_store_handle (handle))
+type objectStoreHandle handle
 
 // witx:
 //
