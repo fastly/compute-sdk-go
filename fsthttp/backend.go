@@ -12,8 +12,8 @@ var (
 	// create dynamic backends.
 	ErrDynamicBackendDisallowed = errors.New("dynamic backends not supported for this service")
 
-	// ErrDynamicBackendNameInUse indicates the backend name is already in use.
-	ErrDynamicBackendNameInUse = errors.New("backend name already in use")
+	// ErrBackendNameInUse indicates the backend name is already in use.
+	ErrBackendNameInUse = errors.New("backend name already in use")
 )
 
 type TLSVersion uint32
@@ -128,7 +128,7 @@ func RegisterDynamicBackend(name string, target string, options *BackendOptions)
 		case ok && status == fastly.FastlyStatusUnsupported:
 			return nil, ErrDynamicBackendDisallowed
 		case ok && status == fastly.FastlyStatusError:
-			return nil, ErrDynamicBackendNameInUse
+			return nil, ErrBackendNameInUse
 		default:
 			return nil, err
 		}
