@@ -1,9 +1,19 @@
 package fsthttp
 
 import (
+	"errors"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
+)
+
+var (
+	// ErrDynamicBackendDisallowed indicates the service is not allowed to
+	// create dynamic backends.
+	ErrDynamicBackendDisallowed = errors.New("dynamic backends not supported for this service")
+
+	// ErrBackendNameInUse indicates the backend name is already in use.
+	ErrBackendNameInUse = errors.New("backend name already in use")
 )
 
 type TLSVersion uint32
@@ -111,9 +121,21 @@ func RegisterDynamicBackend(name string, target string, options *BackendOptions)
 	} else {
 		abiOpts = &fastly.BackendConfigOptions{}
 	}
+	err := fastly.RegisterDynamicBackend(name, target, abiOpts)
+	if err != nil {
+		status, ok := fastly.IsFastlyError(err)
+		switch {
+		case ok && status == fastly.FastlyStatusUnsupported:
+			return nil, ErrDynamicBackendDisallowed
+		case ok && status == fastly.FastlyStatusError:
+			return nil, ErrBackendNameInUse
+		default:
+			return nil, err
+		}
+	}
 	b := Backend{
 		name:   name,
 		target: target,
 	}
-	return &b, fastly.RegisterDynamicBackend(name, target, abiOpts)
+	return &b, nil
 }
