@@ -182,6 +182,53 @@ func RegisterDynamicBackend(name string, target string, opts *BackendConfigOptio
 	return fmt.Errorf("not implemented")
 }
 
+func BackendExists(name string) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func BackendIsHealthy(name string) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func BackendIsDynamic(name string) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func BackendGetHost(name string) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+func BackendGetOverrideHost(name string) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+func BackendGetPort(name string) (int, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func BackendGetConnectTimeout(name string) (time.Duration, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func BackendGetFirstByteTimeout(name string) (time.Duration, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func BackendGetBetweenBytesTimeout(name string) (time.Duration, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+func BackendIsSSL(name string) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func BackendGetSSLMinVersion(name string) (TLSVersion, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func BackendGetSSLMaxVersion(name string) (TLSVersion, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
 type HTTPResponse struct{}
 
 func NewHTTPResponse() (*HTTPResponse, error) {
