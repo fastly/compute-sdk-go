@@ -1,5 +1,15 @@
 ## Unreleased
 
+### 0.1.5 (2023-06-23)
+
+### Changed
+
+- Fix KV Store hostcalls
+
+### Added
+
+- Add support for RegisterDynamicBackend
+
 ## 0.1.4 (2023-05-30)
 
 ### Changed
