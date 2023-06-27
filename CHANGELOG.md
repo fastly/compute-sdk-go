@@ -1,5 +1,9 @@
 ## Unreleased
 
+### Added
+
+- Add Simple Cache API
+
 ### 0.1.5 (2023-06-23)
 
 ### Changed
