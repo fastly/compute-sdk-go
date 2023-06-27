@@ -684,20 +684,14 @@ func (t *Transaction) Cancel() error {
 	return mapFastlyError(t.abiEntry.Cancel())
 }
 
-// Close ends the transaction, commits any inserts or updates, and
-// cleans up resources associated with it.
-//
-// If a Found is associated with this transaction, its Body will be
-// closed if it hasn't been already.
+// Close ends the transaction and cleans up resources associated with
+// it.
 func (t *Transaction) Close() error {
 	if t.ended {
 		return nil
 	}
 	t.ended = true
 
-	if t.found != nil {
-		t.found.Body.Close()
-	}
 	return t.abiEntry.Close()
 }
 
