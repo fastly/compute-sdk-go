@@ -1496,6 +1496,58 @@ func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
 
 // witx:
 //
+// (@interface func (export "redirect_to_websocket_proxy")
+//
+//	(param $backend_name string)
+//	(result $err (expected (error $fastly_status)))
+//
+// )
+//
+//go:wasm-module fastly_http_req
+//export redirect_to_websocket_proxy
+//go:noescape
+func fastlyHTTPReqRedirectToWebsocketProxy(
+	backend prim.Wstring,
+) FastlyStatus
+
+func HandoffWebsocket(backend string) error {
+	if err := fastlyHTTPReqRedirectToWebsocketProxy(
+		prim.NewReadBufferFromString(backend).Wstring(),
+	).toError(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// witx:
+//
+// (@interface func (export "redirect_to_grip_proxy")
+//
+//	(param $backend_name string)
+//	(result $err (expected (error $fastly_status)))
+//
+// )
+//
+//go:wasm-module fastly_http_req
+//export redirect_to_grip_proxy
+//go:noescape
+func fastlyHTTPReqRedirectToGripProxy(
+	backend prim.Wstring,
+) FastlyStatus
+
+func HandoffFanout(backend string) error {
+	if err := fastlyHTTPReqRedirectToGripProxy(
+		prim.NewReadBufferFromString(backend).Wstring(),
+	).toError(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// witx:
+//
 //	(@interface func (export "register_dynamic_backend")
 //		(param $name_prefix string)
 //		(param $target string)
