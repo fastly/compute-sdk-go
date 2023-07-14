@@ -555,6 +555,10 @@ func (t *Transaction) Found() (*Found, error) {
 // MustInsert returns true if a usable cached item was not found, and
 // this transaction client is expected to insert one.
 //
+// This function will return false if any cached item was found, even if
+// stale.  Use [Transaction.MustInsertOrUpdate] instead to handle stale
+// items.
+//
 // Use [Transaction.Insert] to insert the object, or
 // [Transaction.Cancel] to exit the transaction without providing an
 // object.
@@ -562,8 +566,16 @@ func (t *Transaction) MustInsert() bool {
 	return t.state&fastly.CacheLookupStateFound == 0 && t.state&fastly.CacheLookupStateMustInsertOrUpdate != 0
 }
 
-// MustInsertOrUpdate returns true if this transaction client is
-// expected to insert a new item or update a stale item.
+// MustInsertOrUpdate returns true if a fresh cached item was not found,
+// and this transaction client is expected to insert a new item or
+// update a stale item.
+//
+// A fresh cached item not being found could mean one of two things:
+//   - No cached item was found, or
+//   - A stale cached item was found.
+//
+// Use [Transaction.MustInsert] or [Transaction.Found] to determine
+// whether a new cached item must be inserted.
 //
 // Use:
 //   - [Transaction.Update] to freshen a found item by updating its metadata,
