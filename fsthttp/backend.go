@@ -2,6 +2,7 @@ package fsthttp
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
@@ -14,6 +15,9 @@ var (
 
 	// ErrBackendNameInUse indicates the backend name is already in use.
 	ErrBackendNameInUse = errors.New("backend name already in use")
+
+	// ErrBackendNotFound indicates the provided backend was not found.
+	ErrBackendNotFound = errors.New("backend not found")
 )
 
 type TLSVersion uint32
@@ -35,6 +39,103 @@ type BackendOptions struct {
 type Backend struct {
 	name   string
 	target string
+
+	// has the config been populated
+	dynamic bool
+
+	hostOverride        string
+	connectTimeout      time.Duration
+	firstByteTimeout    time.Duration
+	betweenBytesTimeout time.Duration
+	isSSL               bool
+	sslMinVersion       TLSVersion
+	sslMaxVersion       TLSVersion
+}
+
+func BackendFromName(name string) (*Backend, error) {
+	var err error
+
+	exists, err := fastly.BackendExists(name)
+	if err != nil {
+		return nil, err
+	}
+
+	if !exists {
+		return nil, ErrBackendNotFound
+	}
+
+	b := &Backend{
+		name: name,
+	}
+
+	if err := b.populateConfig(); err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+func (b *Backend) populateConfig() error {
+	var err error
+
+	b.dynamic, err = fastly.BackendIsDynamic(b.name)
+	if err != nil {
+		return err
+	}
+
+	host, err := fastly.BackendGetHost(b.name)
+	if err != nil {
+		return err
+	}
+
+	port, err := fastly.BackendGetPort(b.name)
+	if err != nil {
+		return err
+	}
+
+	b.target = host + ":" + strconv.Itoa(port)
+
+	b.hostOverride, err = fastly.BackendGetOverrideHost(b.name)
+	if err != nil {
+		return err
+	}
+
+	b.connectTimeout, err = fastly.BackendGetConnectTimeout(b.name)
+	if err != nil {
+		return err
+	}
+
+	b.firstByteTimeout, err = fastly.BackendGetFirstByteTimeout(b.name)
+	if err != nil {
+		return err
+	}
+
+	b.betweenBytesTimeout, err = fastly.BackendGetBetweenBytesTimeout(b.name)
+	if err != nil {
+		return err
+	}
+
+	b.isSSL, err = fastly.BackendIsSSL(b.name)
+	if err != nil {
+		return err
+	}
+
+	if b.isSSL {
+		var v fastly.TLSVersion
+		v, err = fastly.BackendGetSSLMaxVersion(b.name)
+		if err != nil {
+			return err
+		}
+		b.sslMaxVersion = TLSVersion(v)
+
+		v, err = fastly.BackendGetSSLMinVersion(b.name)
+		if err != nil {
+			return err
+		}
+		b.sslMinVersion = TLSVersion(v)
+	}
+
+	return nil
 }
 
 // Name returns the name associated with this backend.
@@ -45,6 +146,44 @@ func (b *Backend) Name() string {
 // Target returns the target associated with this backend.
 func (b *Backend) Target() string {
 	return b.target
+}
+
+// IsHealthy dynamically checks if the backend is available to serve requests.
+func (b *Backend) IsHealthy() (bool, error) {
+	return fastly.BackendIsHealthy(b.name)
+}
+
+// IsDynamic returns whether the backend is dynamic.
+func (b *Backend) IsDynamic() bool {
+	return b.dynamic
+}
+
+func (b *Backend) HostOverride() string {
+	return b.hostOverride
+}
+
+func (b *Backend) ConnectTimeout() time.Duration {
+	return b.connectTimeout
+}
+
+func (b *Backend) FirstByteTimeout() time.Duration {
+	return b.firstByteTimeout
+}
+
+func (b *Backend) BetweenBytesTimeout() time.Duration {
+	return b.betweenBytesTimeout
+}
+
+func (b *Backend) IsSSL() bool {
+	return b.isSSL
+}
+
+func (b *Backend) SSLMaxVersion() TLSVersion {
+	return b.sslMaxVersion
+}
+
+func (b *Backend) SSLMinVersion() TLSVersion {
+	return b.sslMinVersion
 }
 
 // HostOverride sets the HTTP Host header on connections to this backend.

@@ -1523,6 +1523,326 @@ func RegisterDynamicBackend(name string, target string, opts *BackendConfigOptio
 
 // witx:
 //
+//	(module $fastly_backend
+//		(@interface func (export "exists")
+//			(param $backend string)
+//			(result $err (expected
+//			$backend_exists
+//			(error $fastly_status)))
+//		)
+//
+//go:wasm-module fastly_backend
+//export exists
+//go:noescape
+func fastlyBackendExists(name prim.Wstring, exists *prim.U32) FastlyStatus
+
+func BackendExists(name string) (bool, error) {
+	var exists prim.U32
+	if err := fastlyBackendExists(
+		prim.NewReadBufferFromString(name).Wstring(),
+		&exists,
+	).toError(); err != nil {
+		return false, err
+	}
+	return exists != 0, nil
+}
+
+// witx:
+//
+//	(@interface func (export "is_healthy")
+//		(param $backend string)
+//		(result $err (expected
+//		$backend_health
+//		(error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_backend
+//export is_healthy
+//go:noescape
+func fastlyBackendIsHealthy(name prim.Wstring, healthy *prim.U32) FastlyStatus
+
+func BackendIsHealthy(name string) (bool, error) {
+	var healthy prim.U32
+	if err := fastlyBackendIsHealthy(
+		prim.NewReadBufferFromString(name).Wstring(),
+		&healthy,
+	).toError(); err != nil {
+		return false, err
+	}
+	return healthy != 0, nil
+}
+
+// witx:
+//
+//	(@interface func (export "is_dynamic")
+//		(param $backend string)
+//		(result $err (expected
+//		is_dyanmic
+//		(error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_backend
+//export is_dynamic
+//go:noescape
+func fastlyBackendIsDynamic(name prim.Wstring, dynamic *prim.U32) FastlyStatus
+
+func BackendIsDynamic(name string) (bool, error) {
+	var dynamic prim.U32
+	if err := fastlyBackendIsDynamic(
+		prim.NewReadBufferFromString(name).Wstring(),
+		&dynamic,
+	).toError(); err != nil {
+		return false, err
+	}
+	return dynamic != 0, nil
+}
+
+// witx:
+//
+//	(@interface func (export "get_host")
+//		(param $backend string)
+//		(param $value (@witx pointer (@witx char8)))
+//		(param $value_max_len (@witx usize))
+//		(param $nwritten_out (@witx pointer (@witx usize)))
+//		(result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_backend
+//export get_host
+//go:noescape
+func fastlyBackendGetHost(name prim.Wstring,
+	host *prim.Char8,
+	hostLen prim.Usize,
+	hostWritten *prim.Usize,
+) FastlyStatus
+
+func BackendGetHost(name string) (string, error) {
+	hostBuf := prim.NewWriteBuffer(defaultBufferLen)
+
+	if err := fastlyBackendGetHost(
+		prim.NewReadBufferFromString(name).Wstring(),
+
+		hostBuf.Char8Pointer(),
+		hostBuf.Cap(),
+		hostBuf.NPointer(),
+	).toError(); err != nil {
+		return "", err
+	}
+
+	return hostBuf.ToString(), nil
+}
+
+// witx:
+//
+//	(@interface func (export "get_override_host")
+//		(param $backend string)
+//		(param $value (@witx pointer (@witx char8)))
+//		(param $value_max_len (@witx usize))
+//		(param $nwritten_out (@witx pointer (@witx usize)))
+//		(result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_backend
+//export get_override_host
+//go:noescape
+func fastlyBackendGetOverrideHost(name prim.Wstring,
+	host *prim.Char8,
+	hostLen prim.Usize,
+	hostWritten *prim.Usize,
+) FastlyStatus
+
+func BackendGetOverrideHost(name string) (string, error) {
+	hostBuf := prim.NewWriteBuffer(defaultBufferLen)
+
+	if err := fastlyBackendGetOverrideHost(
+		prim.NewReadBufferFromString(name).Wstring(),
+		hostBuf.Char8Pointer(),
+		hostBuf.Cap(),
+		hostBuf.NPointer(),
+	).toError(); err != nil {
+		return "", err
+	}
+
+	return hostBuf.ToString(), nil
+}
+
+// witx:
+//
+//	(@interface func (export "get_port")
+//		(param $backend string)
+//		(result $err (expected
+//		$port
+//		(error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_backend
+//export get_port
+//go:noescape
+func fastlyBackendGetPort(name prim.Wstring, port *prim.U32) FastlyStatus
+
+func BackendGetPort(name string) (int, error) {
+	var port prim.U32
+	if err := fastlyBackendGetPort(
+		prim.NewReadBufferFromString(name).Wstring(),
+		&port,
+	).toError(); err != nil {
+		return 0, err
+	}
+	return int(port), nil
+}
+
+// witx:
+//
+//	(@interface func (export "get_connect_timeout_ms")
+//		(param $backend string)
+//		(result $err (expected
+//		$timeout_ms
+//		(error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_backend
+//export get_connect_timeout_ms
+//go:noescape
+func fastlyBackendGetConnectTimeoutMs(name prim.Wstring, timeout *prim.U32) FastlyStatus
+
+func BackendGetConnectTimeout(name string) (time.Duration, error) {
+	var timeout prim.U32
+	if err := fastlyBackendGetConnectTimeoutMs(
+		prim.NewReadBufferFromString(name).Wstring(),
+		&timeout,
+	).toError(); err != nil {
+		return 0, err
+	}
+	return time.Duration(time.Duration(timeout) * time.Millisecond), nil
+}
+
+// witx:
+//
+//	(@interface func (export "get_first_byte_timeout_ms")
+//		(param $backend string)
+//		(result $err (expected
+//		$timeout_ms
+//		(error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_backend
+//export get_first_byte_timeout_ms
+//go:noescape
+func fastlyBackendGetFirstByteTimeoutMs(name prim.Wstring, timeout *prim.U32) FastlyStatus
+
+func BackendGetFirstByteTimeout(name string) (time.Duration, error) {
+	var timeout prim.U32
+	if err := fastlyBackendGetFirstByteTimeoutMs(
+		prim.NewReadBufferFromString(name).Wstring(),
+		&timeout,
+	).toError(); err != nil {
+		return 0, err
+	}
+	return time.Duration(time.Duration(timeout) * time.Millisecond), nil
+}
+
+// witx:
+//
+//	(@interface func (export "get_between_bytes_timeout_ms")
+//		(param $backend string)
+//		(result $err (expected
+//		$timeout_ms
+//		(error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_backend
+//export get_between_bytes_timeout_ms
+//go:noescape
+func fastlyBackendGetBetweenBytesTimeoutMs(name prim.Wstring, timeout *prim.U32) FastlyStatus
+
+func BackendGetBetweenBytesTimeout(name string) (time.Duration, error) {
+	var timeout prim.U32
+	if err := fastlyBackendGetBetweenBytesTimeoutMs(
+		prim.NewReadBufferFromString(name).Wstring(),
+		&timeout,
+	).toError(); err != nil {
+		return 0, err
+	}
+	return time.Duration(time.Duration(timeout) * time.Millisecond), nil
+}
+
+// witx:
+//
+//	(@interface func (export "is_ssl")
+//		(param $backend string)
+//		(result $err (expected
+//		is_ssl
+//		(error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_backend
+//export is_ssl
+//go:noescape
+func fastlyBackendIsSSL(name prim.Wstring, ssl *prim.U32) FastlyStatus
+
+func BackendIsSSL(name string) (bool, error) {
+	var ssl prim.U32
+	if err := fastlyBackendIsSSL(
+		prim.NewReadBufferFromString(name).Wstring(),
+		&ssl,
+	).toError(); err != nil {
+		return false, err
+	}
+	return ssl != 0, nil
+}
+
+// witx:
+//
+//	(@interface func (export "get_ssl_min_version")
+//		(param $backend string)
+//		(result $err (expected
+//		$tls_version
+//		(error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_backend
+//export get_port
+//go:noescape
+func fastlyBackendGetSSLMinVersion(name prim.Wstring, version *prim.U32) FastlyStatus
+
+func BackendGetSSLMinVersion(name string) (TLSVersion, error) {
+	var version prim.U32
+	if err := fastlyBackendGetSSLMinVersion(
+		prim.NewReadBufferFromString(name).Wstring(),
+		&version,
+	).toError(); err != nil {
+		return 0, err
+	}
+	return TLSVersion(version), nil
+}
+
+// witx:
+//
+//	(@interface func (export "get_ssl_max_version")
+//		(param $backend string)
+//		(result $err (expected
+//		$tls_version
+//		(error $fastly_status)))
+//	)
+//
+//go:wasm-module fastly_backend
+//export get_port
+//go:noescape
+func fastlyBackendGetSSLMaxVersion(name prim.Wstring, version *prim.U32) FastlyStatus
+
+func BackendGetSSLMaxVersion(name string) (TLSVersion, error) {
+	var version prim.U32
+	if err := fastlyBackendGetSSLMaxVersion(
+		prim.NewReadBufferFromString(name).Wstring(),
+		&version,
+	).toError(); err != nil {
+		return 0, err
+	}
+	return TLSVersion(version), nil
+}
+
+// witx:
+//
 //	(module $fastly_http_resp
 //	   (@interface func (export "new")
 //	     (result $err $fastly_status)
