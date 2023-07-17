@@ -178,6 +178,14 @@ func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
 	return fmt.Errorf("not implemented")
 }
 
+func HandoffWebsocket(backend string) error {
+	return fmt.Errorf("not implemented")
+}
+
+func HandoffFanout(backend string) error {
+	return fmt.Errorf("not implemented")
+}
+
 func RegisterDynamicBackend(name string, target string, opts *BackendConfigOptions) error {
 	return fmt.Errorf("not implemented")
 }
