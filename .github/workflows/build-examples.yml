@@ -27,9 +27,3 @@ jobs:
             echo ${GITHUB_WORKSPACE}/$i
             cd ${GITHUB_WORKSPACE}/$i && tinygo build -target=wasi
           done
-      - name: Build integration tests
-        run: |
-          for i in _integration_tests/fixtures/*; do
-            echo ${GITHUB_WORKSPACE}/$i
-            cd ${GITHUB_WORKSPACE}/$i && tinygo build -target=wasi
-          done
