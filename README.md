@@ -28,6 +28,24 @@ The Fastly Developer Hub has a collection of [common use cases in VCL ported to 
 
 The API reference documentation can be found on [pkg.go.dev/github.com/fastly/compute-sdk-go](https://pkg.go.dev/github.com/fastly/compute-sdk-go).
 
+## Testing
+
+Tests that rely on a Compute@Edge runtime can utilize [Viceroy](https://github.com/fastly/Viceroy), our local development tool.
+
+First, you'll need to install Viceroy and ensure the `viceroy` command is available in your path.
+
+Next, you'll need to create a TinyGo target that knows to run Viceroy.  You can copy the `compute-at-edge.json` file from this repository for this purpose.  (In the future, we will include this in the Go starter kits.)
+
+Write your tests as ordinary Go tests.  You can use Compute@Edge APIs in your tests, although be aware that not all platform functionality is available in Viceroy.  You can look at the `integration_tests` directory for examples.
+
+Finally, run your tests:
+
+    tinygo test -target=compute-at-edge.json ./...
+
+You can try it out and make sure your local Viceroy environment is set up correctly by running the integration tests in this repository:
+
+    tinygo test -target=compute-at-edge.json ./integration_tests/...
+
 ## Logging
 
 Logging can be done using a Fastly Compute@Edge Log Endpoint ([example](./_examples/logging-and-env/main.go)), or by using normal stdout like:
