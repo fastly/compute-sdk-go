@@ -1,5 +1,7 @@
 name: Integration Tests
 on: [push]
+env:
+  VICEROY_VERSION: 0.6.0
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
@@ -14,8 +16,17 @@ jobs:
         uses: ./.github/actions/install-tinygo
         with:
           tinygo-version: '0.28.1'
-      - uses: ./.github/actions/bootstrap-integration-test
-      - name: Check our bootstrap dependencies were installed correctly, and in our $PATH
+      - name: Setup Fastly CLI
+        uses: fastly/compute-actions/setup@v5
+      - name: Install Viceroy ${{ env.VICEROY_VERSION }}
+        run: |
+          echo "Install Viceroy ${{ env.VICEROY_VERSION }}..."
+          wget https://github.com/fastly/Viceroy/releases/download/v${{ env.VICEROY_VERSION }}/viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz
+          mkdir -p $HOME/bin
+          tar -xzf viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz --directory $HOME/bin
+          echo "$HOME/bin" >> $GITHUB_PATH
+        shell: "bash"
+      - name: Check our dependencies
         run: |
           go version
           tinygo version
