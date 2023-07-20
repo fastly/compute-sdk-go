@@ -14,7 +14,7 @@ import (
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
 )
 
-type handle uintptr
+type handle uint32
 
 // FastlyStatus models a response status enum.
 type FastlyStatus uint32
@@ -213,7 +213,7 @@ func (v HTTPVersion) splat() (proto string, major, minor int, err error) {
 // witx:
 //
 //	(typename $http_status u16)
-type httpStatus uint16
+type httpStatus uint32
 
 // witx:
 //
@@ -562,14 +562,14 @@ const (
 type cacheWriteOptions struct {
 	maxAgeNs               prim.U64
 	requestHeaders         requestHandle
-	varyRulePtr            *prim.Char8
+	varyRulePtr            prim.Pointer[prim.Char8]
 	varyRuleLen            prim.Usize
 	initialAgeNs           prim.U64
 	staleWhileRevalidateNs prim.U64
-	surrogateKeysPtr       *prim.Char8
+	surrogateKeysPtr       prim.Pointer[prim.Char8]
 	surrogateKeysLen       prim.Usize
 	length                 prim.U64
-	userMetadataPtr        *prim.U8
+	userMetadataPtr        prim.Pointer[prim.U8]
 	userMetadataLen        prim.Usize
 }
 
@@ -678,9 +678,9 @@ const (
 //	    )
 //	)
 type purgeOptions struct {
-	retBufPtr         *prim.U8
+	retBufPtr         prim.Pointer[prim.U8]
 	retBufLen         prim.Usize
-	retBufNwrittenOut *prim.Usize
+	retBufNwrittenOut prim.Pointer[prim.Usize]
 }
 
 // witx:
@@ -741,20 +741,20 @@ const (
 //  	  ))
 
 type backendConfigOptions struct {
-	hostOverridePtr     *prim.Char8
+	hostOverridePtr     prim.Pointer[prim.Char8]
 	hostOverrideLen     prim.U32
 	connectTimeoutMs    prim.U32
 	firstByteTimeout    prim.U32
 	betweenBytesTimeout prim.U32
 	sslMinVersion       TLSVersion
 	sslMaxVersion       TLSVersion
-	certHostnamePtr     *prim.Char8
+	certHostnamePtr     prim.Pointer[prim.Char8]
 	certHostnameLen     prim.U32
-	caCertPtr           *prim.Char8
+	caCertPtr           prim.Pointer[prim.Char8]
 	caCertLen           prim.U32
-	ciphersPtr          *prim.Char8
+	ciphersPtr          prim.Pointer[prim.Char8]
 	ciphersLen          prim.U32
-	sniHostnamePtr      *prim.Char8
+	sniHostnamePtr      prim.Pointer[prim.Char8]
 	sniHostnameLen      prim.U32
 }
 
@@ -798,7 +798,7 @@ type BackendConfigOptions struct {
 func (b *BackendConfigOptions) HostOverride(host string) {
 	b.mask |= backendConfigOptionsMaskHostOverride
 	buf := prim.NewReadBufferFromString(host)
-	b.opts.hostOverridePtr = buf.Char8Pointer()
+	b.opts.hostOverridePtr = prim.ToPointer(buf.Char8Pointer())
 	b.opts.hostOverrideLen = prim.U32(buf.Len())
 }
 
@@ -838,27 +838,27 @@ func (b *BackendConfigOptions) SSLMaxVersion(v TLSVersion) {
 func (b *BackendConfigOptions) CertHostname(certHostname string) {
 	b.mask |= backendConfigOptionsMaskCertHostname
 	buf := prim.NewReadBufferFromString(certHostname)
-	b.opts.certHostnamePtr = buf.Char8Pointer()
+	b.opts.certHostnamePtr = prim.ToPointer(buf.Char8Pointer())
 	b.opts.certHostnameLen = prim.U32(buf.Len())
 }
 
 func (b *BackendConfigOptions) CACert(caCert string) {
 	b.mask |= backendConfigOptionsMaskCACert
 	buf := prim.NewReadBufferFromString(caCert)
-	b.opts.caCertPtr = buf.Char8Pointer()
+	b.opts.caCertPtr = prim.ToPointer(buf.Char8Pointer())
 	b.opts.caCertLen = prim.U32(buf.Len())
 }
 
 func (b *BackendConfigOptions) Ciphers(ciphers string) {
 	b.mask |= backendConfigOptionsMaskCiphers
 	buf := prim.NewReadBufferFromString(ciphers)
-	b.opts.ciphersPtr = buf.Char8Pointer()
+	b.opts.ciphersPtr = prim.ToPointer(buf.Char8Pointer())
 	b.opts.ciphersLen = prim.U32(buf.Len())
 }
 
 func (b *BackendConfigOptions) SNIHostname(sniHostname string) {
 	b.mask |= backendConfigOptionsMaskSNIHostname
 	buf := prim.NewReadBufferFromString(sniHostname)
-	b.opts.sniHostnamePtr = buf.Char8Pointer()
+	b.opts.sniHostnamePtr = prim.ToPointer(buf.Char8Pointer())
 	b.opts.sniHostnameLen = prim.U32(buf.Len())
 }
