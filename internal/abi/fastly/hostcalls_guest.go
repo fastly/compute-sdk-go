@@ -1613,15 +1613,15 @@ func BackendExists(name string) (bool, error) {
 //go:noescape
 func fastlyBackendIsHealthy(name prim.Wstring, healthy *prim.U32) FastlyStatus
 
-func BackendIsHealthy(name string) (bool, error) {
-	var healthy prim.U32
+func BackendIsHealthy(name string) (BackendHealth, error) {
+	var health prim.U32
 	if err := fastlyBackendIsHealthy(
 		prim.NewReadBufferFromString(name).Wstring(),
-		&healthy,
+		&health,
 	).toError(); err != nil {
-		return false, err
+		return BackendHealthUnknown, err
 	}
-	return healthy != 0, nil
+	return BackendHealth(health), nil
 }
 
 // witx:
@@ -1853,7 +1853,7 @@ func BackendIsSSL(name string) (bool, error) {
 //	)
 //
 //go:wasm-module fastly_backend
-//export get_port
+//export get_ssl_min_version
 //go:noescape
 func fastlyBackendGetSSLMinVersion(name prim.Wstring, version *prim.U32) FastlyStatus
 
@@ -1878,7 +1878,7 @@ func BackendGetSSLMinVersion(name string) (TLSVersion, error) {
 //	)
 //
 //go:wasm-module fastly_backend
-//export get_port
+//export get_ssl_max_version
 //go:noescape
 func fastlyBackendGetSSLMaxVersion(name prim.Wstring, version *prim.U32) FastlyStatus
 

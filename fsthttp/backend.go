@@ -20,6 +20,15 @@ var (
 	ErrBackendNotFound = errors.New("backend not found")
 )
 
+type BackendHealth uint32
+
+// Constants for dynamic backend health status
+const (
+	BackendHealthUnknown   BackendHealth = 0
+	BackendHealthHealthy   BackendHealth = 1
+	BackendHealthUnhealthy BackendHealth = 2
+)
+
 type TLSVersion uint32
 
 // Constants for dynamic backend TLS configuration
@@ -79,57 +88,63 @@ func (b *Backend) populateConfig() error {
 	var err error
 
 	b.dynamic, err = fastly.BackendIsDynamic(b.name)
-	if err != nil {
+	if err := ignoreNoneError(err); err != nil {
 		return err
 	}
 
 	host, err := fastly.BackendGetHost(b.name)
-	if err != nil {
+	if err := ignoreNoneError(err); err != nil {
 		return err
 	}
 
 	port, err := fastly.BackendGetPort(b.name)
-	if err != nil {
+	if err := ignoreNoneError(err); err != nil {
 		return err
 	}
 
 	b.target = host + ":" + strconv.Itoa(port)
 
 	b.hostOverride, err = fastly.BackendGetOverrideHost(b.name)
-	if err != nil {
+	if err := ignoreNoneError(err); err != nil {
 		return err
 	}
 
+	// Timing-related calls return FastlyStatusUnsupported under
+	// Viceroy, so filter that out for these hostcalls too.
+
 	b.connectTimeout, err = fastly.BackendGetConnectTimeout(b.name)
-	if err != nil {
+	if err := ignoreUnsupportedError(ignoreNoneError(err)); err != nil {
 		return err
 	}
 
 	b.firstByteTimeout, err = fastly.BackendGetFirstByteTimeout(b.name)
-	if err != nil {
+	if err := ignoreUnsupportedError(ignoreNoneError(err)); err != nil {
 		return err
 	}
 
 	b.betweenBytesTimeout, err = fastly.BackendGetBetweenBytesTimeout(b.name)
-	if err != nil {
+	if err := ignoreUnsupportedError(ignoreNoneError(err)); err != nil {
 		return err
 	}
 
 	b.isSSL, err = fastly.BackendIsSSL(b.name)
-	if err != nil {
+	if err := ignoreNoneError(err); err != nil {
 		return err
 	}
 
 	if b.isSSL {
+		// SSL version calls also return FastlyStatusUnsupported under
+		// Viceroy.
+
 		var v fastly.TLSVersion
 		v, err = fastly.BackendGetSSLMaxVersion(b.name)
-		if err != nil {
+		if err := ignoreUnsupportedError(ignoreNoneError(err)); err != nil {
 			return err
 		}
 		b.sslMaxVersion = TLSVersion(v)
 
 		v, err = fastly.BackendGetSSLMinVersion(b.name)
-		if err != nil {
+		if err := ignoreUnsupportedError(ignoreNoneError(err)); err != nil {
 			return err
 		}
 		b.sslMinVersion = TLSVersion(v)
@@ -148,9 +163,13 @@ func (b *Backend) Target() string {
 	return b.target
 }
 
-// IsHealthy dynamically checks if the backend is available to serve requests.
-func (b *Backend) IsHealthy() (bool, error) {
-	return fastly.BackendIsHealthy(b.name)
+// Health dynamically checks the backend's health status.
+func (b *Backend) Health() (BackendHealth, error) {
+	v, err := fastly.BackendIsHealthy(b.name)
+	if err != nil {
+		return BackendHealthUnknown, err
+	}
+	return BackendHealth(v), nil
 }
 
 // IsDynamic returns whether the backend is dynamic.
@@ -184,6 +203,10 @@ func (b *Backend) SSLMaxVersion() TLSVersion {
 
 func (b *Backend) SSLMinVersion() TLSVersion {
 	return b.sslMinVersion
+}
+
+func NewBackendOptions() *BackendOptions {
+	return &BackendOptions{}
 }
 
 // HostOverride sets the HTTP Host header on connections to this backend.
@@ -276,5 +299,26 @@ func RegisterDynamicBackend(name string, target string, options *BackendOptions)
 		name:   name,
 		target: target,
 	}
+
+	if err := b.populateConfig(); err != nil {
+		return nil, err
+	}
+
 	return &b, nil
+}
+
+func ignoreNoneError(err error) error {
+	status, ok := fastly.IsFastlyError(err)
+	if ok && status == fastly.FastlyStatusNone {
+		return nil
+	}
+	return err
+}
+
+func ignoreUnsupportedError(err error) error {
+	status, ok := fastly.IsFastlyError(err)
+	if ok && status == fastly.FastlyStatusUnsupported {
+		return nil
+	}
+	return err
 }
