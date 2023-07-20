@@ -749,6 +749,21 @@ type backendConfigOptions struct {
 
 // witx:
 //
+//	(typename $backend_health
+//	    (enum (@witx tag u32)
+//	        $unknown
+//	        $healthy
+//	        $unhealthy))
+type BackendHealth prim.U32
+
+const (
+	BackendHealthUnknown   BackendHealth = 0
+	BackendHealthHealthy   BackendHealth = 1
+	BackendHealthUnhealthy BackendHealth = 2
+)
+
+// witx:
+//
 //	(typename $tls_version
 //	    (enum (@witx tag u32)
 //	      $tls_1

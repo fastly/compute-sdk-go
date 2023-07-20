@@ -194,8 +194,8 @@ func BackendExists(name string) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
-func BackendIsHealthy(name string) (bool, error) {
-	return false, fmt.Errorf("not implemented")
+func BackendIsHealthy(name string) (BackendHealth, error) {
+	return BackendHealthUnknown, fmt.Errorf("not implemented")
 }
 
 func BackendIsDynamic(name string) (bool, error) {
@@ -225,6 +225,7 @@ func BackendGetFirstByteTimeout(name string) (time.Duration, error) {
 func BackendGetBetweenBytesTimeout(name string) (time.Duration, error) {
 	return 0, fmt.Errorf("not implemented")
 }
+
 func BackendIsSSL(name string) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
