@@ -19,6 +19,8 @@ func NewBackendOptions() *fsthttp.BackendOptions {
 }
 
 func TestDynamicBackend(t *testing.T) {
+	var skip bool
+
 	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
 		b, err := fsthttp.RegisterDynamicBackend(
 			"dynamic",
@@ -26,12 +28,18 @@ func TestDynamicBackend(t *testing.T) {
 			NewBackendOptions().UseSSL(true),
 		)
 		if err != nil {
+			// Remove this once Viceroy 0.6.1 is released, which fixes
+			// the error value.
+			if err.Error() == "Fastly error: Inval" {
+				// And we can't t.Skip() because that's not supported in TinyGo.
+				skip = true
+				return
+			}
+
 			t.Errorf("RegisterDynamicBackend: %v", err)
 			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
 			return
 		}
-
-		fmt.Printf("%+v\n", b)
 
 		if !b.IsDynamic() {
 			t.Errorf("IsDynamic() = false, want true")
@@ -92,6 +100,11 @@ func TestDynamicBackend(t *testing.T) {
 	w := fsttest.NewRecorder()
 
 	handler(context.Background(), w, r)
+
+	if skip {
+		t.Log("Skipping test due to Viceroy bug.  Remove this workaround once Viceroy 0.6.1 is released.")
+		return
+	}
 
 	if got, want := w.Code, fsthttp.StatusOK; got != want {
 		t.Errorf("Code = %d, want %d", got, want)
