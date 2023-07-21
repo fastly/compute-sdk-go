@@ -4,11 +4,8 @@ jobs:
   build-examples:
     strategy:
       matrix:
-        go-version: ['1.20', '1.19']
-        tinygo-version: ['0.27.0', '0.26.0']
-        exclude:
-          - go-version: '1.20'
-            tinygo-version: '0.26.0'
+        go-version: ['^1.20.0', '^1.19.0']
+        tinygo-version: ['0.28.1', '0.27.0']
     runs-on: ubuntu-latest
     steps:
       - name: Checkout fastly/compute-sdk-go
@@ -24,12 +21,6 @@ jobs:
       - name: Build examples
         run: |
           for i in _examples/*; do
-            echo ${GITHUB_WORKSPACE}/$i
-            cd ${GITHUB_WORKSPACE}/$i && tinygo build -target=wasi
-          done
-      - name: Build integration tests
-        run: |
-          for i in _integration_tests/fixtures/*; do
             echo ${GITHUB_WORKSPACE}/$i
             cd ${GITHUB_WORKSPACE}/$i && tinygo build -target=wasi
           done

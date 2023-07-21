@@ -1,0 +1,4 @@
+{
+	"inherits": ["wasi"],
+	"emulator": "viceroy run -C fastly.toml {}"
+}

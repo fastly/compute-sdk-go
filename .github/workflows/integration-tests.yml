@@ -1,31 +1,36 @@
-name: Compute TinyGo SDK Test
+name: Integration Tests
 on: [push]
+env:
+  VICEROY_VERSION: 0.6.0
 jobs:
-  sdktest:
+  integration-tests:
     runs-on: ubuntu-latest
-    concurrency: 
-      group: SdkTestJob
-      cancel-in-progress: true
     steps:
       - name: Checkout fastly/compute-sdk-go
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: '1.20'
+          go-version: '^1.20.0'
       - name: Install TinyGo
         uses: ./.github/actions/install-tinygo
         with:
-          tinygo-version: '0.27.0'
-      - uses: ./.github/actions/bootstrap-integration-test
-      - name: Check our bootstrap dependencies were installed correctly, and in our $PATH
+          tinygo-version: '0.28.1'
+      - name: Setup Fastly CLI
+        uses: fastly/compute-actions/setup@v5
+      - name: Install Viceroy ${{ env.VICEROY_VERSION }}
+        run: |
+          echo "Install Viceroy ${{ env.VICEROY_VERSION }}..."
+          wget https://github.com/fastly/Viceroy/releases/download/v${{ env.VICEROY_VERSION }}/viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz
+          mkdir -p $HOME/bin
+          tar -xzf viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz --directory $HOME/bin
+          echo "$HOME/bin" >> $GITHUB_PATH
+        shell: "bash"
+      - name: Check our dependencies
         run: |
           go version
           tinygo version
           fastly version
           viceroy --version
-      - name: compute-sdk-go Integration Tests Job
-        uses: ./.github/actions/compute-sdk-test
-        id: sdktest
-        with:
-          config: './_integration_tests/sdk-test-config.json'
+      - name: Run Integration Tests
+        run: RUST_LOG="viceroy=info,viceroy-lib=info" tinygo test -v -target=compute-at-edge.json ./integration_tests/...
