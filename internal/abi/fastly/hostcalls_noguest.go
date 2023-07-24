@@ -165,10 +165,6 @@ func (r *PendingRequest) Wait() (response *HTTPResponse, responseBody *HTTPBody,
 	return nil, nil, fmt.Errorf("not implemented")
 }
 
-func PendingRequestSelect(reqs ...*PendingRequest) (index int, done *PendingRequest, response *HTTPResponse, responseBody *HTTPBody, err error) {
-	return 0, nil, nil, nil, fmt.Errorf("not implemented")
-}
-
 func (r *HTTPRequest) SetAutoDecompressResponse(options AutoDecompressResponseOptions) error {
 	return fmt.Errorf("not implemented")
 }
