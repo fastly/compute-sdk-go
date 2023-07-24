@@ -1,4 +1,4 @@
-//go:build tinygo.wasm && wasi && !nofastlyhostcalls
+//go:build ((tinygo.wasm && wasi) || wasip1) && !nofastlyhostcalls
 
 // Copyright 2022 Fastly, Inc.
 
