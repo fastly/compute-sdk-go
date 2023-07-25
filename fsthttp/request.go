@@ -299,6 +299,15 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 
 	abiPending, abiReqBody, err := req.sendABIRequestAsync(backend)
 	if err != nil {
+		status, ok := fastly.IsFastlyError(err)
+		if !ok {
+			return nil, err
+		}
+
+		if status == fastly.FastlyStatusInval {
+			return nil, ErrBackendNotFound
+		}
+
 		return nil, err
 	}
 
