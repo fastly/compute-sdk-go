@@ -1,0 +1,11 @@
+# This file describes a Fastly Compute@Edge package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["oss@fastly.com"]
+description = ""
+language = "go"
+manifest_version = 2
+name = "with-timeout"
+
+[local_server]
+backends.httpbin.url = "https://httpbin.org"
