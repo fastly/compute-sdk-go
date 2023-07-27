@@ -1,0 +1,13 @@
+# This file describes a Fastly Compute@Edge package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["oss@fastly.com"]
+description = ""
+language = "go"
+manifest_version = 2
+name = "corecache"
+
+# Note that this example doesn't currently work with Viceroy (`fastly
+# compute serve`) so you'll need to deploy it to Compute@Edge in order
+# to test it.  You can do that with `fastly compute build` and `fastly
+# compute deploy`.

@@ -22,7 +22,7 @@ Then, you can install `compute-sdk-go` in your project by running:
 
 Examples can be found in the [`examples`](./_examples) directory.
 
-The Fastly Developer Hub has a collection of [common use cases in VCL ported to TinyGo](https://developer.fastly.com/learning/compute/migrate/). Which also acts as a great set of introductory examples of using TinyGo on Compute@Edge.
+The Fastly Developer Hub has a collection of [common use cases in VCL ported to TinyGo](https://developer.fastly.com/learning/compute/migrate/) which also acts as a great set of introductory examples of using TinyGo on Compute@Edge.
 
 ## API Reference
 

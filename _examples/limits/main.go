@@ -14,6 +14,11 @@ func main() {
 	fsthttp.RequestLimits.SetMaxURLLen(16 * 1024)
 
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		fmt.Fprintf(w, "The length of the URL is %d\n", len(r.URL.String()))
+		fmt.Fprintf(
+			w,
+			"The length of the URL is %d and the maximum is %d\n",
+			len(r.URL.String()),
+			fsthttp.RequestLimits.MaxURLLen(),
+		)
 	})
 }

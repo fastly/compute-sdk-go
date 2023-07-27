@@ -1,0 +1,11 @@
+# This file describes a Fastly Compute@Edge package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["oss@fastly.com"]
+description = ""
+language = "go"
+manifest_version = 2
+name = "kvstore"
+
+[local_server]
+kv_stores.example_kvstore = [{key = "foo", data = "Hello from KV Store!\n"}]

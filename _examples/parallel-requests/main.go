@@ -23,9 +23,9 @@ func main() {
 		// Send several requests in parallel.
 		var wg sync.WaitGroup
 		for _, url := range []string{
-			"https://httpbin.org/drip?delay=4&duration=1", // delay 4s + stream response body 1s = 5s
-			"https://httpbin.org/drip?delay=2&duration=2", // delay 2s + stream response body 2s = 4s
-			"https://httpbin.org/delay/3",                 // delay 3s + stream response body 0s = 3s
+			"https://http-me.glitch.me/drip=2?wait=3000", // delay 3s + stream body 2s = 5s
+			"https://http-me.glitch.me/drip=2?wait=2000", // delay 2s + stream body 2s = 4s
+			"https://http-me.glitch.me/wait=3000",        // delay 3s + stream body 0s = 3s
 		} {
 			wg.Add(1)
 			go func(url string) {
@@ -42,7 +42,7 @@ func main() {
 				// Sending HTTP requests in separate goroutines is both
 				// concurrent and parallel. For example, 3 requests that each
 				// take 3s to return a response will take about 3s in total.
-				resp, err := req.Send(ctx, "httpbin")
+				resp, err := req.Send(ctx, "httpme")
 				if err != nil {
 					log.Printf("%s: send request: %v", url, err)
 					return
