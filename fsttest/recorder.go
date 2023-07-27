@@ -2,6 +2,7 @@ package fsttest
 
 import (
 	"bytes"
+	"io"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
 )
@@ -48,3 +49,9 @@ func (r *ResponseRecorder) Close() error {
 // SetManualFramingMode is a no-op on ResponseRecorder.  It exists to
 // satisfy the fsthttp.ResponseWriter interface.
 func (r *ResponseRecorder) SetManualFramingMode(v bool) {}
+
+// Append is a no-op on ResponseRecorder.  It exists to
+// satisfy the fsthttp.ResponseWriter interface.
+func (r *ResponseRecorder) Append(other io.ReadCloser) error {
+	return nil
+}
