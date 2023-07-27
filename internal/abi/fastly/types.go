@@ -147,10 +147,21 @@ func (e FastlyError) getStatus() FastlyStatus {
 
 // IsFastlyError detects and unwraps a FastlyError to its component parts.
 func IsFastlyError(err error) (FastlyStatus, bool) {
-	if e, ok := err.(interface{ getStatus() FastlyStatus }); ok {
-		return e.getStatus(), true
+	for {
+		switch e := err.(type) {
+		case interface{ getStatus() FastlyStatus }:
+			return e.getStatus(), true
+
+		case interface{ Unwrap() error }:
+			err = e.Unwrap()
+			if err == nil {
+				return 0, false
+			}
+
+		default:
+			return 0, false
+		}
 	}
-	return 0, false
 }
 
 // HTTPVersion describes an HTTP protocol version.
