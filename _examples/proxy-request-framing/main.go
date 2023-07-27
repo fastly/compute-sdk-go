@@ -13,8 +13,8 @@ func main() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
 		// Reset the URI and Host header, so the request is
 		// recognized and routed correctly at the origin.
-		r.URL.Scheme, r.URL.Host = "https", "httpbin.org"
-		r.Header.Set("host", "httpbin.org")
+		r.URL.Scheme, r.URL.Host = "https", "http-me.glitch.me"
+		r.Header.Set("host", "http-me.glitch.me")
 
 		// Determine the framing headers (Content-Length/Transfer-Encoding)
 		// based on the message body (default)
@@ -24,8 +24,8 @@ func main() {
 		r.CacheOptions.Pass = true
 
 		// This requires your service to be configured with a backend
-		// named "httpbin" and pointing to "https://httpbin.org".
-		resp, err := r.Send(ctx, "httpbin")
+		// named "httpme" and pointing to "https://http-me.glitch.me".
+		resp, err := r.Send(ctx, "httpme")
 		if err != nil {
 			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
 			return

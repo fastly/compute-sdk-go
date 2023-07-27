@@ -8,4 +8,4 @@ manifest_version = 2
 name = "proxy-request"
 
 [local_server]
-backends.httpbin.url = "https://httpbin.org"
+backends.httpme.url = "https://http-me.glitch.me"
