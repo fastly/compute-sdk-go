@@ -112,8 +112,8 @@ type ResponseWriter interface {
 	// To have an effect on the response, this must be called before any call to Write() or WriteHeader().
 	SetManualFramingMode(bool)
 
-	// Append a body onto the end of this response.
-	// This operation is performed in amortized constant time, and so should always be preferred to reading an entire body and then writing the same contents to another body.
+	// Append a body onto the end of this response. Will fail if passed anything other than a Response's Body field.
+	// This operation is performed in amortized constant time, and so should always be preferred to directly copying a body with io.Copy.
 	Append(other io.ReadCloser) error
 }
 
