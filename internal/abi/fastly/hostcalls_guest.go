@@ -2729,6 +2729,40 @@ func (s *Secret) Plaintext() ([]byte, error) {
 	return buf.AsBytes(), nil
 }
 
+// witx:
+//
+// (@interface func (export "from_bytes")
+//     (param $buf (@witx pointer (@witx char8)))
+//     (param $buf_len (@witx usize))
+//     (result $err (expected $secret_handle (error $fastly_status)))
+// )
+
+//go:wasm-module fastly_secret_store
+//export from_bytes
+//go:noescape
+func fastlySecretFromBytes(
+	buf *prim.Char8,
+	bufLen prim.Usize,
+	h *secretHandle,
+) FastlyStatus
+
+// FromBytes creates a secret handle for the given byte slice.  This is
+// for use with APIs that require a secret handle but cannot (for
+// whatever reason) use a secret store.
+func SecretFromBytes(b []byte) (*Secret, error) {
+	var s Secret
+
+	if err := fastlySecretFromBytes(
+		prim.NewReadBufferFromBytes(b).Char8Pointer(),
+		prim.Usize(len(b)),
+		&s.h,
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
 type CacheLookupOptions struct {
 	opts cacheLookupOptions
 	mask cacheLookupOptionsMask

@@ -100,3 +100,24 @@ func (s *Secret) Plaintext() ([]byte, error) {
 	}
 	return plaintext, nil
 }
+
+// FromBytes creates an instance of the [Secret] type for use with APIs
+// that require it from the provided byte slice.
+//
+// This function is provided as a way to use data that should be secret,
+// but is being obtained by some other means than a Fastly Secret Store.
+// Secret values created this way are plaintext only, and are not shared
+// with other sessions.  This should only be used in situations in which
+// an API requires a [Secret], but you cannot (for whatever reason) use
+// a [Store] to store them.
+//
+// It is strongly suggested to store secrets in a [Store] and create
+// Secret values by calling [Store.Get].
+func SecretFromBytes(b []byte) (*Secret, error) {
+	s, err := fastly.SecretFromBytes(b)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Secret{s: s}, nil
+}
