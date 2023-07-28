@@ -60,3 +60,40 @@ func TestSecretStore(t *testing.T) {
 		t.Errorf("Body = %q, want %q", got, want)
 	}
 }
+
+func TestSecretFromBytes(t *testing.T) {
+	const plaintext = "not a real secret"
+
+	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
+		s, err := secretstore.SecretFromBytes([]byte(plaintext))
+		if err != nil {
+			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			return
+		}
+
+		v, err := s.Plaintext()
+		if err != nil {
+			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			return
+		}
+
+		w.Write(v)
+	}
+
+	r, err := fsthttp.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatalf("NewRequest: %v", err)
+	}
+
+	w := fsttest.NewRecorder()
+
+	handler(context.Background(), w, r)
+
+	if got, want := w.Code, fsthttp.StatusOK; got != want {
+		t.Errorf("Code = %d, want %d", got, want)
+	}
+
+	if got, want := w.Body.String(), plaintext; got != want {
+		t.Errorf("Body = %q, want %q", got, want)
+	}
+}
