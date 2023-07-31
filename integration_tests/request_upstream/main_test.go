@@ -14,6 +14,11 @@ import (
 )
 
 func TestRequestUpstream(t *testing.T) {
+	t.Run("useAppend=false", func(t *testing.T) { requestUpstream(false, t) })
+	t.Run("useAppend=true", func(t *testing.T) { requestUpstream(true, t) })
+}
+
+func requestUpstream(useAppend bool, t *testing.T) {
 	handler := func(ctx context.Context, w fsthttp.ResponseWriter, _ *fsthttp.Request) {
 		// Create our upstream request
 		req, err := fsthttp.NewRequest("GET", "https://compute-sdk-test-backend.edgecompute.app/request_upstream", nil)
@@ -39,7 +44,11 @@ func TestRequestUpstream(t *testing.T) {
 
 		w.Header().Reset(resp.Header.Clone())
 		w.WriteHeader(resp.StatusCode)
-		io.Copy(w, resp.Body)
+		if useAppend {
+			w.Append(resp.Body)
+		} else {
+			io.Copy(w, resp.Body)
+		}
 	}
 
 	r, err := fsthttp.NewRequest("GET", "/", nil)

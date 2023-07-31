@@ -111,6 +111,10 @@ type ResponseWriter interface {
 	//
 	// To have an effect on the response, this must be called before any call to Write() or WriteHeader().
 	SetManualFramingMode(bool)
+
+	// Append a body onto the end of this response. Will fail if passed anything other than a Response's Body field.
+	// This operation is performed in amortized constant time, and so should always be preferred to directly copying a body with io.Copy.
+	Append(other io.ReadCloser) error
 }
 
 type responseWriter struct {
@@ -166,4 +170,13 @@ func (resp *responseWriter) Close() error {
 
 func (resp *responseWriter) SetManualFramingMode(mode bool) {
 	resp.ManualFramingMode = mode
+}
+
+func (resp *responseWriter) Append(other io.ReadCloser) error {
+	otherAbiBody, ok := other.(*fastly.HTTPBody)
+	if !ok {
+		return fmt.Errorf("non-Response Body passed to ResponseWriter.Append")
+	}
+	resp.abiBody.Append(otherAbiBody)
+	return nil
 }

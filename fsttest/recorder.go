@@ -2,8 +2,11 @@ package fsttest
 
 import (
 	"bytes"
+	"fmt"
+	"io"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
+	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
 
 // ResponseRecorder is an implementation of fsthttp.ResponseWriter that
@@ -48,3 +51,18 @@ func (r *ResponseRecorder) Close() error {
 // SetManualFramingMode is a no-op on ResponseRecorder.  It exists to
 // satisfy the fsthttp.ResponseWriter interface.
 func (r *ResponseRecorder) SetManualFramingMode(v bool) {}
+
+// Append records the response body.  The data is written to the Body
+// field of the ResponseRecorder.
+func (r *ResponseRecorder) Append(other io.ReadCloser) error {
+	// do the same type check as the real implementation
+	_, ok := other.(*fastly.HTTPBody)
+	if !ok {
+		return fmt.Errorf("non-Response Body passed to ResponseWriter.Append")
+	}
+	// the real implementation makes a host call to do the body append
+	// without a real body handle to write to, we'll just use io.Copy to the same
+	// effect
+	_, err := io.Copy(r, other)
+	return err
+}
