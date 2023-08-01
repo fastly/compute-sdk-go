@@ -1,5 +1,19 @@
 ## Unreleased
 
+## 0.1.7 (2023-08-04)
+
+### Added
+
+- Add Append method to ResponseWriter
+- Add SecretFromBytes to secretstore
+- Add support for HandoffWebsocket, HandoffFanout hostcalls (`exp/handoff`)
+- Add support for backend query API (`backend`)
+- Add support for testing via Viceroy with `go test`
+
+### Changed
+
+- Improve returned errors
+
 ## 0.1.6 (2023-07-13)
 
 ### Added
