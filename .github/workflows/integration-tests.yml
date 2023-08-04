@@ -1,7 +1,7 @@
 name: Integration Tests
 on: [push]
 env:
-  VICEROY_VERSION: 0.6.0
+  VICEROY_VERSION: 0.6.1
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
