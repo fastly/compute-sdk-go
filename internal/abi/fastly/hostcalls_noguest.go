@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+func Initialize(version uint64) error {
+	return fmt.Errorf("not implemented")
+}
+
 func ParseUserAgent(userAgent string) (family, major, minor, patch string, err error) {
 	return "", "", "", "", fmt.Errorf("not implemented")
 }
