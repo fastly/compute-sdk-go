@@ -1,5 +1,4 @@
-//go:build (!tinygo.wasm && !wasi) || nofastlyhostcalls
-// +build !tinygo.wasm,!wasi nofastlyhostcalls
+//go:build !((tinygo.wasm && wasi) || wasip1) || nofastlyhostcalls
 
 //revive:disable:exported
 
@@ -164,10 +163,6 @@ func (r *PendingRequest) Poll() (done bool, response *HTTPResponse, responseBody
 
 func (r *PendingRequest) Wait() (response *HTTPResponse, responseBody *HTTPBody, err error) {
 	return nil, nil, fmt.Errorf("not implemented")
-}
-
-func PendingRequestSelect(reqs ...*PendingRequest) (index int, done *PendingRequest, response *HTTPResponse, responseBody *HTTPBody, err error) {
-	return 0, nil, nil, nil, fmt.Errorf("not implemented")
 }
 
 func (r *HTTPRequest) SetAutoDecompressResponse(options AutoDecompressResponseOptions) error {

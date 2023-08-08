@@ -1,5 +1,4 @@
-//go:build tinygo.wasm && wasi && !nofastlyhostcalls
-// +build tinygo.wasm,wasi,!nofastlyhostcalls
+//go:build ((tinygo.wasm && wasi) || wasip1) && !nofastlyhostcalls
 
 // Copyright 2022 Fastly, Inc.
 
@@ -29,14 +28,14 @@ func init() {
 //	   (result $err $fastly_status))
 //	)
 //
-//go:wasm-module fastly_abi
-//export init
+//go:wasmimport fastly_abi init
 //go:noescape
 func fastlyABIInit(abiVersion prim.U64) FastlyStatus
 
 // TODO(pb): this doesn't need to be exported, I don't think?
 // Initialize the Fastly ABI at the given version.
 //func Initialize(version uint64) error {
+
 //	return fastlyABIInit(version).toError()
 //}
 
@@ -65,27 +64,26 @@ func fastlyABIInit(abiVersion prim.U64) FastlyStatus
 //	   (result $err $fastly_status)
 //	 )
 //
-//go:wasm-module fastly_uap
-//export parse
+//go:wasmimport fastly_uap parse
 //go:noescape
 func fastlyUAPParse(
-	userAgent prim.Wstring,
+	userAgentData prim.Pointer[prim.U8], userAgentLen prim.Usize,
 
-	family *prim.Char8,
+	family prim.Pointer[prim.Char8],
 	familyLen prim.Usize,
-	familyNWrittenOut *prim.Usize,
+	familyNWrittenOut prim.Pointer[prim.Usize],
 
-	major *prim.Char8,
+	major prim.Pointer[prim.Char8],
 	majorLen prim.Usize,
-	majorNWrittenOut *prim.Usize,
+	majorNWrittenOut prim.Pointer[prim.Usize],
 
-	minor *prim.Char8,
+	minor prim.Pointer[prim.Char8],
 	minorLen prim.Usize,
-	minorNWrittenOut *prim.Usize,
+	minorNWrittenOut prim.Pointer[prim.Usize],
 
-	patch *prim.Char8,
+	patch prim.Pointer[prim.Char8],
 	patchLen prim.Usize,
-	patchNWrittenOut *prim.Usize,
+	patchNWrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // ParseUserAgent parses the user agent string into its component parts.
@@ -98,24 +96,26 @@ func ParseUserAgent(userAgent string) (family, major, minor, patch string, err e
 		patchBuf  = prim.NewWriteBuffer(cap)
 	)
 
+	userAgentBuffer := prim.NewReadBufferFromString(userAgent).Wstring()
+
 	if err := fastlyUAPParse(
-		prim.NewReadBufferFromString(userAgent).Wstring(),
+		userAgentBuffer.Data, userAgentBuffer.Len,
 
-		familyBuf.Char8Pointer(),
+		prim.ToPointer(familyBuf.Char8Pointer()),
 		familyBuf.Cap(),
-		familyBuf.NPointer(),
+		prim.ToPointer(familyBuf.NPointer()),
 
-		majorBuf.Char8Pointer(),
+		prim.ToPointer(majorBuf.Char8Pointer()),
 		majorBuf.Cap(),
-		majorBuf.NPointer(),
+		prim.ToPointer(majorBuf.NPointer()),
 
-		minorBuf.Char8Pointer(),
+		prim.ToPointer(minorBuf.Char8Pointer()),
 		minorBuf.Cap(),
-		minorBuf.NPointer(),
+		prim.ToPointer(minorBuf.NPointer()),
 
-		patchBuf.Char8Pointer(),
+		prim.ToPointer(patchBuf.Char8Pointer()),
 		patchBuf.Cap(),
-		patchBuf.NPointer(),
+		prim.ToPointer(patchBuf.NPointer()),
 	).toError(); err != nil {
 		return "", "", "", "", err
 	}
@@ -148,8 +148,7 @@ type HTTPBody struct {
 //	  (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_body
-//export append
+//go:wasmimport fastly_http_body append
 //go:noescape
 func fastlyHTTPBodyAppend(
 	dest bodyHandle,
@@ -158,6 +157,7 @@ func fastlyHTTPBodyAppend(
 
 // Append the other body to this one.
 func (b *HTTPBody) Append(other *HTTPBody) error {
+
 	if err := fastlyHTTPBodyAppend(
 		b.h,
 		other.h,
@@ -175,11 +175,10 @@ func (b *HTTPBody) Append(other *HTTPBody) error {
 //	  (result $h $body_handle)
 //	)
 //
-//go:wasm-module fastly_http_body
-//export new
+//go:wasmimport fastly_http_body new
 //go:noescape
 func fastlyHTTPBodyNew(
-	h *bodyHandle,
+	h prim.Pointer[bodyHandle],
 ) FastlyStatus
 
 // NewHTTPBody returns a new, empty HTTP body.
@@ -187,7 +186,7 @@ func NewHTTPBody() (*HTTPBody, error) {
 	var b HTTPBody
 
 	if err := fastlyHTTPBodyNew(
-		&b.h,
+		prim.ToPointer(&b.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -205,25 +204,25 @@ func NewHTTPBody() (*HTTPBody, error) {
 //	  (result $nread (@witx usize))
 //	)
 //
-//go:wasm-module fastly_http_body
-//export read
+//go:wasmimport fastly_http_body read
 //go:noescape
 func fastlyHTTPBodyRead(
 	h bodyHandle,
-	buf *prim.U8,
+	buf prim.Pointer[prim.U8],
 	bufLen prim.Usize,
-	nRead *prim.Usize,
+	nRead prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // Read implements io.Reader, reading up to len(p) bytes from the body into p.
 // Returns the number of bytes read, and any error encountered.
 func (b *HTTPBody) Read(p []byte) (int, error) {
 	buf := prim.NewWriteBufferFromBytes(p)
+
 	if err := fastlyHTTPBodyRead(
 		b.h,
-		buf.U8Pointer(),
+		prim.ToPointer(buf.U8Pointer()),
 		buf.Len(), // can't assume len(p) == cap(p)
-		buf.NPointer(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return 0, err
 	}
@@ -246,14 +245,13 @@ func (b *HTTPBody) Read(p []byte) (int, error) {
 //	  (result $nwritten (@witx usize))
 //	)
 //
-//go:wasm-module fastly_http_body
-//export write
+//go:wasmimport fastly_http_body write
 //go:noescape
 func fastlyHTTPBodyWrite(
 	h bodyHandle,
-	buf prim.ArrayU8,
+	bufData prim.Pointer[prim.U8], bufLen prim.Usize,
 	end bodyWriteEnd,
-	nWritten *prim.Usize,
+	nWritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // Write implements io.Writer, writing len(p) bytes from p into the body.
@@ -262,11 +260,13 @@ func fastlyHTTPBodyWrite(
 func (b *HTTPBody) Write(p []byte) (n int, err error) {
 	for n < len(p) && err == nil {
 		var nWritten prim.Usize
+		p_n_Buffer := prim.NewReadBufferFromBytes(p[n:]).ArrayU8()
+
 		if err = fastlyHTTPBodyWrite(
 			b.h,
-			prim.NewReadBufferFromBytes(p[n:]).ArrayU8(),
+			p_n_Buffer.Data, p_n_Buffer.Len,
 			bodyWriteEndBack,
-			&nWritten,
+			prim.ToPointer(&nWritten),
 		).toError(); err == nil {
 			n += int(nWritten)
 		}
@@ -285,8 +285,7 @@ func (b *HTTPBody) Write(p []byte) (n int, err error) {
 //	  (result $err (expected (error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_http_body
-//export close
+//go:wasmimport fastly_http_body close
 //go:noescape
 func fastlyHTTPBodyClose(
 	h bodyHandle,
@@ -314,8 +313,7 @@ func (b *HTTPBody) Close() error {
 //	  (result $err (expected (error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_http_body
-//export abandon
+//go:wasmimport fastly_http_body abandon
 //go:noescape
 func fastlyHTTPBodyAbandon(
 	h bodyHandle,
@@ -348,21 +346,22 @@ type LogEndpoint struct {
 //	  (result $err $fastly_status)
 //	  (result $endpoint_handle_out $endpoint_handle))
 //
-//go:wasm-module fastly_log
-//export endpoint_get
+//go:wasmimport fastly_log endpoint_get
 //go:noescape
 func fastlyLogEndpointGet(
-	name prim.ArrayU8,
-	endpointHandleOut *endpointHandle,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	endpointHandleOut prim.Pointer[endpointHandle],
 ) FastlyStatus
 
 // GetLogEndpoint opens the log endpoint identified by name.
 func GetLogEndpoint(name string) (*LogEndpoint, error) {
 	var e LogEndpoint
 
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+
 	if err := fastlyLogEndpointGet(
-		prim.NewReadBufferFromString(name).ArrayU8(),
-		&e.h,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&e.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -380,13 +379,12 @@ func GetLogEndpoint(name string) (*LogEndpoint, error) {
 //
 // )
 //
-//go:wasm-module fastly_log
-//export write
+//go:wasmimport fastly_log write
 //go:noescape
 func fastlyLogWrite(
 	h endpointHandle,
-	msg prim.ArrayU8,
-	nWrittenOut *prim.Usize,
+	msgData prim.Pointer[prim.U8], msgLen prim.Usize,
+	nWrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // Write implements io.Writer, writing len(p) bytes from p into the endpoint.
@@ -395,10 +393,12 @@ func fastlyLogWrite(
 func (e *LogEndpoint) Write(p []byte) (n int, err error) {
 	for n < len(p) && err == nil {
 		var nWritten prim.Usize
+		p_n_Buffer := prim.NewReadBufferFromBytes(p[n:]).ArrayU8()
+
 		if err = fastlyLogWrite(
 			e.h,
-			prim.NewReadBufferFromBytes(p[n:]).ArrayU8(),
-			&nWritten,
+			p_n_Buffer.Data, p_n_Buffer.Len,
+			prim.ToPointer(&nWritten),
 		).toError(); err == nil {
 			n += int(nWritten)
 		}
@@ -422,12 +422,11 @@ type HTTPRequest struct {
 //	  (result $body $body_handle)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export body_downstream_get
+//go:wasmimport fastly_http_req body_downstream_get
 //go:noescape
 func fastlyHTTPReqBodyDownstreamGet(
-	req *requestHandle,
-	body *bodyHandle,
+	req prim.Pointer[requestHandle],
+	body prim.Pointer[bodyHandle],
 ) FastlyStatus
 
 // BodyDownstreamGet returns the request and body of the singleton downstream
@@ -437,9 +436,10 @@ func BodyDownstreamGet() (*HTTPRequest, *HTTPBody, error) {
 		rh requestHandle = requestHandle(math.MaxUint32 - 1)
 		bh bodyHandle    = bodyHandle(math.MaxUint32 - 1)
 	)
+
 	if err := fastlyHTTPReqBodyDownstreamGet(
-		&rh,
-		&bh,
+		prim.ToPointer(&rh),
+		prim.ToPointer(&bh),
 	).toError(); err != nil {
 		return nil, nil, err
 	}
@@ -457,8 +457,7 @@ func BodyDownstreamGet() (*HTTPRequest, *HTTPBody, error) {
 //	  (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export cache_override_set
+//go:wasmimport fastly_http_req cache_override_set
 //go:noescape
 //lint:ignore U1000 deprecated in favor of V2
 func fastlyHTTPReqCacheOverrideSet(
@@ -479,15 +478,14 @@ func fastlyHTTPReqCacheOverrideSet(
 //	  (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export cache_override_v2_set
+//go:wasmimport fastly_http_req cache_override_v2_set
 //go:noescape
 func fastlyHTTPReqCacheOverrideV2Set(
 	h requestHandle,
 	tag cacheOverrideTag,
 	ttl prim.U32,
 	staleWhileRevalidate prim.U32,
-	sk prim.ArrayU8,
+	skData prim.Pointer[prim.U8], skLen prim.Usize,
 ) FastlyStatus
 
 // SetCacheOverride sets caching-related flags on the request.
@@ -510,12 +508,14 @@ func (r *HTTPRequest) SetCacheOverride(options CacheOverrideOptions) error {
 		tag |= cacheOverrideTagStaleWhileRevalidate
 	}
 
+	options_SurrogateKeyBuffer := prim.NewReadBufferFromString(options.SurrogateKey).ArrayU8()
+
 	return fastlyHTTPReqCacheOverrideV2Set(
 		r.h,
 		tag,
 		prim.U32(options.TTL),
 		prim.U32(options.StaleWhileRevalidate),
-		prim.NewReadBufferFromString(options.SurrogateKey).ArrayU8(),
+		options_SurrogateKeyBuffer.Data, options_SurrogateKeyBuffer.Len,
 	).toError()
 }
 
@@ -528,21 +528,21 @@ func (r *HTTPRequest) SetCacheOverride(options CacheOverrideOptions) error {
 //	   (result $nwritten_out (@witx usize))
 //	)
 //
-//go:wasm-module fastly_http_req
-//export downstream_client_ip_addr
+//go:wasmimport fastly_http_req downstream_client_ip_addr
 //go:noescape
 func fastlyHTTPReqDownstreamClientIPAddr(
-	addrOctetsOut *prim.Char8, // must be 16-byte array
-	nwrittenOut *prim.Usize,
+	addrOctetsOut prim.Pointer[prim.Char8], // must be 16-byte array
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // DownstreamClientIPAddr returns the IP address of the downstream client that
 // performed the singleton downstream request.
 func DownstreamClientIPAddr() (net.IP, error) {
 	buf := prim.NewWriteBuffer(16) // must be a 16-byte array
+
 	if err := fastlyHTTPReqDownstreamClientIPAddr(
-		buf.Char8Pointer(),
-		buf.NPointer(),
+		prim.ToPointer(buf.Char8Pointer()),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -559,23 +559,23 @@ func DownstreamClientIPAddr() (net.IP, error) {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export downstream_tls_cipher_openssl_name
+//go:wasmimport fastly_http_req downstream_tls_cipher_openssl_name
 //go:noescape
 func fastlyHTTPReqDownstreamTLSCipherOpenSSLName(
-	cipherOut *prim.Char8,
+	cipherOut prim.Pointer[prim.Char8],
 	cipherMaxLen prim.Usize,
-	nwrittenOut *prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // DownstreamTLSCipherOpenSSLName returns the name of the OpenSSL TLS cipher
 // used with the singleton downstream request, if any.
 func DownstreamTLSCipherOpenSSLName() (string, error) {
 	buf := prim.NewWriteBuffer(defaultBufferLen)
+
 	if err := fastlyHTTPReqDownstreamTLSCipherOpenSSLName(
-		buf.Char8Pointer(),
+		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
-		buf.NPointer(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
@@ -592,23 +592,23 @@ func DownstreamTLSCipherOpenSSLName() (string, error) {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export downstream_tls_protocol
+//go:wasmimport fastly_http_req downstream_tls_protocol
 //go:noescape
 func fastlyHTTPReqDownstreamTLSProtocol(
-	protocolOut *prim.Char8,
+	protocolOut prim.Pointer[prim.Char8],
 	protocolMaxLen prim.Usize,
-	nwrittenOut *prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // DownstreamTLSProtocol returns the name of the TLS protocol used with the
 // singleton downstream request, if any.
 func DownstreamTLSProtocol() (string, error) {
 	buf := prim.NewWriteBuffer(defaultBufferLen)
+
 	if err := fastlyHTTPReqDownstreamTLSProtocol(
-		buf.Char8Pointer(),
+		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
-		buf.NPointer(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
@@ -625,23 +625,23 @@ func DownstreamTLSProtocol() (string, error) {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export downstream_tls_client_hello
+//go:wasmimport fastly_http_req downstream_tls_client_hello
 //go:noescape
 func fastlyHTTPReqDownstreamTLSClientHello(
-	chelloOut *prim.Char8,
+	chelloOut prim.Pointer[prim.Char8],
 	chelloMaxLen prim.Usize,
-	nwrittenOut *prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // DownstreamTLSClientHello returns the ClientHello message sent by the client
 // in the singleton downstream request, if any.
 func DownstreamTLSClientHello() ([]byte, error) {
 	buf := prim.NewWriteBuffer(defaultBufferLen)
+
 	if err := fastlyHTTPReqDownstreamTLSClientHello(
-		buf.Char8Pointer(),
+		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
-		buf.NPointer(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -656,11 +656,10 @@ func DownstreamTLSClientHello() ([]byte, error) {
 //	  (result $h $request_handle)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export new
+//go:wasmimport fastly_http_req new
 //go:noescape
 func fastlyHTTPReqNew(
-	h *requestHandle,
+	h prim.Pointer[requestHandle],
 ) FastlyStatus
 
 // NewHTTPRequest returns a new, empty HTTP request.
@@ -668,7 +667,7 @@ func NewHTTPRequest() (*HTTPRequest, error) {
 	var r HTTPRequest
 
 	if err := fastlyHTTPReqNew(
-		&r.h,
+		prim.ToPointer(&r.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -688,16 +687,15 @@ func NewHTTPRequest() (*HTTPRequest, error) {
 //	  (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export header_names_get
+//go:wasmimport fastly_http_req header_names_get
 //go:noescape
 func fastlyHTTPReqHeaderNamesGet(
 	h requestHandle,
-	buf *prim.Char8,
+	buf prim.Pointer[prim.Char8],
 	bufLen prim.Usize,
 	cursor multiValueCursor,
-	endingCursorOut *multiValueCursorResult,
-	nwrittenOut *prim.Usize,
+	endingCursorOut prim.Pointer[multiValueCursorResult],
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // GetHeaderNames returns an iterator that yields the names of each header of
@@ -710,13 +708,14 @@ func (r *HTTPRequest) GetHeaderNames(maxHeaderNameLen int) *Values {
 		endingCursorOut *multiValueCursorResult,
 		nwrittenOut *prim.Usize,
 	) FastlyStatus {
+
 		return fastlyHTTPReqHeaderNamesGet(
 			r.h,
-			buf,
+			prim.ToPointer(buf),
 			bufLen,
 			cursor,
-			endingCursorOut,
-			nwrittenOut,
+			prim.ToPointer(endingCursorOut),
+			prim.ToPointer(nwrittenOut),
 		)
 	}
 
@@ -734,15 +733,14 @@ func (r *HTTPRequest) GetHeaderNames(maxHeaderNameLen int) *Values {
 //	  (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export original_header_names_get
+//go:wasmimport fastly_http_req original_header_names_get
 //go:noescape
 func fastlyHTTPReqOriginalHeaderNamesGet(
-	buf *prim.Char8,
+	buf prim.Pointer[prim.Char8],
 	bufLen prim.Usize,
 	cursor multiValueCursor,
-	endingCursorOut *multiValueCursorResult,
-	nwrittenOut *prim.Usize,
+	endingCursorOut prim.Pointer[multiValueCursorResult],
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // GetOriginalHeaderNames returns an iterator that yields the names of each
@@ -755,12 +753,13 @@ func GetOriginalHeaderNames(maxHeaderNameLen int) *Values {
 		endingCursorOut *multiValueCursorResult,
 		nwrittenOut *prim.Usize,
 	) FastlyStatus {
+
 		return fastlyHTTPReqOriginalHeaderNamesGet(
-			buf,
+			prim.ToPointer(buf),
 			bufLen,
 			cursor,
-			endingCursorOut,
-			nwrittenOut,
+			prim.ToPointer(endingCursorOut),
+			prim.ToPointer(nwrittenOut),
 		)
 	}
 
@@ -774,19 +773,19 @@ func GetOriginalHeaderNames(maxHeaderNameLen int) *Values {
 //	  (result $count u32)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export original_header_count
+//go:wasmimport fastly_http_req original_header_count
 //go:noescape
 func fastlyHTTPReqOriginalHeaderCount(
-	count *prim.U32,
+	count prim.Pointer[prim.U32],
 ) FastlyStatus
 
 // GetOriginalHeaderCount returns the number of headers of the singleton
 // downstream request.
 func GetOriginalHeaderCount() (int, error) {
 	var count prim.U32
+
 	if err := fastlyHTTPReqOriginalHeaderCount(
-		&count,
+		prim.ToPointer(&count),
 	).toError(); err != nil {
 		return 0, err
 	}
@@ -805,27 +804,28 @@ func GetOriginalHeaderCount() (int, error) {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export header_value_get
+//go:wasmimport fastly_http_req header_value_get
 //go:noescape
 func fastlyHTTPReqHeaderValueGet(
 	h requestHandle,
-	name prim.ArrayU8,
-	value *prim.Char8,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	value prim.Pointer[prim.Char8],
 	valueMaxLen prim.Usize,
-	nwrittenOut *prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // GetHeaderValue returns the first header value of the given header name on the
 // request, if any.
 func (r *HTTPRequest) GetHeaderValue(name string, maxHeaderValueLen int) (string, error) {
 	buf := prim.NewWriteBuffer(maxHeaderValueLen)
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+
 	if err := fastlyHTTPReqHeaderValueGet(
 		r.h,
-		prim.NewReadBufferFromString(name).ArrayU8(),
-		buf.Char8Pointer(),
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
-		buf.NPointer(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
@@ -846,17 +846,16 @@ func (r *HTTPRequest) GetHeaderValue(name string, maxHeaderValueLen int) (string
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export header_values_get
+//go:wasmimport fastly_http_req header_values_get
 //go:noescape
 func fastlyHTTPReqHeaderValuesGet(
 	h requestHandle,
-	name prim.ArrayU8,
-	buf *prim.Char8,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	buf prim.Pointer[prim.Char8],
 	bufLen prim.Usize,
 	cursor multiValueCursor,
-	endingCursorOut *multiValueCursorResult,
-	nwrittenOut *prim.Usize,
+	endingCursorOut prim.Pointer[multiValueCursorResult],
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // GetHeaderValues returns an iterator that yields the values for the named
@@ -869,14 +868,16 @@ func (r *HTTPRequest) GetHeaderValues(name string, maxHeaderValueLen int) *Value
 		endingCursorOut *multiValueCursorResult,
 		nwrittenOut *prim.Usize,
 	) FastlyStatus {
+		nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+
 		return fastlyHTTPReqHeaderValuesGet(
 			r.h,
-			prim.NewReadBufferFromString(name).ArrayU8(),
-			buf,
+			nameBuffer.Data, nameBuffer.Len,
+			prim.ToPointer(buf),
 			bufLen,
 			cursor,
-			endingCursorOut,
-			nwrittenOut,
+			prim.ToPointer(endingCursorOut),
+			prim.ToPointer(nwrittenOut),
 		)
 	}
 
@@ -892,13 +893,12 @@ func (r *HTTPRequest) GetHeaderValues(name string, maxHeaderValueLen int) *Value
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export header_values_set
+//go:wasmimport fastly_http_req header_values_set
 //go:noescape
 func fastlyHTTPReqHeaderValuesSet(
 	h requestHandle,
-	name prim.ArrayU8,
-	values prim.ArrayChar8, // multiple values separated by \0
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	valuesData prim.Pointer[prim.U8], valuesLen prim.Usize, // multiple values separated by \0
 ) FastlyStatus
 
 // SetHeaderValues sets the provided header(s) on the request.
@@ -909,10 +909,13 @@ func (r *HTTPRequest) SetHeaderValues(name string, values []string) error {
 		buf.WriteByte(0)
 	}
 
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+	buf_Bytes_Buffer := prim.NewReadBufferFromBytes(buf.Bytes()).ArrayChar8()
+
 	return fastlyHTTPReqHeaderValuesSet(
 		r.h,
-		prim.NewReadBufferFromString(name).ArrayU8(),
-		prim.NewReadBufferFromBytes(buf.Bytes()).ArrayChar8(),
+		nameBuffer.Data, nameBuffer.Len,
+		buf_Bytes_Buffer.Data, buf_Bytes_Buffer.Len,
 	).toError()
 }
 
@@ -925,21 +928,23 @@ func (r *HTTPRequest) SetHeaderValues(name string, values []string) error {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export header_insert
+//go:wasmimport fastly_http_req header_insert
 //go:noescape
 func fastlyHTTPReqHeaderInsert(
 	h requestHandle,
-	name prim.ArrayU8,
-	value prim.ArrayU8,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	valueData prim.Pointer[prim.U8], valueLen prim.Usize,
 ) FastlyStatus
 
 // InsertHeader adds the provided header to the request.
 func (r *HTTPRequest) InsertHeader(name, value string) error {
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+	valueBuffer := prim.NewReadBufferFromString(value).ArrayU8()
+
 	return fastlyHTTPReqHeaderInsert(
 		r.h,
-		prim.NewReadBufferFromString(name).ArrayU8(),
-		prim.NewReadBufferFromString(value).ArrayU8(),
+		nameBuffer.Data, nameBuffer.Len,
+		valueBuffer.Data, valueBuffer.Len,
 	).toError()
 }
 
@@ -952,23 +957,25 @@ func (r *HTTPRequest) InsertHeader(name, value string) error {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export header_append
+//go:wasmimport fastly_http_req header_append
 //go:noescape
 func fastlyHTTPReqHeaderAppend(
 	h requestHandle,
-	name prim.ArrayU8,
-	value prim.ArrayU8,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	valueData prim.Pointer[prim.U8], valueLen prim.Usize,
 ) FastlyStatus
 
 // AppendHeader adds the provided header to the request.
 //
 // TODO(pb): what is the difference to InsertHeader?
 func (r *HTTPRequest) AppendHeader(name, value string) error {
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+	valueBuffer := prim.NewReadBufferFromString(value).ArrayU8()
+
 	return fastlyHTTPReqHeaderAppend(
 		r.h,
-		prim.NewReadBufferFromString(name).ArrayU8(),
-		prim.NewReadBufferFromString(value).ArrayU8(),
+		nameBuffer.Data, nameBuffer.Len,
+		valueBuffer.Data, valueBuffer.Len,
 	).toError()
 }
 
@@ -980,19 +987,20 @@ func (r *HTTPRequest) AppendHeader(name, value string) error {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export header_remove
+//go:wasmimport fastly_http_req header_remove
 //go:noescape
 func fastlyHTTPReqHeaderRemove(
 	h requestHandle,
-	name prim.ArrayU8,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
 ) FastlyStatus
 
 // RemoveHeader removes the named header(s) from the request.
 func (r *HTTPRequest) RemoveHeader(name string) error {
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+
 	return fastlyHTTPReqHeaderRemove(
 		r.h,
-		prim.NewReadBufferFromString(name).ArrayU8(),
+		nameBuffer.Data, nameBuffer.Len,
 	).toError()
 }
 
@@ -1006,24 +1014,24 @@ func (r *HTTPRequest) RemoveHeader(name string) error {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export method_get
+//go:wasmimport fastly_http_req method_get
 //go:noescape
 func fastlyHTTPReqMethodGet(
 	h requestHandle,
-	buf *prim.Char8,
+	buf prim.Pointer[prim.Char8],
 	bufLen prim.Usize,
-	nwrittenOut *prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // GetMethod returns the HTTP method of the request.
 func (r *HTTPRequest) GetMethod(maxMethodLen int) (string, error) {
 	buf := prim.NewWriteBuffer(maxMethodLen)
+
 	if err := fastlyHTTPReqMethodGet(
 		r.h,
-		buf.Char8Pointer(),
+		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
-		buf.NPointer(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
@@ -1039,19 +1047,20 @@ func (r *HTTPRequest) GetMethod(maxMethodLen int) (string, error) {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export method_set
+//go:wasmimport fastly_http_req method_set
 //go:noescape
 func fastlyHTTPReqMethodSet(
 	h requestHandle,
-	method prim.Wstring,
+	methodData prim.Pointer[prim.U8], methodLen prim.Usize,
 ) FastlyStatus
 
 // SetMethod sets the HTTP method of the request.
 func (r *HTTPRequest) SetMethod(method string) error {
+	methodBuffer := prim.NewReadBufferFromString(method).Wstring()
+
 	return fastlyHTTPReqMethodSet(
 		r.h,
-		prim.NewReadBufferFromString(method).Wstring(),
+		methodBuffer.Data, methodBuffer.Len,
 	).toError()
 }
 
@@ -1065,24 +1074,24 @@ func (r *HTTPRequest) SetMethod(method string) error {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export uri_get
+//go:wasmimport fastly_http_req uri_get
 //go:noescape
 func fastlyHTTPReqURIGet(
 	h requestHandle,
-	buf *prim.Char8,
+	buf prim.Pointer[prim.Char8],
 	bufLen prim.Usize,
-	nwrittenOut *prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // GetURI returns the fully qualified URI of the request.
 func (r *HTTPRequest) GetURI(maxURLLen int) (string, error) {
 	buf := prim.NewWriteBuffer(maxURLLen)
+
 	if err := fastlyHTTPReqURIGet(
 		r.h,
-		buf.Char8Pointer(),
+		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
-		buf.NPointer(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
@@ -1098,19 +1107,20 @@ func (r *HTTPRequest) GetURI(maxURLLen int) (string, error) {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export uri_set
+//go:wasmimport fastly_http_req uri_set
 //go:noescape
 func fastlyHTTPReqURISet(
 	h requestHandle,
-	uri prim.Wstring,
+	uriData prim.Pointer[prim.U8], uriLen prim.Usize,
 ) FastlyStatus
 
 // SetURI sets the request's fully qualified URI.
 func (r *HTTPRequest) SetURI(uri string) error {
+	uriBuffer := prim.NewReadBufferFromString(uri).Wstring()
+
 	return fastlyHTTPReqURISet(
 		r.h,
-		prim.NewReadBufferFromString(uri).Wstring(),
+		uriBuffer.Data, uriBuffer.Len,
 	).toError()
 }
 
@@ -1122,20 +1132,20 @@ func (r *HTTPRequest) SetURI(uri string) error {
 //	   (result $version $http_version)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export version_get
+//go:wasmimport fastly_http_req version_get
 //go:noescape
 func fastlyHTTPReqVersionGet(
 	h requestHandle,
-	version *HTTPVersion,
+	version prim.Pointer[HTTPVersion],
 ) FastlyStatus
 
 // GetVersion returns the HTTP version of the request.
 func (r *HTTPRequest) GetVersion() (proto string, major, minor int, err error) {
 	var v HTTPVersion
+
 	if err := fastlyHTTPReqVersionGet(
 		r.h,
-		&v,
+		prim.ToPointer(&v),
 	).toError(); err != nil {
 		return "", 0, 0, err
 	}
@@ -1151,8 +1161,7 @@ func (r *HTTPRequest) GetVersion() (proto string, major, minor int, err error) {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export version_set
+//go:wasmimport fastly_http_req version_set
 //go:noescape
 func fastlyHTTPReqVersionSet(
 	h requestHandle,
@@ -1161,6 +1170,7 @@ func fastlyHTTPReqVersionSet(
 
 // SetVersion sets the HTTP version of the request.
 func (r *HTTPRequest) SetVersion(v HTTPVersion) error {
+
 	return fastlyHTTPReqVersionSet(
 		r.h,
 		v,
@@ -1178,15 +1188,14 @@ func (r *HTTPRequest) SetVersion(v HTTPVersion) error {
 //	   (result $resp_body $body_handle)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export send
+//go:wasmimport fastly_http_req send
 //go:noescape
 func fastlyHTTPReqSend(
 	h requestHandle,
 	b bodyHandle,
-	backend prim.Wstring,
-	resp *responseHandle,
-	respBody *bodyHandle,
+	backendData prim.Pointer[prim.U8], backendLen prim.Usize,
+	resp prim.Pointer[responseHandle],
+	respBody prim.Pointer[bodyHandle],
 ) FastlyStatus
 
 // Send the request, with the provided body, to the named backend. The body is
@@ -1198,12 +1207,14 @@ func (r *HTTPRequest) Send(requestBody *HTTPBody, backend string) (response *HTT
 		respBody HTTPBody
 	)
 
+	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
+
 	if err := fastlyHTTPReqSend(
 		r.h,
 		requestBody.h,
-		prim.NewReadBufferFromString(backend).Wstring(),
-		&resp.h,
-		&respBody.h,
+		backendBuffer.Data, backendBuffer.Len,
+		prim.ToPointer(&resp.h),
+		prim.ToPointer(&respBody.h),
 	).toError(); err != nil {
 		return nil, nil, err
 	}
@@ -1221,14 +1232,13 @@ func (r *HTTPRequest) Send(requestBody *HTTPBody, backend string) (response *HTT
 //	   (result $pending_req $pending_request_handle)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export send_async
+//go:wasmimport fastly_http_req send_async
 //go:noescape
 func fastlyHTTPReqSendAsync(
 	h requestHandle,
 	b bodyHandle,
-	backend prim.Wstring,
-	pendingReq *pendingRequestHandle,
+	backendData prim.Pointer[prim.U8], backendLen prim.Usize,
+	pendingReq prim.Pointer[pendingRequestHandle],
 ) FastlyStatus
 
 // PendingRequest is an outstanding or completed asynchronous HTTP request.
@@ -1243,11 +1253,13 @@ type PendingRequest struct {
 func (r *HTTPRequest) SendAsync(requestBody *HTTPBody, backend string) (*PendingRequest, error) {
 	var pendingReq PendingRequest
 
+	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
+
 	if err := fastlyHTTPReqSendAsync(
 		r.h,
 		requestBody.h,
-		prim.NewReadBufferFromString(backend).Wstring(),
-		&pendingReq.h,
+		backendBuffer.Data, backendBuffer.Len,
+		prim.ToPointer(&pendingReq.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -1265,14 +1277,13 @@ func (r *HTTPRequest) SendAsync(requestBody *HTTPBody, backend string) (*Pending
 //	   (result $pending_req $pending_request_handle)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export send_async_streaming
+//go:wasmimport fastly_http_req send_async_streaming
 //go:noescape
 func fastlyHTTPReqSendAsyncStreaming(
 	h requestHandle,
 	b bodyHandle,
-	backend prim.Wstring,
-	pendingReq *pendingRequestHandle,
+	backendData prim.Pointer[prim.U8], backendLen prim.Usize,
+	pendingReq prim.Pointer[pendingRequestHandle],
 ) FastlyStatus
 
 // SendAsyncStreaming sends the request, with the provided body, to the named
@@ -1282,11 +1293,13 @@ func fastlyHTTPReqSendAsyncStreaming(
 func (r *HTTPRequest) SendAsyncStreaming(requestBody *HTTPBody, backend string) (*PendingRequest, error) {
 	var pendingReq PendingRequest
 
+	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
+
 	if err := fastlyHTTPReqSendAsyncStreaming(
 		r.h,
 		requestBody.h,
-		prim.NewReadBufferFromString(backend).Wstring(),
-		&pendingReq.h,
+		backendBuffer.Data, backendBuffer.Len,
+		prim.ToPointer(&pendingReq.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -1306,14 +1319,13 @@ func (r *HTTPRequest) SendAsyncStreaming(requestBody *HTTPBody, backend string) 
 //	   (result $resp_body $body_handle)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export pending_req_poll
+//go:wasmimport fastly_http_req pending_req_poll
 //go:noescape
 func fastlyHTTPReqPendingReqPoll(
 	h pendingRequestHandle,
-	isDone *prim.U32,
-	resp *responseHandle,
-	respBody *bodyHandle,
+	isDone prim.Pointer[prim.U32],
+	resp prim.Pointer[responseHandle],
+	respBody prim.Pointer[bodyHandle],
 ) FastlyStatus
 
 // Poll checks to see if the pending request is complete, returning immediately.
@@ -1328,9 +1340,9 @@ func (r *PendingRequest) Poll() (done bool, response *HTTPResponse, responseBody
 
 	if err := fastlyHTTPReqPendingReqPoll(
 		r.h,
-		&isDone,
-		&resp.h,
-		&respBody.h,
+		prim.ToPointer(&isDone),
+		prim.ToPointer(&resp.h),
+		prim.ToPointer(&respBody.h),
 	).toError(); err != nil {
 		return false, nil, nil, err
 	}
@@ -1347,13 +1359,12 @@ func (r *PendingRequest) Poll() (done bool, response *HTTPResponse, responseBody
 //	   (result $resp_body $body_handle)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export pending_req_wait
+//go:wasmimport fastly_http_req pending_req_wait
 //go:noescape
 func fastlyHTTPReqPendingReqWait(
 	h pendingRequestHandle,
-	resp *responseHandle,
-	respBody *bodyHandle,
+	resp prim.Pointer[responseHandle],
+	respBody prim.Pointer[bodyHandle],
 ) FastlyStatus
 
 // Wait blocks until the pending request is complete, returning the response and
@@ -1371,8 +1382,8 @@ func (r *PendingRequest) Wait() (response *HTTPResponse, responseBody *HTTPBody,
 
 	if err := fastlyHTTPReqPendingReqWait(
 		r.h,
-		&resp.h,
-		&respBody.h,
+		prim.ToPointer(&resp.h),
+		prim.ToPointer(&respBody.h),
 	).toError(); err != nil {
 		return nil, nil, err
 	}
@@ -1390,50 +1401,8 @@ func (r *PendingRequest) Wait() (response *HTTPResponse, responseBody *HTTPBody,
 //	   (result $resp_body $body_handle)
 //	)
 //
-//go:wasm-module fastly_http_req
-//export pending_req_select
+//go:wasmimport fastly_http_req pending_req_select
 //go:noescape
-func fastlyHTTPReqPendingReqSelect(
-	hs []pendingRequestHandle, // TODO(pb): is correct?
-	doneIdx *prim.U32,
-	resp *responseHandle,
-	respBody *bodyHandle,
-) FastlyStatus
-
-// PendingRequestSelect blocks until one of the provided pending requests is
-// complete. Returns the completed request, and its associated response and
-// response body. If more than one pending request is complete, returns one of
-// them randomly.
-//
-// TODO(pb): is random correct?
-func PendingRequestSelect(reqs ...*PendingRequest) (index int, done *PendingRequest, response *HTTPResponse, responseBody *HTTPBody, err error) {
-	resp, err := NewHTTPResponse()
-	if err != nil {
-		return 0, nil, nil, nil, fmt.Errorf("response: %w", err)
-	}
-
-	respBody, err := NewHTTPBody()
-	if err != nil {
-		return 0, nil, nil, nil, fmt.Errorf("response body: %w", err)
-	}
-
-	hs := make([]pendingRequestHandle, len(reqs))
-	for i := range reqs {
-		hs[i] = reqs[i].h
-	}
-
-	var doneIdx prim.U32
-	if err := fastlyHTTPReqPendingReqSelect(
-		hs,
-		&doneIdx,
-		&resp.h,
-		&respBody.h,
-	).toError(); err != nil {
-		return 0, nil, nil, nil, err
-	}
-
-	return int(doneIdx), reqs[doneIdx], resp, respBody, nil
-}
 
 // witx:
 //
@@ -1443,8 +1412,7 @@ func PendingRequestSelect(reqs ...*PendingRequest) (index int, done *PendingRequ
 //	   (result $err (expected (error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_http_req
-//export auto_decompress_response_set
+//go:wasmimport fastly_http_req auto_decompress_response_set
 //go:noescape
 func fastlyAutoDecompressResponseSet(
 	h requestHandle,
@@ -1474,8 +1442,7 @@ func (r *HTTPRequest) SetAutoDecompressResponse(options AutoDecompressResponseOp
 //	     (result $err (expected (error $fastly_status)))
 //	 )
 //
-//go:wasm-module fastly_http_req
-//export framing_headers_mode_set
+//go:wasmimport fastly_http_req framing_headers_mode_set
 //go:noescape
 func fastlyHTTPReqSetFramingHeadersMode(
 	h requestHandle,
@@ -1488,6 +1455,7 @@ func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
 	if manual {
 		mode = framingHeadersModeManuallyFromHeaders
 	}
+
 	return fastlyHTTPReqSetFramingHeadersMode(
 		r.h,
 		mode,
@@ -1503,16 +1471,17 @@ func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
 //
 // )
 //
-//go:wasm-module fastly_http_req
-//export redirect_to_websocket_proxy
+//go:wasmimport fastly_http_req redirect_to_websocket_proxy
 //go:noescape
 func fastlyHTTPReqRedirectToWebsocketProxy(
-	backend prim.Wstring,
+	backendData prim.Pointer[prim.U8], backendLen prim.Usize,
 ) FastlyStatus
 
 func HandoffWebsocket(backend string) error {
+	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
+
 	if err := fastlyHTTPReqRedirectToWebsocketProxy(
-		prim.NewReadBufferFromString(backend).Wstring(),
+		backendBuffer.Data, backendBuffer.Len,
 	).toError(); err != nil {
 		return err
 	}
@@ -1529,16 +1498,17 @@ func HandoffWebsocket(backend string) error {
 //
 // )
 //
-//go:wasm-module fastly_http_req
-//export redirect_to_grip_proxy
+//go:wasmimport fastly_http_req redirect_to_grip_proxy
 //go:noescape
 func fastlyHTTPReqRedirectToGripProxy(
-	backend prim.Wstring,
+	backendData prim.Pointer[prim.U8], backendLen prim.Usize,
 ) FastlyStatus
 
 func HandoffFanout(backend string) error {
+	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
+
 	if err := fastlyHTTPReqRedirectToGripProxy(
-		prim.NewReadBufferFromString(backend).Wstring(),
+		backendBuffer.Data, backendBuffer.Len,
 	).toError(); err != nil {
 		return err
 	}
@@ -1556,17 +1526,19 @@ func HandoffFanout(backend string) error {
 //		(result $err (expected (error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_http_req
-//export register_dynamic_backend
+//go:wasmimport fastly_http_req register_dynamic_backend
 //go:noescape
-func fastlyRegisterDynamicBackend(name prim.Wstring, target prim.Wstring, mask backendConfigOptionsMask, opts *backendConfigOptions) FastlyStatus
+func fastlyRegisterDynamicBackend(nameData prim.Pointer[prim.U8], nameLen prim.Usize, targetData prim.Pointer[prim.U8], targetLen prim.Usize, mask backendConfigOptionsMask, opts prim.Pointer[backendConfigOptions]) FastlyStatus
 
 func RegisterDynamicBackend(name string, target string, opts *BackendConfigOptions) error {
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+	targetBuffer := prim.NewReadBufferFromString(target).Wstring()
+
 	if err := fastlyRegisterDynamicBackend(
-		prim.NewReadBufferFromString(name).Wstring(),
-		prim.NewReadBufferFromString(target).Wstring(),
+		nameBuffer.Data, nameBuffer.Len,
+		targetBuffer.Data, targetBuffer.Len,
 		opts.mask,
-		&opts.opts,
+		prim.ToPointer(&opts.opts),
 	).toError(); err != nil {
 		return err
 	}
@@ -1583,16 +1555,17 @@ func RegisterDynamicBackend(name string, target string, opts *BackendConfigOptio
 //			(error $fastly_status)))
 //		)
 //
-//go:wasm-module fastly_backend
-//export exists
+//go:wasmimport fastly_backend exists
 //go:noescape
-func fastlyBackendExists(name prim.Wstring, exists *prim.U32) FastlyStatus
+func fastlyBackendExists(nameData prim.Pointer[prim.U8], nameLen prim.Usize, exists prim.Pointer[prim.U32]) FastlyStatus
 
 func BackendExists(name string) (bool, error) {
 	var exists prim.U32
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyBackendExists(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&exists,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&exists),
 	).toError(); err != nil {
 		return false, err
 	}
@@ -1608,16 +1581,17 @@ func BackendExists(name string) (bool, error) {
 //		(error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_backend
-//export is_healthy
+//go:wasmimport fastly_backend is_healthy
 //go:noescape
-func fastlyBackendIsHealthy(name prim.Wstring, healthy *prim.U32) FastlyStatus
+func fastlyBackendIsHealthy(nameData prim.Pointer[prim.U8], nameLen prim.Usize, healthy prim.Pointer[prim.U32]) FastlyStatus
 
 func BackendIsHealthy(name string) (BackendHealth, error) {
 	var health prim.U32
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyBackendIsHealthy(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&health,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&health),
 	).toError(); err != nil {
 		return BackendHealthUnknown, err
 	}
@@ -1633,16 +1607,17 @@ func BackendIsHealthy(name string) (BackendHealth, error) {
 //		(error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_backend
-//export is_dynamic
+//go:wasmimport fastly_backend is_dynamic
 //go:noescape
-func fastlyBackendIsDynamic(name prim.Wstring, dynamic *prim.U32) FastlyStatus
+func fastlyBackendIsDynamic(nameData prim.Pointer[prim.U8], nameLen prim.Usize, dynamic prim.Pointer[prim.U32]) FastlyStatus
 
 func BackendIsDynamic(name string) (bool, error) {
 	var dynamic prim.U32
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyBackendIsDynamic(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&dynamic,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&dynamic),
 	).toError(); err != nil {
 		return false, err
 	}
@@ -1659,24 +1634,25 @@ func BackendIsDynamic(name string) (bool, error) {
 //		(result $err (expected (error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_backend
-//export get_host
+//go:wasmimport fastly_backend get_host
 //go:noescape
-func fastlyBackendGetHost(name prim.Wstring,
-	host *prim.Char8,
+func fastlyBackendGetHost(nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	host prim.Pointer[prim.Char8],
 	hostLen prim.Usize,
-	hostWritten *prim.Usize,
+	hostWritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 func BackendGetHost(name string) (string, error) {
 	hostBuf := prim.NewWriteBuffer(defaultBufferLen)
 
-	if err := fastlyBackendGetHost(
-		prim.NewReadBufferFromString(name).Wstring(),
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
 
-		hostBuf.Char8Pointer(),
+	if err := fastlyBackendGetHost(
+		nameBuffer.Data, nameBuffer.Len,
+
+		prim.ToPointer(hostBuf.Char8Pointer()),
 		hostBuf.Cap(),
-		hostBuf.NPointer(),
+		prim.ToPointer(hostBuf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
@@ -1694,23 +1670,24 @@ func BackendGetHost(name string) (string, error) {
 //		(result $err (expected (error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_backend
-//export get_override_host
+//go:wasmimport fastly_backend get_override_host
 //go:noescape
-func fastlyBackendGetOverrideHost(name prim.Wstring,
-	host *prim.Char8,
+func fastlyBackendGetOverrideHost(nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	host prim.Pointer[prim.Char8],
 	hostLen prim.Usize,
-	hostWritten *prim.Usize,
+	hostWritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 func BackendGetOverrideHost(name string) (string, error) {
 	hostBuf := prim.NewWriteBuffer(defaultBufferLen)
 
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyBackendGetOverrideHost(
-		prim.NewReadBufferFromString(name).Wstring(),
-		hostBuf.Char8Pointer(),
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(hostBuf.Char8Pointer()),
 		hostBuf.Cap(),
-		hostBuf.NPointer(),
+		prim.ToPointer(hostBuf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
@@ -1727,16 +1704,17 @@ func BackendGetOverrideHost(name string) (string, error) {
 //		(error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_backend
-//export get_port
+//go:wasmimport fastly_backend get_port
 //go:noescape
-func fastlyBackendGetPort(name prim.Wstring, port *prim.U32) FastlyStatus
+func fastlyBackendGetPort(nameData prim.Pointer[prim.U8], nameLen prim.Usize, port prim.Pointer[prim.U32]) FastlyStatus
 
 func BackendGetPort(name string) (int, error) {
 	var port prim.U32
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyBackendGetPort(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&port,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&port),
 	).toError(); err != nil {
 		return 0, err
 	}
@@ -1752,16 +1730,17 @@ func BackendGetPort(name string) (int, error) {
 //		(error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_backend
-//export get_connect_timeout_ms
+//go:wasmimport fastly_backend get_connect_timeout_ms
 //go:noescape
-func fastlyBackendGetConnectTimeoutMs(name prim.Wstring, timeout *prim.U32) FastlyStatus
+func fastlyBackendGetConnectTimeoutMs(nameData prim.Pointer[prim.U8], nameLen prim.Usize, timeout prim.Pointer[prim.U32]) FastlyStatus
 
 func BackendGetConnectTimeout(name string) (time.Duration, error) {
 	var timeout prim.U32
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyBackendGetConnectTimeoutMs(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&timeout,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&timeout),
 	).toError(); err != nil {
 		return 0, err
 	}
@@ -1777,16 +1756,17 @@ func BackendGetConnectTimeout(name string) (time.Duration, error) {
 //		(error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_backend
-//export get_first_byte_timeout_ms
+//go:wasmimport fastly_backend get_first_byte_timeout_ms
 //go:noescape
-func fastlyBackendGetFirstByteTimeoutMs(name prim.Wstring, timeout *prim.U32) FastlyStatus
+func fastlyBackendGetFirstByteTimeoutMs(nameData prim.Pointer[prim.U8], nameLen prim.Usize, timeout prim.Pointer[prim.U32]) FastlyStatus
 
 func BackendGetFirstByteTimeout(name string) (time.Duration, error) {
 	var timeout prim.U32
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyBackendGetFirstByteTimeoutMs(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&timeout,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&timeout),
 	).toError(); err != nil {
 		return 0, err
 	}
@@ -1802,16 +1782,17 @@ func BackendGetFirstByteTimeout(name string) (time.Duration, error) {
 //		(error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_backend
-//export get_between_bytes_timeout_ms
+//go:wasmimport fastly_backend get_between_bytes_timeout_ms
 //go:noescape
-func fastlyBackendGetBetweenBytesTimeoutMs(name prim.Wstring, timeout *prim.U32) FastlyStatus
+func fastlyBackendGetBetweenBytesTimeoutMs(nameData prim.Pointer[prim.U8], nameLen prim.Usize, timeout prim.Pointer[prim.U32]) FastlyStatus
 
 func BackendGetBetweenBytesTimeout(name string) (time.Duration, error) {
 	var timeout prim.U32
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyBackendGetBetweenBytesTimeoutMs(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&timeout,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&timeout),
 	).toError(); err != nil {
 		return 0, err
 	}
@@ -1827,16 +1808,17 @@ func BackendGetBetweenBytesTimeout(name string) (time.Duration, error) {
 //		(error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_backend
-//export is_ssl
+//go:wasmimport fastly_backend is_ssl
 //go:noescape
-func fastlyBackendIsSSL(name prim.Wstring, ssl *prim.U32) FastlyStatus
+func fastlyBackendIsSSL(nameData prim.Pointer[prim.U8], nameLen prim.Usize, ssl prim.Pointer[prim.U32]) FastlyStatus
 
 func BackendIsSSL(name string) (bool, error) {
 	var ssl prim.U32
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyBackendIsSSL(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&ssl,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&ssl),
 	).toError(); err != nil {
 		return false, err
 	}
@@ -1852,16 +1834,17 @@ func BackendIsSSL(name string) (bool, error) {
 //		(error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_backend
-//export get_ssl_min_version
+//go:wasmimport fastly_backend get_ssl_min_version
 //go:noescape
-func fastlyBackendGetSSLMinVersion(name prim.Wstring, version *prim.U32) FastlyStatus
+func fastlyBackendGetSSLMinVersion(nameData prim.Pointer[prim.U8], nameLen prim.Usize, version prim.Pointer[prim.U32]) FastlyStatus
 
 func BackendGetSSLMinVersion(name string) (TLSVersion, error) {
 	var version prim.U32
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyBackendGetSSLMinVersion(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&version,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&version),
 	).toError(); err != nil {
 		return 0, err
 	}
@@ -1877,16 +1860,17 @@ func BackendGetSSLMinVersion(name string) (TLSVersion, error) {
 //		(error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_backend
-//export get_ssl_max_version
+//go:wasmimport fastly_backend get_ssl_max_version
 //go:noescape
-func fastlyBackendGetSSLMaxVersion(name prim.Wstring, version *prim.U32) FastlyStatus
+func fastlyBackendGetSSLMaxVersion(nameData prim.Pointer[prim.U8], nameLen prim.Usize, version prim.Pointer[prim.U32]) FastlyStatus
 
 func BackendGetSSLMaxVersion(name string) (TLSVersion, error) {
 	var version prim.U32
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyBackendGetSSLMaxVersion(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&version,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&version),
 	).toError(); err != nil {
 		return 0, err
 	}
@@ -1901,11 +1885,10 @@ func BackendGetSSLMaxVersion(name string) (TLSVersion, error) {
 //	     (result $h $response_handle)
 //	   )
 //
-//go:wasm-module fastly_http_resp
-//export new
+//go:wasmimport fastly_http_resp new
 //go:noescape
 func fastlyHTTPRespNew(
-	h *responseHandle,
+	h prim.Pointer[responseHandle],
 ) FastlyStatus
 
 // HTTPResponse represents a response to an HTTP request.
@@ -1919,7 +1902,7 @@ func NewHTTPResponse() (*HTTPResponse, error) {
 	var resp HTTPResponse
 
 	if err := fastlyHTTPRespNew(
-		&resp.h,
+		prim.ToPointer(&resp.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -1941,16 +1924,15 @@ func NewHTTPResponse() (*HTTPResponse, error) {
 //	  (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_resp
-//export header_names_get
+//go:wasmimport fastly_http_resp header_names_get
 //go:noescape
 func fastlyHTTPRespHeaderNamesGet(
 	h responseHandle,
-	buf *prim.Char8,
+	buf prim.Pointer[prim.Char8],
 	bufLen prim.Usize,
 	cursor multiValueCursor,
-	endingCursorOut *multiValueCursorResult,
-	nwrittenOut *prim.Usize,
+	endingCursorOut prim.Pointer[multiValueCursorResult],
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // GetHeaderNames returns an iterator that yields the names of each header of
@@ -1963,13 +1945,14 @@ func (r *HTTPResponse) GetHeaderNames(maxHeaderNameLen int) *Values {
 		endingCursorOut *multiValueCursorResult,
 		nwrittenOut *prim.Usize,
 	) FastlyStatus {
+
 		return fastlyHTTPRespHeaderNamesGet(
 			r.h,
-			buf,
+			prim.ToPointer(buf),
 			bufLen,
 			cursor,
-			endingCursorOut,
-			nwrittenOut,
+			prim.ToPointer(endingCursorOut),
+			prim.ToPointer(nwrittenOut),
 		)
 	}
 
@@ -1987,27 +1970,28 @@ func (r *HTTPResponse) GetHeaderNames(maxHeaderNameLen int) *Values {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_resp
-//export header_value_get
+//go:wasmimport fastly_http_resp header_value_get
 //go:noescape
 func fastlyHTTPRespHeaderValueGet(
 	h responseHandle,
-	name prim.ArrayU8,
-	value *prim.Char8,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	value prim.Pointer[prim.Char8],
 	valueMaxLen prim.Usize,
-	nwrittenOut *prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // GetHeaderValue returns the first header value of the given header name on the
 // response, if any.
 func (r *HTTPResponse) GetHeaderValue(name string, maxHeaderValueLen int) (string, error) {
 	buf := prim.NewWriteBuffer(maxHeaderValueLen)
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+
 	if err := fastlyHTTPRespHeaderValueGet(
 		r.h,
-		prim.NewReadBufferFromString(name).ArrayU8(),
-		buf.Char8Pointer(),
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
-		buf.NPointer(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
@@ -2028,17 +2012,16 @@ func (r *HTTPResponse) GetHeaderValue(name string, maxHeaderValueLen int) (strin
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_resp
-//export header_values_get
+//go:wasmimport fastly_http_resp header_values_get
 //go:noescape
 func fastlyHTTPRespHeaderValuesGet(
 	h responseHandle,
-	name prim.ArrayU8,
-	buf *prim.Char8,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	buf prim.Pointer[prim.Char8],
 	bufLen prim.Usize,
 	cursor multiValueCursor,
-	endingCursorOut *multiValueCursorResult,
-	nwrittenOut *prim.Usize,
+	endingCursorOut prim.Pointer[multiValueCursorResult],
+	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // GetHeaderValues returns an iterator that yields the values for the named
@@ -2051,14 +2034,16 @@ func (r *HTTPResponse) GetHeaderValues(name string, maxHeaderValueLen int) *Valu
 		endingCursorOut *multiValueCursorResult,
 		nwrittenOut *prim.Usize,
 	) FastlyStatus {
+		nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+
 		return fastlyHTTPRespHeaderValuesGet(
 			r.h,
-			prim.NewReadBufferFromString(name).ArrayU8(),
-			buf,
+			nameBuffer.Data, nameBuffer.Len,
+			prim.ToPointer(buf),
 			bufLen,
 			cursor,
-			endingCursorOut,
-			nwrittenOut,
+			prim.ToPointer(endingCursorOut),
+			prim.ToPointer(nwrittenOut),
 		)
 	}
 
@@ -2074,13 +2059,12 @@ func (r *HTTPResponse) GetHeaderValues(name string, maxHeaderValueLen int) *Valu
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_resp
-//export header_values_set
+//go:wasmimport fastly_http_resp header_values_set
 //go:noescape
 func fastlyHTTPRespHeaderValuesSet(
 	h responseHandle,
-	name prim.ArrayU8,
-	values prim.ArrayChar8, // multiple values separated by \0
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	valuesData prim.Pointer[prim.U8], valuesLen prim.Usize, // multiple values separated by \0
 ) FastlyStatus
 
 // SetHeaderValues sets the provided header(s) on the response.
@@ -2093,10 +2077,13 @@ func (r *HTTPResponse) SetHeaderValues(name string, values []string) error {
 		buf.WriteByte(0)
 	}
 
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+	buf_Bytes_Buffer := prim.NewReadBufferFromBytes(buf.Bytes()).ArrayChar8()
+
 	return fastlyHTTPRespHeaderValuesSet(
 		r.h,
-		prim.NewReadBufferFromString(name).ArrayU8(),
-		prim.NewReadBufferFromBytes(buf.Bytes()).ArrayChar8(),
+		nameBuffer.Data, nameBuffer.Len,
+		buf_Bytes_Buffer.Data, buf_Bytes_Buffer.Len,
 	).toError()
 }
 
@@ -2109,13 +2096,12 @@ func (r *HTTPResponse) SetHeaderValues(name string, values []string) error {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_resp
-//export header_insert
+//go:wasmimport fastly_http_resp header_insert
 //go:noescape
 func fastlyHTTPRespHeaderInsert(
 	h responseHandle,
-	name prim.ArrayU8,
-	value prim.ArrayU8,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	valueData prim.Pointer[prim.U8], valueLen prim.Usize,
 ) FastlyStatus
 
 // InsertHeader adds the provided header to the response.
@@ -2124,10 +2110,13 @@ func (r *HTTPResponse) InsertHeader(name, value string) error {
 		nameBuf  = prim.NewReadBufferFromString(name)
 		valueBuf = prim.NewReadBufferFromString(value)
 	)
+	nameBufArrayU8 := nameBuf.ArrayU8()
+	valueBufArrayU8 := valueBuf.ArrayU8()
+
 	return fastlyHTTPRespHeaderInsert(
 		r.h,
-		nameBuf.ArrayU8(),
-		valueBuf.ArrayU8(),
+		nameBufArrayU8.Data, nameBufArrayU8.Len,
+		valueBufArrayU8.Data, valueBufArrayU8.Len,
 	).toError()
 }
 
@@ -2140,23 +2129,25 @@ func (r *HTTPResponse) InsertHeader(name, value string) error {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_resp
-//export header_append
+//go:wasmimport fastly_http_resp header_append
 //go:noescape
 func fastlyHTTPRespHeaderAppend(
 	h responseHandle,
-	name prim.ArrayU8,
-	value prim.ArrayU8,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	valueData prim.Pointer[prim.U8], valueLen prim.Usize,
 ) FastlyStatus
 
 // AppendHeader adds the provided header to the response.
 //
 // TODO(pb): what is the difference to InsertHeader?
 func (r *HTTPResponse) AppendHeader(name, value string) error {
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+	valueBuffer := prim.NewReadBufferFromString(value).ArrayU8()
+
 	return fastlyHTTPRespHeaderAppend(
 		r.h,
-		prim.NewReadBufferFromString(name).ArrayU8(),
-		prim.NewReadBufferFromString(value).ArrayU8(),
+		nameBuffer.Data, nameBuffer.Len,
+		valueBuffer.Data, valueBuffer.Len,
 	).toError()
 }
 
@@ -2168,19 +2159,20 @@ func (r *HTTPResponse) AppendHeader(name, value string) error {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_resp
-//export header_remove
+//go:wasmimport fastly_http_resp header_remove
 //go:noescape
 func fastlyHTTPRespHeaderRemove(
 	h responseHandle,
-	name prim.ArrayU8,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
 ) FastlyStatus
 
 // RemoveHeader removes the named header(s) from the response.
 func (r *HTTPResponse) RemoveHeader(name string) error {
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+
 	return fastlyHTTPRespHeaderRemove(
 		r.h,
-		prim.NewReadBufferFromString(name).ArrayU8(),
+		nameBuffer.Data, nameBuffer.Len,
 	).toError()
 }
 
@@ -2192,20 +2184,20 @@ func (r *HTTPResponse) RemoveHeader(name string) error {
 //	   (result $version $http_version)
 //	)
 //
-//go:wasm-module fastly_http_resp
-//export version_get
+//go:wasmimport fastly_http_resp version_get
 //go:noescape
 func fastlyHTTPRespVersionGet(
 	h responseHandle,
-	version *HTTPVersion,
+	version prim.Pointer[HTTPVersion],
 ) FastlyStatus
 
 // GetVersion returns the HTTP version of the request.
 func (r *HTTPResponse) GetVersion() (proto string, major, minor int, err error) {
 	var v HTTPVersion
+
 	if err := fastlyHTTPRespVersionGet(
 		r.h,
-		&v,
+		prim.ToPointer(&v),
 	).toError(); err != nil {
 		return "", 0, 0, err
 	}
@@ -2221,8 +2213,7 @@ func (r *HTTPResponse) GetVersion() (proto string, major, minor int, err error) 
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_resp
-//export version_set
+//go:wasmimport fastly_http_resp version_set
 //go:noescape
 func fastlyHTTPRespVersionSet(
 	h responseHandle,
@@ -2231,6 +2222,7 @@ func fastlyHTTPRespVersionSet(
 
 // SetVersion sets the HTTP version of the response.
 func (r *HTTPResponse) SetVersion(v HTTPVersion) error {
+
 	return fastlyHTTPRespVersionSet(
 		r.h,
 		v,
@@ -2246,8 +2238,7 @@ func (r *HTTPResponse) SetVersion(v HTTPVersion) error {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_resp
-//export send_downstream
+//go:wasmimport fastly_http_resp send_downstream
 //go:noescape
 func fastlyHTTPRespSendDownstream(
 	h responseHandle,
@@ -2287,20 +2278,20 @@ func (r *HTTPResponse) SendDownstream(responseBody *HTTPBody, stream bool) error
 //	   (result $status $http_status)
 //	)
 //
-//go:wasm-module fastly_http_resp
-//export status_get
+//go:wasmimport fastly_http_resp status_get
 //go:noescape
 func fastlyHTTPRespStatusGet(
 	h responseHandle,
-	status *httpStatus,
+	status prim.Pointer[httpStatus],
 ) FastlyStatus
 
 // GetStatusCode returns the status code of the response.
 func (r *HTTPResponse) GetStatusCode() (int, error) {
 	var status httpStatus
+
 	if err := fastlyHTTPRespStatusGet(
 		r.h,
-		&status,
+		prim.ToPointer(&status),
 	).toError(); err != nil {
 		return 0, err
 	}
@@ -2316,8 +2307,7 @@ func (r *HTTPResponse) GetStatusCode() (int, error) {
 //	   (result $err $fastly_status)
 //	)
 //
-//go:wasm-module fastly_http_resp
-//export status_set
+//go:wasmimport fastly_http_resp status_set
 //go:noescape
 func fastlyHTTPRespStatusSet(
 	h responseHandle,
@@ -2327,6 +2317,7 @@ func fastlyHTTPRespStatusSet(
 // SetStatusCode sets the status code of the response.
 func (r *HTTPResponse) SetStatusCode(code int) error {
 	status := httpStatus(code)
+
 	return fastlyHTTPRespStatusSet(
 		r.h,
 		status,
@@ -2341,8 +2332,7 @@ func (r *HTTPResponse) SetStatusCode(code int) error {
 //	     (result $err (expected (error $fastly_status)))
 //	 )
 //
-//go:wasm-module fastly_http_resp
-//export framing_headers_mode_set
+//go:wasmimport fastly_http_resp framing_headers_mode_set
 //go:noescape
 func fastlyHTTPRespSetFramingHeadersMode(
 	h responseHandle,
@@ -2355,6 +2345,7 @@ func (r *HTTPResponse) SetFramingHeadersMode(manual bool) error {
 	if manual {
 		mode = framingHeadersModeManuallyFromHeaders
 	}
+
 	return fastlyHTTPRespSetFramingHeadersMode(
 		r.h,
 		mode,
@@ -2370,12 +2361,11 @@ func (r *HTTPResponse) SetFramingHeadersMode(manual bool) error {
 //	      (result $h $dictionary_handle)
 //	   )
 //
-//go:wasm-module fastly_dictionary
-//export open
+//go:wasmimport fastly_dictionary open
 //go:noescape
 func fastlyDictionaryOpen(
-	name prim.Wstring,
-	h *dictionaryHandle,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	h prim.Pointer[dictionaryHandle],
 ) FastlyStatus
 
 // Dictionary represents a Fastly edge dictionary, a collection of read-only
@@ -2389,9 +2379,11 @@ type Dictionary struct {
 func OpenDictionary(name string) (*Dictionary, error) {
 	var d Dictionary
 
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyDictionaryOpen(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&d.h,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&d.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -2410,26 +2402,27 @@ func OpenDictionary(name string) (*Dictionary, error) {
 //	   (result $nwritten (@witx usize))
 //	)
 //
-//go:wasm-module fastly_dictionary
-//export get
+//go:wasmimport fastly_dictionary get
 //go:noescape
 func fastlyDictionaryGet(
 	h dictionaryHandle,
-	key prim.Wstring,
-	value *prim.Char8,
+	keyData prim.Pointer[prim.U8], keyLen prim.Usize,
+	value prim.Pointer[prim.Char8],
 	valueMaxLen prim.Usize,
-	nWritten *prim.Usize,
+	nWritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // Get the value for key, if it exists.
 func (d *Dictionary) Get(key string) (string, error) {
 	buf := prim.NewWriteBuffer(dictionaryValueMaxLen)
+	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
+
 	if err := fastlyDictionaryGet(
 		d.h,
-		prim.NewReadBufferFromString(key).Wstring(),
-		buf.Char8Pointer(),
+		keyBuffer.Data, keyBuffer.Len,
+		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
-		buf.NPointer(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
@@ -2451,15 +2444,14 @@ func (d *Dictionary) Get(key string) (string, error) {
 //
 // )
 //
-//go:wasm-module fastly_geo
-//export lookup
+//go:wasmimport fastly_geo lookup
 //go:noescape
 func fastlyGeoLookup(
-	addrOctets *prim.Char8,
+	addrOctets prim.Pointer[prim.Char8],
 	addLen prim.Usize,
-	buf *prim.Char8,
+	buf prim.Pointer[prim.Char8],
 	bufLen prim.Usize,
-	nWrittenOut *prim.Usize,
+	nWrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // GeoLookup returns the geographic data associated with the IP address.
@@ -2469,12 +2461,13 @@ func GeoLookup(ip net.IP) ([]byte, error) {
 		ip = x
 	}
 	addrOctets := prim.NewReadBufferFromBytes(ip)
+
 	if err := fastlyGeoLookup(
-		addrOctets.Char8Pointer(),
+		prim.ToPointer(addrOctets.Char8Pointer()),
 		addrOctets.Len(),
-		buf.Char8Pointer(),
+		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
-		buf.NPointer(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -2490,12 +2483,11 @@ func GeoLookup(ip net.IP) ([]byte, error) {
 //	     (result $err (expected $object_store_handle (error $fastly_status)))
 //	  )
 
-//go:wasm-module fastly_object_store
-//export open
+//go:wasmimport fastly_object_store open
 //go:noescape
 func fastlyObjectStoreOpen(
-	name prim.Wstring,
-	h *objectStoreHandle,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	h prim.Pointer[objectStoreHandle],
 ) FastlyStatus
 
 // objectStore represents a Fastly kv store, a collection of key/value pairs.
@@ -2508,9 +2500,11 @@ type KVStore struct {
 func OpenKVStore(name string) (*KVStore, error) {
 	var o KVStore
 
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlyObjectStoreOpen(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&o.h,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&o.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -2527,23 +2521,24 @@ func OpenKVStore(name string) (*KVStore, error) {
 //	   (result $err (expected (error $fastly_status)))
 //	)
 
-//go:wasm-module fastly_object_store
-//export lookup
+//go:wasmimport fastly_object_store lookup
 //go:noescape
 func fastlyObjectStoreLookup(
 	h objectStoreHandle,
-	key prim.Wstring,
-	b *bodyHandle,
+	keyData prim.Pointer[prim.U8], keyLen prim.Usize,
+	b prim.Pointer[bodyHandle],
 ) FastlyStatus
 
 // Lookup returns the value for key, if it exists.
 func (o *KVStore) Lookup(key string) (io.Reader, error) {
 	body := HTTPBody{h: invalidBodyHandle}
 
+	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
+
 	if err := fastlyObjectStoreLookup(
 		o.h,
-		prim.NewReadBufferFromString(key).Wstring(),
-		&body.h,
+		keyBuffer.Data, keyBuffer.Len,
+		prim.ToPointer(&body.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -2566,12 +2561,11 @@ func (o *KVStore) Lookup(key string) (io.Reader, error) {
 //	  (result $err (expected (error $fastly_status)))
 //	)
 
-//go:wasm-module fastly_object_store
-//export insert
+//go:wasmimport fastly_object_store insert
 //go:noescape
 func fastlyObjectStoreInsert(
 	h objectStoreHandle,
-	key prim.Wstring,
+	keyData prim.Pointer[prim.U8], keyLen prim.Usize,
 	b bodyHandle,
 ) FastlyStatus
 
@@ -2586,9 +2580,11 @@ func (o *KVStore) Insert(key string, value io.Reader) error {
 		return err
 	}
 
+	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
+
 	if err := fastlyObjectStoreInsert(
 		o.h,
-		prim.NewReadBufferFromString(key).Wstring(),
+		keyBuffer.Data, keyBuffer.Len,
 		body.h,
 	).toError(); err != nil {
 		return err
@@ -2617,21 +2613,22 @@ type Secret struct {
 //	     (result $err (expected $secret_store_handle (error $fastly_status)))
 //	  )
 
-//go:wasm-module fastly_secret_store
-//export open
+//go:wasmimport fastly_secret_store open
 //go:noescape
 func fastlySecretStoreOpen(
-	name prim.Wstring,
-	h *secretStoreHandle,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	h prim.Pointer[secretStoreHandle],
 ) FastlyStatus
 
 // OpenSecretStore returns a reference to the named secret store, if it exists.
 func OpenSecretStore(name string) (*SecretStore, error) {
 	var st SecretStore
 
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlySecretStoreOpen(
-		prim.NewReadBufferFromString(name).Wstring(),
-		&st.h,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&st.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -2649,13 +2646,12 @@ func OpenSecretStore(name string) (*SecretStore, error) {
 //     )
 //   )
 
-//go:wasm-module fastly_secret_store
-//export get
+//go:wasmimport fastly_secret_store get
 //go:noescape
 func fastlySecretStoreGet(
 	h secretStoreHandle,
-	key prim.Wstring,
-	s *secretHandle,
+	keyData prim.Pointer[prim.U8], keyLen prim.Usize,
+	s prim.Pointer[secretHandle],
 ) FastlyStatus
 
 // Get returns a handle to the secret value for the given name, if it
@@ -2663,10 +2659,12 @@ func fastlySecretStoreGet(
 func (st *SecretStore) Get(name string) (*Secret, error) {
 	var s Secret
 
+	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
+
 	if err := fastlySecretStoreGet(
 		st.h,
-		prim.NewReadBufferFromString(name).Wstring(),
-		&s.h,
+		nameBuffer.Data, nameBuffer.Len,
+		prim.ToPointer(&s.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -2686,14 +2684,13 @@ func (st *SecretStore) Get(name string) (*Secret, error) {
 //     )
 //   )
 
-//go:wasm-module fastly_secret_store
-//export plaintext
+//go:wasmimport fastly_secret_store plaintext
 //go:noescape
 func fastlySecretPlaintext(
 	h secretHandle,
-	buf *prim.Char8,
+	buf prim.Pointer[prim.Char8],
 	bufLen prim.Usize,
-	nwritten *prim.Usize,
+	nwritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // Plaintext decrypts and returns the secret value as a byte slice.
@@ -2705,9 +2702,9 @@ func (s *Secret) Plaintext() ([]byte, error) {
 
 	status := fastlySecretPlaintext(
 		s.h,
-		buf.Char8Pointer(),
+		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
-		buf.NPointer(),
+		prim.ToPointer(buf.NPointer()),
 	)
 	if status == FastlyStatusBufLen {
 		// The buffer was too small, but it'll tell us how big it will
@@ -2716,9 +2713,9 @@ func (s *Secret) Plaintext() ([]byte, error) {
 
 		status = fastlySecretPlaintext(
 			s.h,
-			buf.Char8Pointer(),
+			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
-			buf.NPointer(),
+			prim.ToPointer(buf.NPointer()),
 		)
 	}
 
@@ -2805,7 +2802,7 @@ func (o *CacheWriteOptions) SetRequest(req *HTTPRequest) {
 func (o *CacheWriteOptions) Vary(v []string) {
 	vstr := strings.Join(v, " ")
 	buf := prim.NewReadBufferFromString(vstr)
-	o.opts.varyRulePtr = buf.Char8Pointer()
+	o.opts.varyRulePtr = prim.ToPointer(buf.Char8Pointer())
 	o.opts.varyRuleLen = buf.Len()
 	o.mask |= cacheWriteOptionsMaskVaryRule
 }
@@ -2823,7 +2820,7 @@ func (o *CacheWriteOptions) StaleWhileRevalidate(v time.Duration) {
 func (o *CacheWriteOptions) SurrogateKeys(v []string) {
 	vstr := strings.Join(v, " ")
 	buf := prim.NewReadBufferFromString(vstr)
-	o.opts.surrogateKeysPtr = buf.Char8Pointer()
+	o.opts.surrogateKeysPtr = prim.ToPointer(buf.Char8Pointer())
 	o.opts.surrogateKeysLen = buf.Len()
 	o.mask |= cacheWriteOptionsMaskSurrogateKeys
 }
@@ -2835,7 +2832,7 @@ func (o *CacheWriteOptions) ContentLength(v uint64) {
 
 func (o *CacheWriteOptions) UserMetadata(v []byte) {
 	buf := prim.NewReadBufferFromBytes(v)
-	o.opts.userMetadataPtr = buf.U8Pointer()
+	o.opts.userMetadataPtr = prim.ToPointer(buf.U8Pointer())
 	o.opts.userMetadataLen = buf.Len()
 	o.mask |= cacheWriteOptionsMaskUserMetadata
 }
@@ -2863,24 +2860,25 @@ type CacheEntry struct {
 //	  )
 //	)
 //
-//go:wasm-module fastly_cache
-//export lookup
+//go:wasmimport fastly_cache lookup
 //go:noescape
 func fastlyCacheLookup(
-	key prim.ArrayU8,
+	keyData prim.Pointer[prim.U8], keyLen prim.Usize,
 	mask cacheLookupOptionsMask,
-	opts *cacheLookupOptions,
-	h *cacheHandle,
+	opts prim.Pointer[cacheLookupOptions],
+	h prim.Pointer[cacheHandle],
 ) FastlyStatus
 
 func CacheLookup(key []byte, opts CacheLookupOptions) (*CacheEntry, error) {
 	var entry CacheEntry
 
+	keyBuffer := prim.NewReadBufferFromBytes(key).ArrayU8()
+
 	if err := fastlyCacheLookup(
-		prim.NewReadBufferFromBytes(key).ArrayU8(),
+		keyBuffer.Data, keyBuffer.Len,
 		opts.mask,
-		&opts.opts,
-		&entry.h,
+		prim.ToPointer(&opts.opts),
+		prim.ToPointer(&entry.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -2901,24 +2899,25 @@ func CacheLookup(key []byte, opts CacheLookupOptions) (*CacheEntry, error) {
 //		  (result $err (expected $body_handle (error $fastly_status)))
 //	 )
 //
-//go:wasm-module fastly_cache
-//export insert
+//go:wasmimport fastly_cache insert
 //go:noescape
 func fastlyCacheInsert(
-	key prim.ArrayU8,
+	keyData prim.Pointer[prim.U8], keyLen prim.Usize,
 	mask cacheWriteOptionsMask,
-	opts *cacheWriteOptions,
-	h *bodyHandle,
+	opts prim.Pointer[cacheWriteOptions],
+	h prim.Pointer[bodyHandle],
 ) FastlyStatus
 
 func CacheInsert(key []byte, opts CacheWriteOptions) (*HTTPBody, error) {
 	body := HTTPBody{closable: true}
 
+	keyBuffer := prim.NewReadBufferFromBytes(key).ArrayU8()
+
 	if err := fastlyCacheInsert(
-		prim.NewReadBufferFromBytes(key).ArrayU8(),
+		keyBuffer.Data, keyBuffer.Len,
 		opts.mask,
-		&opts.opts,
-		&body.h,
+		prim.ToPointer(&opts.opts),
+		prim.ToPointer(&body.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -2939,24 +2938,25 @@ func CacheInsert(key []byte, opts CacheWriteOptions) (*HTTPBody, error) {
 //		  (result $err (expected $cache_handle (error $fastly_status)))
 //	 )
 //
-//go:wasm-module fastly_cache
-//export transaction_lookup
+//go:wasmimport fastly_cache transaction_lookup
 //go:noescape
 func fastlyCacheTransactionLookup(
-	key prim.ArrayU8,
+	keyData prim.Pointer[prim.U8], keyLen prim.Usize,
 	mask cacheLookupOptionsMask,
-	opts *cacheLookupOptions,
-	h *cacheHandle,
+	opts prim.Pointer[cacheLookupOptions],
+	h prim.Pointer[cacheHandle],
 ) FastlyStatus
 
 func CacheTransactionLookup(key []byte, opts CacheLookupOptions) (*CacheEntry, error) {
 	var entry CacheEntry
 
+	keyBuffer := prim.NewReadBufferFromBytes(key).ArrayU8()
+
 	if err := fastlyCacheTransactionLookup(
-		prim.NewReadBufferFromBytes(key).ArrayU8(),
+		keyBuffer.Data, keyBuffer.Len,
 		opts.mask,
-		&opts.opts,
-		&entry.h,
+		prim.ToPointer(&opts.opts),
+		prim.ToPointer(&entry.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -2979,14 +2979,13 @@ func CacheTransactionLookup(key []byte, opts CacheLookupOptions) (*CacheEntry, e
 //	  (result $err (expected $body_handle (error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_cache
-//export transaction_insert
+//go:wasmimport fastly_cache transaction_insert
 //go:noescape
 func fastlyCacheTransactionInsert(
 	h cacheHandle,
 	mask cacheWriteOptionsMask,
-	opts *cacheWriteOptions,
-	body *bodyHandle,
+	opts prim.Pointer[cacheWriteOptions],
+	body prim.Pointer[bodyHandle],
 ) FastlyStatus
 
 func (c *CacheEntry) Insert(opts CacheWriteOptions) (*HTTPBody, error) {
@@ -2995,8 +2994,8 @@ func (c *CacheEntry) Insert(opts CacheWriteOptions) (*HTTPBody, error) {
 	if err := fastlyCacheTransactionInsert(
 		c.h,
 		opts.mask,
-		&opts.opts,
-		&body.h,
+		prim.ToPointer(&opts.opts),
+		prim.ToPointer(&body.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -3023,15 +3022,14 @@ func (c *CacheEntry) Insert(opts CacheWriteOptions) (*HTTPBody, error) {
 //	  (result $err (expected (tuple $body_handle $cache_handle) (error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_cache
-//export transaction_insert_and_stream_back
+//go:wasmimport fastly_cache transaction_insert_and_stream_back
 //go:noescape
 func fastlyCacheTransactionInsertAndStreamBack(
 	h cacheHandle,
 	mask cacheWriteOptionsMask,
-	opts *cacheWriteOptions,
-	body *bodyHandle,
-	stream *cacheHandle,
+	opts prim.Pointer[cacheWriteOptions],
+	body prim.Pointer[bodyHandle],
+	stream prim.Pointer[cacheHandle],
 ) FastlyStatus
 
 func (c *CacheEntry) InsertAndStreamBack(opts CacheWriteOptions) (*HTTPBody, *CacheEntry, error) {
@@ -3041,9 +3039,9 @@ func (c *CacheEntry) InsertAndStreamBack(opts CacheWriteOptions) (*HTTPBody, *Ca
 	if err := fastlyCacheTransactionInsertAndStreamBack(
 		c.h,
 		opts.mask,
-		&opts.opts,
-		&body.h,
-		&entry.h,
+		prim.ToPointer(&opts.opts),
+		prim.ToPointer(&body.h),
+		prim.ToPointer(&entry.h),
 	).toError(); err != nil {
 		return nil, nil, err
 	}
@@ -3065,20 +3063,20 @@ func (c *CacheEntry) InsertAndStreamBack(opts CacheWriteOptions) (*HTTPBody, *Ca
 //	  (result $err (expected (error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_cache
-//export transaction_update
+//go:wasmimport fastly_cache transaction_update
 //go:noescape
 func fastlyCacheTransactionUpdate(
 	h cacheHandle,
 	mask cacheWriteOptionsMask,
-	opts *cacheWriteOptions,
+	opts prim.Pointer[cacheWriteOptions],
 ) FastlyStatus
 
 func (c *CacheEntry) Update(opts CacheWriteOptions) error {
+
 	return fastlyCacheTransactionUpdate(
 		c.h,
 		opts.mask,
-		&opts.opts,
+		prim.ToPointer(&opts.opts),
 	).toError()
 }
 
@@ -3092,12 +3090,12 @@ func (c *CacheEntry) Update(opts CacheWriteOptions) error {
 //		  (result $err (expected (error $fastly_status)))
 //	 )
 //
-//go:wasm-module fastly_cache
-//export transaction_cancel
+//go:wasmimport fastly_cache transaction_cancel
 //go:noescape
 func fastlyCacheTransactionCancel(h cacheHandle) FastlyStatus
 
 func (c *CacheEntry) Cancel() error {
+
 	return fastlyCacheTransactionCancel(c.h).toError()
 }
 
@@ -3108,12 +3106,12 @@ func (c *CacheEntry) Cancel() error {
 //	  (result $err (expected (error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_cache
-//export close
+//go:wasmimport fastly_cache close
 //go:noescape
 func fastlyCacheClose(h cacheHandle) FastlyStatus
 
 func (c *CacheEntry) Close() error {
+
 	return fastlyCacheClose(c.h).toError()
 }
 
@@ -3124,14 +3122,14 @@ func (c *CacheEntry) Close() error {
 //	  (result $err (expected $cache_lookup_state (error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_cache
-//export get_state
+//go:wasmimport fastly_cache get_state
 //go:noescape
-func fastlyCacheGetState(h cacheHandle, st *CacheLookupState) FastlyStatus
+func fastlyCacheGetState(h cacheHandle, st prim.Pointer[CacheLookupState]) FastlyStatus
 
 func (c *CacheEntry) State() (CacheLookupState, error) {
 	var state CacheLookupState
-	if err := fastlyCacheGetState(c.h, &state).toError(); err != nil {
+
+	if err := fastlyCacheGetState(c.h, prim.ToPointer(&state)).toError(); err != nil {
 		return 0, err
 	}
 
@@ -3150,14 +3148,13 @@ func (c *CacheEntry) State() (CacheLookupState, error) {
 //		  (result $err (expected (error $fastly_status)))
 //	 )
 //
-//go:wasm-module fastly_cache
-//export get_user_metadata
+//go:wasmimport fastly_cache get_user_metadata
 //go:noescape
 func fastlyCacheGetUserMetadata(
 	h cacheHandle,
-	buf *prim.U8,
+	buf prim.Pointer[prim.U8],
 	bufLen prim.Usize,
-	nwritten *prim.Usize,
+	nwritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 func (c *CacheEntry) UserMetadata() ([]byte, error) {
@@ -3165,9 +3162,9 @@ func (c *CacheEntry) UserMetadata() ([]byte, error) {
 
 	status := fastlyCacheGetUserMetadata(
 		c.h,
-		buf.U8Pointer(),
+		prim.ToPointer(buf.U8Pointer()),
 		buf.Cap(),
-		buf.NPointer(),
+		prim.ToPointer(buf.NPointer()),
 	)
 	if status == FastlyStatusBufLen {
 		// The buffer was too small, but it'll tell us how big it will
@@ -3176,9 +3173,9 @@ func (c *CacheEntry) UserMetadata() ([]byte, error) {
 
 		status = fastlyCacheGetUserMetadata(
 			c.h,
-			buf.U8Pointer(),
+			prim.ToPointer(buf.U8Pointer()),
 			buf.Cap(),
-			buf.NPointer(),
+			prim.ToPointer(buf.NPointer()),
 		)
 	}
 
@@ -3200,14 +3197,13 @@ func (c *CacheEntry) UserMetadata() ([]byte, error) {
 //		  (result $err (expected $body_handle (error $fastly_status)))
 //	 )
 //
-//go:wasm-module fastly_cache
-//export get_body
+//go:wasmimport fastly_cache get_body
 //go:noescape
 func fastlyCacheGetBody(
 	h cacheHandle,
 	mask cacheGetBodyOptionsMask,
-	opts *cacheGetBodyOptions,
-	body *bodyHandle,
+	opts prim.Pointer[cacheGetBodyOptions],
+	body prim.Pointer[bodyHandle],
 ) FastlyStatus
 
 func (c *CacheEntry) Body(opts CacheGetBodyOptions) (*HTTPBody, error) {
@@ -3216,8 +3212,8 @@ func (c *CacheEntry) Body(opts CacheGetBodyOptions) (*HTTPBody, error) {
 	if err := fastlyCacheGetBody(
 		c.h,
 		opts.mask,
-		&opts.opts,
-		&b.h,
+		prim.ToPointer(&opts.opts),
+		prim.ToPointer(&b.h),
 	).toError(); err != nil {
 		return nil, err
 	}
@@ -3236,14 +3232,14 @@ func (c *CacheEntry) Body(opts CacheGetBodyOptions) (*HTTPBody, error) {
 //		  (result $err (expected $cache_object_length (error $fastly_status)))
 //	 )
 //
-//go:wasm-module fastly_cache
-//export get_length
+//go:wasmimport fastly_cache get_length
 //go:noescape
-func fastlyCacheGetLength(h cacheHandle, l *prim.U64) FastlyStatus
+func fastlyCacheGetLength(h cacheHandle, l prim.Pointer[prim.U64]) FastlyStatus
 
 func (c *CacheEntry) Length() (uint64, error) {
 	var l prim.U64
-	if err := fastlyCacheGetLength(c.h, &l).toError(); err != nil {
+
+	if err := fastlyCacheGetLength(c.h, prim.ToPointer(&l)).toError(); err != nil {
 		return 0, err
 	}
 
@@ -3259,14 +3255,14 @@ func (c *CacheEntry) Length() (uint64, error) {
 //		  (result $err (expected $cache_duration_ns (error $fastly_status)))
 //	 )
 //
-//go:wasm-module fastly_cache
-//export get_max_age_ns
+//go:wasmimport fastly_cache get_max_age_ns
 //go:noescape
-func fastlyCacheGetMaxAgeNs(h cacheHandle, d *prim.U64) FastlyStatus
+func fastlyCacheGetMaxAgeNs(h cacheHandle, d prim.Pointer[prim.U64]) FastlyStatus
 
 func (c *CacheEntry) MaxAge() (time.Duration, error) {
 	var d prim.U64
-	if err := fastlyCacheGetMaxAgeNs(c.h, &d).toError(); err != nil {
+
+	if err := fastlyCacheGetMaxAgeNs(c.h, prim.ToPointer(&d)).toError(); err != nil {
 		return 0, err
 	}
 
@@ -3282,14 +3278,14 @@ func (c *CacheEntry) MaxAge() (time.Duration, error) {
 //		  (result $err (expected $cache_duration_ns (error $fastly_status)))
 //	 )
 //
-//go:wasm-module fastly_cache
-//export get_stale_while_revalidate_ns
+//go:wasmimport fastly_cache get_stale_while_revalidate_ns
 //go:noescape
-func fastlyCacheGetStaleWhileRevalidateNs(h cacheHandle, d *prim.U64) FastlyStatus
+func fastlyCacheGetStaleWhileRevalidateNs(h cacheHandle, d prim.Pointer[prim.U64]) FastlyStatus
 
 func (c *CacheEntry) StaleWhileRevalidate() (time.Duration, error) {
 	var d prim.U64
-	if err := fastlyCacheGetStaleWhileRevalidateNs(c.h, &d).toError(); err != nil {
+
+	if err := fastlyCacheGetStaleWhileRevalidateNs(c.h, prim.ToPointer(&d)).toError(); err != nil {
 		return 0, err
 	}
 
@@ -3305,14 +3301,14 @@ func (c *CacheEntry) StaleWhileRevalidate() (time.Duration, error) {
 //		  (result $err (expected $cache_duration_ns (error $fastly_status)))
 //	 )
 //
-//go:wasm-module fastly_cache
-//export get_age_ns
+//go:wasmimport fastly_cache get_age_ns
 //go:noescape
-func fastlyCacheGetAgeNs(h cacheHandle, d *prim.U64) FastlyStatus
+func fastlyCacheGetAgeNs(h cacheHandle, d prim.Pointer[prim.U64]) FastlyStatus
 
 func (c *CacheEntry) Age() (time.Duration, error) {
 	var d prim.U64
-	if err := fastlyCacheGetAgeNs(c.h, &d).toError(); err != nil {
+
+	if err := fastlyCacheGetAgeNs(c.h, prim.ToPointer(&d)).toError(); err != nil {
 		return 0, err
 	}
 
@@ -3328,14 +3324,14 @@ func (c *CacheEntry) Age() (time.Duration, error) {
 //		  (result $err (expected $cache_hit_count (error $fastly_status)))
 //	 )
 //
-//go:wasm-module fastly_cache
-//export get_hits
+//go:wasmimport fastly_cache get_hits
 //go:noescape
-func fastlyCacheGetHits(h cacheHandle, d *prim.U64) FastlyStatus
+func fastlyCacheGetHits(h cacheHandle, d prim.Pointer[prim.U64]) FastlyStatus
 
 func (c *CacheEntry) Hits() (uint64, error) {
 	var d prim.U64
-	if err := fastlyCacheGetHits(c.h, &d).toError(); err != nil {
+
+	if err := fastlyCacheGetHits(c.h, prim.ToPointer(&d)).toError(); err != nil {
 		return 0, err
 	}
 
@@ -3364,15 +3360,16 @@ func (o *PurgeOptions) SoftPurge(v bool) {
 //	    (result $err (expected (error $fastly_status)))
 //	)
 //
-//go:wasm-module fastly_purge
-//export purge_surrogate_key
+//go:wasmimport fastly_purge purge_surrogate_key
 //go:noescape
-func fastlyPurgeSurrogateKey(surrogateKey prim.Wstring, mask purgeOptionsMask, opts *purgeOptions) FastlyStatus
+func fastlyPurgeSurrogateKey(surrogateKeyData prim.Pointer[prim.U8], surrogateKeyLen prim.Usize, mask purgeOptionsMask, opts prim.Pointer[purgeOptions]) FastlyStatus
 
 func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
+	surrogateKeyBuffer := prim.NewReadBufferFromString(surrogateKey).Wstring()
+
 	return fastlyPurgeSurrogateKey(
-		prim.NewReadBufferFromString(surrogateKey).Wstring(),
+		surrogateKeyBuffer.Data, surrogateKeyBuffer.Len,
 		opts.mask,
-		&opts.opts,
+		prim.ToPointer(&opts.opts),
 	).toError()
 }
