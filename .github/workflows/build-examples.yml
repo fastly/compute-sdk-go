@@ -1,7 +1,7 @@
 name: Build Examples
 on: [push]
 jobs:
-  build-examples:
+  build-examples-tinygo:
     strategy:
       matrix:
         go-version: ['^1.20.0', '^1.19.0']
@@ -23,4 +23,22 @@ jobs:
           for i in _examples/*; do
             echo ${GITHUB_WORKSPACE}/$i
             cd ${GITHUB_WORKSPACE}/$i && tinygo build -target=wasi
+          done
+  build-examples-go:
+    strategy:
+      matrix:
+        go-version: ['^1.21.0']
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fastly/compute-sdk-go
+        uses: actions/checkout@v3
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+         go-version: ${{ matrix.go-version }}
+      - name: Build examples
+        run: |
+          for i in _examples/*; do
+            echo ${GITHUB_WORKSPACE}/$i
+            cd ${GITHUB_WORKSPACE}/$i && env GOARCH=wasm GOOS=wasip1 go build
           done
