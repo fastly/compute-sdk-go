@@ -2734,13 +2734,12 @@ func (s *Secret) Plaintext() ([]byte, error) {
 //     (result $err (expected $secret_handle (error $fastly_status)))
 // )
 
-//go:wasm-module fastly_secret_store
-//export from_bytes
+//go:wasmimport fastly_secret_store from_bytes
 //go:noescape
 func fastlySecretFromBytes(
-	buf *prim.Char8,
+	buf prim.Pointer[prim.Char8],
 	bufLen prim.Usize,
-	h *secretHandle,
+	h prim.Pointer[secretHandle],
 ) FastlyStatus
 
 // FromBytes creates a secret handle for the given byte slice.  This is
@@ -2749,10 +2748,12 @@ func fastlySecretFromBytes(
 func SecretFromBytes(b []byte) (*Secret, error) {
 	var s Secret
 
+	buf := prim.NewReadBufferFromBytes(b)
+
 	if err := fastlySecretFromBytes(
-		prim.NewReadBufferFromBytes(b).Char8Pointer(),
-		prim.Usize(len(b)),
-		&s.h,
+		prim.ToPointer(buf.Char8Pointer()),
+		buf.Len(),
+		prim.ToPointer(&s.h),
 	).toError(); err != nil {
 		return nil, err
 	}
