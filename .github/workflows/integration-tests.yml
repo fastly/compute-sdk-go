@@ -3,7 +3,7 @@ on: [push]
 env:
   VICEROY_VERSION: 0.6.1
 jobs:
-  integration-tests:
+  integration-tests-tinygo:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout fastly/compute-sdk-go
@@ -34,3 +34,29 @@ jobs:
           viceroy --version
       - name: Run Integration Tests
         run: RUST_LOG="viceroy=info,viceroy-lib=info" tinygo test -v -target=compute-at-edge.json ./integration_tests/...
+  integration-tests-go:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fastly/compute-sdk-go
+        uses: actions/checkout@v3
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '^1.21.0'
+      - name: Setup Fastly CLI
+        uses: fastly/compute-actions/setup@v5
+      - name: Install Viceroy ${{ env.VICEROY_VERSION }}
+        run: |
+          echo "Install Viceroy ${{ env.VICEROY_VERSION }}..."
+          wget https://github.com/fastly/Viceroy/releases/download/v${{ env.VICEROY_VERSION }}/viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz
+          mkdir -p $HOME/bin
+          tar -xzf viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz --directory $HOME/bin
+          echo "$HOME/bin" >> $GITHUB_PATH
+        shell: "bash"
+      - name: Check our dependencies
+        run: |
+          go version
+          fastly version
+          viceroy --version
+      - name: Run Integration Tests
+        run: RUST_LOG="viceroy=info,viceroy-lib=info" GOARCH=wasm GOOS=wasip1 go test -exec "viceroy run -C fastly.toml" -v ./integration_tests/...
