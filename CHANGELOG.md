@@ -1,5 +1,15 @@
 ## Unreleased
 
+## 0.2.0 (2023-08-11)
+
+### Added
+
+- Add support for Go 1.21 WASI
+
+### Changed
+
+- Remove support for TinyGo 0.28.0 and earlier
+
 ## 0.1.7 (2023-08-04)
 
 ### Added
