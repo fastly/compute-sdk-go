@@ -1,6 +1,6 @@
 # compute-sdk-go
 
-Go SDK for building [Compute@Edge](https://www.fastly.com/products/edge-compute/serverless) applications with [Go](https://go.dev) (1.21+) and [TinyGo](https://tinygo.org/) (0.28.1+).
+Go SDK for building [Compute@Edge](https://www.fastly.com/products/edge-compute) applications with [Go](https://go.dev) (1.21+) and [TinyGo](https://tinygo.org/) (0.28.1+).
 
 ## Quick Start
 
