@@ -20,7 +20,7 @@ jobs:
           tinygo-version: ${{ matrix.tinygo-version }}
       - name: Build examples
         run: |
-          for i in _examples/*; do
+          for i in _examples/*/; do
             echo ${GITHUB_WORKSPACE}/$i
             cd ${GITHUB_WORKSPACE}/$i && tinygo build -target=wasi
           done
@@ -38,7 +38,7 @@ jobs:
          go-version: ${{ matrix.go-version }}
       - name: Build examples
         run: |
-          for i in _examples/*; do
+          for i in _examples/*/; do
             echo ${GITHUB_WORKSPACE}/$i
             cd ${GITHUB_WORKSPACE}/$i && env GOARCH=wasm GOOS=wasip1 go build
           done
