@@ -4,7 +4,7 @@ jobs:
   build-examples-tinygo:
     strategy:
       matrix:
-        go-version: ['^1.20.0', '^1.19.0']
+        go-version: ['~1.20.0', '~1.19.0']
         tinygo-version: ['0.28.1']
     runs-on: ubuntu-latest
     steps:
