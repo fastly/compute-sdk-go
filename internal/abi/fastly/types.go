@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
@@ -937,6 +938,12 @@ func (b *BackendConfigOptions) SNIHostname(sniHostname string) {
 //	        $http_request_uri_invalid
 //	        ;;; The system encountered an unexpected internal error.
 //	        $internal_error
+//	        ;;; The system received a TLS alert from the backend. The field $tls_alert_id may be set in
+//	        ;;; the $send_error_detail.
+//	        $tls_alert_received
+//	        ;;; The system encountered a TLS error when communicating with the backend, either during
+//	        ;;; the handshake or afterwards.
+//	        $tls_protocol_error
 //	        ))
 type sendErrorDetailTag prim.U32
 
@@ -964,6 +971,8 @@ const (
 	sendErrorDetailTagHTTPRequestCacheKeyInvalid                           = 20
 	sendErrorDetailTagHTTPRequestURIInvalid                                = 21
 	sendErrorDetailTagInternalError                                        = 22
+	sendErrorDetailTagTLSAlertReceived                                     = 23
+	sendErrorDetailTagTLSProtocolError                                     = 24
 )
 
 // witx:
@@ -978,6 +987,7 @@ const (
 //	       $reserved
 //	       $dns_error_rcode
 //	       $dns_error_info_code
+//	       $tls_alert_id
 //	       ))
 type sendErrorDetailMask prim.U32
 
@@ -985,6 +995,7 @@ const (
 	sendErrorDetailMaskReserved      = 1 << 0 // $reserved
 	sendErrorDetailMaskDNSErrorRCode = 1 << 1 // $dns_error_rcode
 	sendErrorDetailMaskDNSErrorInfo  = 1 << 2 // $dns_error_info_code
+	sendErrorDetailMaskTLSAlertID    = 1 << 3 // $tls_alert_id
 )
 
 // witx:
@@ -995,17 +1006,19 @@ const (
 //	    (field $mask $send_error_detail_mask)
 //	    (field $dns_error_rcode u16)
 //	    (field $dns_error_info_code u16)
+//	    (field $tls_alert_id u8)
 //	    ))
 type sendErrorDetail struct {
 	tag              sendErrorDetailTag
 	mask             sendErrorDetailMask
 	dnsErrorRCode    prim.U16
 	dnsErrorInfoCode prim.U16
+	tlsAlertID       prim.U8
 }
 
 func newSendErrorDetail() sendErrorDetail {
 	return sendErrorDetail{
-		mask: sendErrorDetailMaskDNSErrorRCode | sendErrorDetailMaskDNSErrorInfo,
+		mask: sendErrorDetailMaskDNSErrorRCode | sendErrorDetailMaskDNSErrorInfo | sendErrorDetailMaskTLSAlertID,
 	}
 }
 
@@ -1063,7 +1076,86 @@ func (d sendErrorDetail) String() string {
 		return "HTTP request URI invalid"
 	case sendErrorDetailTagInternalError:
 		return "internal error"
+	case sendErrorDetailTagTLSAlertReceived:
+		return fmt.Sprintf("TLS alert received (%s)", tlsAlertString(d.tlsAlertID))
+	case sendErrorDetailTagTLSProtocolError:
+		return "TLS protocol error"
 	default:
 		return fmt.Sprintf("unknown error (%d)", d.tag)
+	}
+}
+
+func tlsAlertString(id prim.U8) string {
+	switch id {
+	case 0:
+		return "close notify"
+	case 10:
+		return "unexpected message"
+	case 20:
+		return "bad record MAC"
+	case 21:
+		return "decryption failed"
+	case 22:
+		return "record overflow"
+	case 30:
+		return "decompression failure"
+	case 40:
+		return "handshake failure"
+	case 41:
+		return "no certificate"
+	case 42:
+		return "bad certificate"
+	case 43:
+		return "unsupported certificate"
+	case 44:
+		return "certificate revoked"
+	case 45:
+		return "certificate expired"
+	case 46:
+		return "certificate unknown"
+	case 47:
+		return "illegal parameter"
+	case 48:
+		return "unknown certificate authority"
+	case 49:
+		return "access denied"
+	case 50:
+		return "error decoding message"
+	case 51:
+		return "error decrypting message"
+	case 60:
+		return "export restriction"
+	case 70:
+		return "protocol version not supported"
+	case 71:
+		return "insufficient security level"
+	case 80:
+		return "internal error"
+	case 86:
+		return "inappropriate fallback"
+	case 90:
+		return "user canceled"
+	case 100:
+		return "no renegotiation"
+	case 109:
+		return "missing extension"
+	case 110:
+		return "unsupported extension"
+	case 111:
+		return "certificate unobtainable"
+	case 112:
+		return "unrecognized name"
+	case 113:
+		return "bad certificate status response"
+	case 114:
+		return "bad certificate hash value"
+	case 115:
+		return "unknown PSK identity"
+	case 116:
+		return "certificate required"
+	case 120:
+		return "no application protocol"
+	default:
+		return strconv.Itoa(int(id))
 	}
 }
