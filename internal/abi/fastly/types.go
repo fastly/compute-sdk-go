@@ -127,6 +127,15 @@ func (s FastlyStatus) toError() error {
 	}
 }
 
+func (s FastlyStatus) toErrorDetailed(d sendErrorDetail) error {
+	switch s {
+	case FastlyStatusOK:
+		return nil
+	default:
+		return FastlyError{Status: s, detail: d}
+	}
+}
+
 // FastlyError decorates error-class FastlyStatus values and implements the
 // error interface.
 //
@@ -134,10 +143,15 @@ func (s FastlyStatus) toError() error {
 // IsFastlyError helper instead.
 type FastlyError struct {
 	Status FastlyStatus
+	detail sendErrorDetail
 }
 
 // Error implements the error interface.
 func (e FastlyError) Error() string {
+	if detail := e.detail.String(); detail != "" {
+		return fmt.Sprintf("Fastly error: send error: %s", detail)
+	}
+
 	return fmt.Sprintf("Fastly error: %s", e.Status.String())
 }
 
@@ -861,4 +875,195 @@ func (b *BackendConfigOptions) SNIHostname(sniHostname string) {
 	buf := prim.NewReadBufferFromString(sniHostname)
 	b.opts.sniHostnamePtr = prim.ToPointer(buf.Char8Pointer())
 	b.opts.sniHostnameLen = prim.U32(buf.Len())
+}
+
+// witx:
+//
+//	(typename $send_error_detail_tag
+//	    (enum (@witx tag u32)
+//	        ;;; The $send_error_detail struct has not been populated.
+//	        $uninitialized
+//	        ;;; There was no send error.
+//	        $ok
+//	        ;;; The system encountered a timeout when trying to find an IP address for the backend
+//	        ;;; hostname.
+//	        $dns_timeout
+//	        ;;; The system encountered a DNS error when trying to find an IP address for the backend
+//	        ;;; hostname. The fields $dns_error_rcode and $dns_error_info_code may be set in the
+//	        ;;; $send_error_detail.
+//	        $dns_error
+//	        ;;; The system cannot determine which backend to use, or the specified backend was invalid.
+//	        $destination_not_found
+//	        ;;; The system considers the backend to be unavailable; e.g., recent attempts to communicate
+//	        ;;; with it may have failed, or a health check may indicate that it is down.
+//	        $destination_unavailable
+//	        ;;; The system cannot find a route to the next-hop IP address.
+//	        $destination_ip_unroutable
+//	        ;;; The system's connection to the backend was refused.
+//	        $connection_refused
+//	        ;;; The system's connection to the backend was closed before a complete response was
+//	        ;;; received.
+//	        $connection_terminated
+//	        ;;; The system's attempt to open a connection to the backend timed out.
+//	        $connection_timeout
+//	        ;;; The system is configured to limit the number of connections it has to the backend, and
+//	        ;;; that limit has been exceeded.
+//	        $connection_limit_reached
+//	        ;;; The system encountered an error when verifying the certificate presented by the backend.
+//	        $tls_certificate_error
+//	        ;;; The system encountered an error with the backend TLS configuration.
+//	        $tls_configuration_error
+//	        ;;; The system received an incomplete response to the request from the backend.
+//	        $http_incomplete_response
+//	        ;;; The system received a response to the request whose header section was considered too
+//	        ;;; large.
+//	        $http_response_header_section_too_large
+//	        ;;; The system received a response to the request whose body was considered too large.
+//	        $http_response_body_too_large
+//	        ;;; The system reached a configured time limit waiting for the complete response.
+//	        $http_response_timeout
+//	        ;;; The system received a response to the request whose status code or reason phrase was
+//	        ;;; invalid.
+//	        $http_response_status_invalid
+//	        ;;; The process of negotiating an upgrade of the HTTP version between the system and the
+//	        ;;; backend failed.
+//	        $http_upgrade_failed
+//	        ;;; The system encountered an HTTP protocol error when communicating with the backend. This
+//	        ;;; error will only be used when a more specific one is not defined.
+//	        $http_protocol_error
+//	        ;;; An invalid cache key was provided for the request.
+//	        $http_request_cache_key_invalid
+//	        ;;; An invalid URI was provided for the request.
+//	        $http_request_uri_invalid
+//	        ;;; The system encountered an unexpected internal error.
+//	        $internal_error
+//	        ))
+type sendErrorDetailTag prim.U32
+
+const (
+	sendErrorDetailTagUninitialized                     sendErrorDetailTag = 0
+	sendErrorDetailTagOK                                                   = 1
+	sendErrorDetailTagDNSTimeout                                           = 2
+	sendErrorDetailTagDNSError                                             = 3
+	sendErrorDetailTagDestinationNotFound                                  = 4
+	sendErrorDetailTagDestinationUnavailable                               = 5
+	sendErrorDetailTagDestinationIPUnroutable                              = 6
+	sendErrorDetailTagConnectionRefused                                    = 7
+	sendErrorDetailTagConnectionTerminated                                 = 8
+	sendErrorDetailTagConnectionTimeout                                    = 9
+	sendErrorDetailTagConnectionLimitReached                               = 10
+	sendErrorDetailTagTLSCertificateError                                  = 11
+	sendErrorDetailTagTLSConfigurationError                                = 12
+	sendErrorDetailTagHTTPIncompleteResponse                               = 13
+	sendErrorDetailTagHTTPResponseHeaderSectionTooLarge                    = 14
+	sendErrorDetailTagHTTPResponseBodyTooLarge                             = 15
+	sendErrorDetailTagHTTPResponseTimeout                                  = 16
+	sendErrorDetailTagHTTPResponseStatusInvalid                            = 17
+	sendErrorDetailTagHTTPUpgradeFailed                                    = 18
+	sendErrorDetailTagHTTPProtocolError                                    = 19
+	sendErrorDetailTagHTTPRequestCacheKeyInvalid                           = 20
+	sendErrorDetailTagHTTPRequestURIInvalid                                = 21
+	sendErrorDetailTagInternalError                                        = 22
+)
+
+// witx:
+//
+//	;;; Mask representing which fields are understood by the guest, and which have been set by the host.
+//	;;;
+//	;;; When the guest calls hostcalls with a mask, it should set every bit in the mask that corresponds
+//	;;; to a defined flag. This signals the host to write only to fields with a set bit, allowing
+//	;;; forward compatibility for existing guest programs even after new fields are added to the struct.
+//	(typename $send_error_detail_mask
+//	    (flags (@witx repr u32)
+//	       $reserved
+//	       $dns_error_rcode
+//	       $dns_error_info_code
+//	       ))
+type sendErrorDetailMask prim.U32
+
+const (
+	sendErrorDetailMaskReserved      = 1 << 0 // $reserved
+	sendErrorDetailMaskDNSErrorRCode = 1 << 1 // $dns_error_rcode
+	sendErrorDetailMaskDNSErrorInfo  = 1 << 2 // $dns_error_info_code
+)
+
+// witx:
+//
+//	(typename $send_error_detail
+//	  (record
+//	    (field $tag $send_error_detail_tag)
+//	    (field $mask $send_error_detail_mask)
+//	    (field $dns_error_rcode u16)
+//	    (field $dns_error_info_code u16)
+//	    ))
+type sendErrorDetail struct {
+	tag              sendErrorDetailTag
+	mask             sendErrorDetailMask
+	dnsErrorRCode    prim.U16
+	dnsErrorInfoCode prim.U16
+}
+
+func newSendErrorDetail() sendErrorDetail {
+	return sendErrorDetail{
+		mask: sendErrorDetailMaskDNSErrorRCode | sendErrorDetailMaskDNSErrorInfo,
+	}
+}
+
+func (d sendErrorDetail) String() string {
+	switch d.tag {
+	case sendErrorDetailTagUninitialized:
+		// Not enough information to convert to an error.  In this case,
+		// the caller should use the FastlyStatus as the basis for the
+		// error instead.
+		return ""
+
+	case sendErrorDetailTagOK:
+		// No error
+		return ""
+
+	case sendErrorDetailTagDNSTimeout:
+		return "DNS timeout"
+	case sendErrorDetailTagDNSError:
+		return fmt.Sprintf("DNS error (rcode=%d, info_code=%d)", d.dnsErrorRCode, d.dnsErrorInfoCode)
+	case sendErrorDetailTagDestinationNotFound:
+		return "destination not found"
+	case sendErrorDetailTagDestinationUnavailable:
+		return "destination unavailable"
+	case sendErrorDetailTagDestinationIPUnroutable:
+		return "destination IP unroutable"
+	case sendErrorDetailTagConnectionRefused:
+		return "connection refused"
+	case sendErrorDetailTagConnectionTerminated:
+		return "connection terminated"
+	case sendErrorDetailTagConnectionTimeout:
+		return "connection timeout"
+	case sendErrorDetailTagConnectionLimitReached:
+		return "connection limit reached"
+	case sendErrorDetailTagTLSCertificateError:
+		return "TLS certificate error"
+	case sendErrorDetailTagTLSConfigurationError:
+		return "TLS configuration error"
+	case sendErrorDetailTagHTTPIncompleteResponse:
+		return "incomplete HTTP response"
+	case sendErrorDetailTagHTTPResponseHeaderSectionTooLarge:
+		return "HTTP response header section too large"
+	case sendErrorDetailTagHTTPResponseBodyTooLarge:
+		return "HTTP response body too large"
+	case sendErrorDetailTagHTTPResponseTimeout:
+		return "HTTP response timeout"
+	case sendErrorDetailTagHTTPResponseStatusInvalid:
+		return "HTTP response status invalid"
+	case sendErrorDetailTagHTTPUpgradeFailed:
+		return "HTTP upgrade failed"
+	case sendErrorDetailTagHTTPProtocolError:
+		return "HTTP protocol error"
+	case sendErrorDetailTagHTTPRequestCacheKeyInvalid:
+		return "HTTP request cache key invalid"
+	case sendErrorDetailTagHTTPRequestURIInvalid:
+		return "HTTP request URI invalid"
+	case sendErrorDetailTagInternalError:
+		return "internal error"
+	default:
+		return fmt.Sprintf("unknown error (%d)", d.tag)
+	}
 }
