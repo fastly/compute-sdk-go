@@ -949,30 +949,30 @@ type sendErrorDetailTag prim.U32
 
 const (
 	sendErrorDetailTagUninitialized                     sendErrorDetailTag = 0
-	sendErrorDetailTagOK                                                   = 1
-	sendErrorDetailTagDNSTimeout                                           = 2
-	sendErrorDetailTagDNSError                                             = 3
-	sendErrorDetailTagDestinationNotFound                                  = 4
-	sendErrorDetailTagDestinationUnavailable                               = 5
-	sendErrorDetailTagDestinationIPUnroutable                              = 6
-	sendErrorDetailTagConnectionRefused                                    = 7
-	sendErrorDetailTagConnectionTerminated                                 = 8
-	sendErrorDetailTagConnectionTimeout                                    = 9
-	sendErrorDetailTagConnectionLimitReached                               = 10
-	sendErrorDetailTagTLSCertificateError                                  = 11
-	sendErrorDetailTagTLSConfigurationError                                = 12
-	sendErrorDetailTagHTTPIncompleteResponse                               = 13
-	sendErrorDetailTagHTTPResponseHeaderSectionTooLarge                    = 14
-	sendErrorDetailTagHTTPResponseBodyTooLarge                             = 15
-	sendErrorDetailTagHTTPResponseTimeout                                  = 16
-	sendErrorDetailTagHTTPResponseStatusInvalid                            = 17
-	sendErrorDetailTagHTTPUpgradeFailed                                    = 18
-	sendErrorDetailTagHTTPProtocolError                                    = 19
-	sendErrorDetailTagHTTPRequestCacheKeyInvalid                           = 20
-	sendErrorDetailTagHTTPRequestURIInvalid                                = 21
-	sendErrorDetailTagInternalError                                        = 22
-	sendErrorDetailTagTLSAlertReceived                                     = 23
-	sendErrorDetailTagTLSProtocolError                                     = 24
+	sendErrorDetailTagOK                                sendErrorDetailTag = 1
+	sendErrorDetailTagDNSTimeout                        sendErrorDetailTag = 2
+	sendErrorDetailTagDNSError                          sendErrorDetailTag = 3
+	sendErrorDetailTagDestinationNotFound               sendErrorDetailTag = 4
+	sendErrorDetailTagDestinationUnavailable            sendErrorDetailTag = 5
+	sendErrorDetailTagDestinationIPUnroutable           sendErrorDetailTag = 6
+	sendErrorDetailTagConnectionRefused                 sendErrorDetailTag = 7
+	sendErrorDetailTagConnectionTerminated              sendErrorDetailTag = 8
+	sendErrorDetailTagConnectionTimeout                 sendErrorDetailTag = 9
+	sendErrorDetailTagConnectionLimitReached            sendErrorDetailTag = 10
+	sendErrorDetailTagTLSCertificateError               sendErrorDetailTag = 11
+	sendErrorDetailTagTLSConfigurationError             sendErrorDetailTag = 12
+	sendErrorDetailTagHTTPIncompleteResponse            sendErrorDetailTag = 13
+	sendErrorDetailTagHTTPResponseHeaderSectionTooLarge sendErrorDetailTag = 14
+	sendErrorDetailTagHTTPResponseBodyTooLarge          sendErrorDetailTag = 15
+	sendErrorDetailTagHTTPResponseTimeout               sendErrorDetailTag = 16
+	sendErrorDetailTagHTTPResponseStatusInvalid         sendErrorDetailTag = 17
+	sendErrorDetailTagHTTPUpgradeFailed                 sendErrorDetailTag = 18
+	sendErrorDetailTagHTTPProtocolError                 sendErrorDetailTag = 19
+	sendErrorDetailTagHTTPRequestCacheKeyInvalid        sendErrorDetailTag = 20
+	sendErrorDetailTagHTTPRequestURIInvalid             sendErrorDetailTag = 21
+	sendErrorDetailTagInternalError                     sendErrorDetailTag = 22
+	sendErrorDetailTagTLSAlertReceived                  sendErrorDetailTag = 23
+	sendErrorDetailTagTLSProtocolError                  sendErrorDetailTag = 24
 )
 
 // witx:
