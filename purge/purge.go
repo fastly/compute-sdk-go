@@ -1,5 +1,5 @@
 // Package purge provides cache purging operations for Fastly
-// Compute@Edge.
+// Compute.
 //
 // See the [Fastly purge documentation] for details.
 //

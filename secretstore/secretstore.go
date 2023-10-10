@@ -1,5 +1,5 @@
 // Package secretstore provides a read-only interface to Fastly
-// Compute@Edge Secret Stores.
+// Compute Secret Stores.
 //
 // Secret stores are persistent, globally distributed stores for
 // secrets.  Secrets are decrypted as-needed at the edge.

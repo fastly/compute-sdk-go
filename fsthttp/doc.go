@@ -1,9 +1,9 @@
 // Copyright 2022 Fastly, Inc.
 
-// Package fsthttp provides HTTP functionality for Fastly's Compute@Edge
+// Package fsthttp provides HTTP functionality for Fastly's Compute
 // environment.
 //
-// A Compute@Edge program can be thought of as an HTTP request handler. Each
+// A Compute program can be thought of as an HTTP request handler. Each
 // execution is triggered by an incoming request from a client, and is expected
 // to respond to that request before terminating. The Serve function provides a
 // Handler-style interface to that Request and its ResponseWriter.
