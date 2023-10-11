@@ -1,6 +1,6 @@
 # compute-sdk-go
 
-Go SDK for building [Compute@Edge](https://www.fastly.com/products/edge-compute) applications with [Go](https://go.dev) (1.21+) and [TinyGo](https://tinygo.org/) (0.28.1+).
+Go SDK for building [Fastly Compute](https://www.fastly.com/products/edge-compute) applications with [Go](https://go.dev) (1.21+) and [TinyGo](https://tinygo.org/) (0.28.1+).
 
 ## Quick Start
 
@@ -12,7 +12,7 @@ If you're using TinyGo, you'll also want to take a look at our [TinyGo Recommend
 
 ## Supported Toolchains
 
-Compute@Edge builds on top of WebAssembly and the [WebAssembly System Interface](https://wasi.dev/).
+Compute builds on top of WebAssembly and the [WebAssembly System Interface](https://wasi.dev/).
 
 TinyGo supports WASI as a target, and Go does as of its 1.21 release.
 
@@ -44,7 +44,7 @@ Then, you can install `compute-sdk-go` in your project by running:
 
 Examples can be found in the [`examples`](./_examples) directory.
 
-The Fastly Developer Hub has a collection of [common use cases in VCL ported to Go](https://developer.fastly.com/learning/compute/migrate/) which also acts as a great set of introductory examples of using Go on Compute@Edge.
+The Fastly Developer Hub has a collection of [common use cases in VCL ported to Go](https://developer.fastly.com/learning/compute/migrate/) which also acts as a great set of introductory examples of using Go on Compute.
 
 ## API Reference
 
@@ -52,11 +52,11 @@ The API reference documentation can be found on [pkg.go.dev/github.com/fastly/co
 
 ## Testing
 
-Tests that rely on a Compute@Edge runtime can utilize [Viceroy](https://github.com/fastly/Viceroy), our local development tool.
+Tests that rely on a Compute runtime can utilize [Viceroy](https://github.com/fastly/Viceroy), our local development tool.
 
 Install Viceroy and ensure the `viceroy` command is available in your path.
 
-Write your tests as ordinary Go tests.  Viceroy provides the Compute@Edge APIs locally, although be aware that not all platform functionality is available.  You can look at the `integration_tests` directory for examples.
+Write your tests as ordinary Go tests.  Viceroy provides the Compute APIs locally, although be aware that not all platform functionality is available.  You can look at the `integration_tests` directory for examples.
 
 ### TinyGo
 
@@ -82,7 +82,7 @@ You can try it out and make sure your local Viceroy environment is set up correc
 
 ## Logging
 
-Logging can be done using a Fastly Compute@Edge Log Endpoint ([example](./_examples/logging-and-env/main.go)), or by using normal stdout like:
+Logging can be done using a Fastly Compute Log Endpoint ([example](./_examples/logging-and-env/main.go)), or by using normal stdout like:
 
 ```
 fmt.Printf("request received: %s\n", r.URL.String())
@@ -90,7 +90,7 @@ fmt.Printf("request received: %s\n", r.URL.String())
 
 ## TinyGo Recommended Packages
 
-TinyGo is still a new project, which has yet to get a version `1.0.0`. Therefore, the project is incomplete, but in its current state can still handle a lot of tasks on Compute@Edge. However, [some languages features of Go are still missing](https://tinygo.org/docs/reference/lang-support/).
+TinyGo is still a new project, which has yet to get a version `1.0.0`. Therefore, the project is incomplete, but in its current state can still handle a lot of tasks on Compute. However, [some languages features of Go are still missing](https://tinygo.org/docs/reference/lang-support/).
 
 To help with your adoption of `compute-sdk-go`, here are some recommended packages to help with some of the current missing language features:
 

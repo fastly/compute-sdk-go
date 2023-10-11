@@ -25,14 +25,14 @@ See the [documentation](https://developer.fastly.com/reference/compute/fastly-to
 
 #### [`hello-world`](./hello-world)
 
-The canonical example.  It demonstrates the basic structure of a Fastly Compute@Edge program in Go.
+The canonical example.  It demonstrates the basic structure of a Fastly Compute program in Go.
 
 #### [`http-adapter`](./http-adapter)
 
 The Go SDK provides a set of APIs in its [`fsthttp`](https://pkg.go.dev/github.com/fastly/compute-sdk-go/fsthttp) package which should be familiar to any Go programmer who has used the standard library's [`net/http`](https://pkg.go.dev/net/http) package.
 Although similar, the implementations are different and the types are not interchangeable.
 
-[An adapter](https://pkg.go.dev/github.com/fastly/compute-sdk-go/fsthttp#Adapt) is provided to allow existing `net/http` handlers to be used with the Fastly Compute@Edge API.
+[An adapter](https://pkg.go.dev/github.com/fastly/compute-sdk-go/fsthttp#Adapt) is provided to allow existing `net/http` handlers to be used with the Fastly Compute API.
 This example demonstrates how to use it with [`http.ServeMux`](https://pkg.go.dev/net/http#ServeMux) from the standard library but it can be used with any other [`http.Handler`](https://pkg.go.dev/net/http#Handler), including ones from popular third-party libraries like [gorilla/mux](https://github.com/gorilla/mux) and [chi](https://github.com/go-chi/chi).
 
 #### [`kvstore`](./kvstore)
@@ -49,7 +49,7 @@ This example demonstrates how to adjust certain [request limits](https://pkg.go.
 #### [`logging-and-env`](./logging-and-env)
 
 This example demonstrates how logging works, both by printing to stdout and stderr and by sending to dedicated logging endpoints using the [`rtlog`](https://pkg.go.dev/github.com/fastly/compute-sdk-go/rtlog) package.
-It also prints out several environment variables that are set by default in the Compute@Edge environment.
+It also prints out several environment variables that are set by default in the Compute environment.
 Note, however, that most of these environment variables are unset when running locally.
 
 #### [`middlewares`](./middlewares)
@@ -95,7 +95,7 @@ A simple example that sets a cookie on the response.
 #### [`set-google-analytics`](./set-google-analytics)
 
 Due to [Intelligent Tracking Prevention 2.1](https://webkit.org/blog/8613/intelligent-tracking-prevention-2-1/) restrictions, cookies set from JavaScript are capped to 7 days of storage.
-This example demonstrates how to use Compute@Edge to set a first-party server-side cookie for Google Analytics that can last longer.
+This example demonstrates how to use Compute to set a first-party server-side cookie for Google Analytics that can last longer.
 
 #### [`simplecache`](./simplecache)
 

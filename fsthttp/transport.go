@@ -6,16 +6,16 @@ import (
 )
 
 // Transport is an http.RoundTripper implementation for backend requests
-// on Compute@Edge.
+// on Compute.
 //
-// Compute@Edge requests must be made to a pre-configured named backend.
+// Compute requests must be made to a pre-configured named backend.
 // Transport provides a mechanism for mapping hostnames to backend
 // names.  A default catchall backend is set when the Transport is
 // created, but additional host-to-backend mappings can be added with
 // the AddHostBackend method.
 //
 // Transport is provided primarily to adapt existing code which uses
-// http.Client instances to work on Compute@Edge.  Using an http.Client
+// http.Client instances to work on Compute.  Using an http.Client
 // pulls in substantially more code, resulting in slower compile times
 // and larger binaries.  For this reason, we recommend new code use the
 // fsthttp.Request type and its Send() method directly whenever

@@ -1,10 +1,10 @@
 // Copyright 2022 Fastly, Inc.
 
-// Package fastly provides access to the Compute@Edge hostcall ABI.
+// Package fastly provides access to the Fastly Compute hostcall ABI.
 //
 // The TinyGo SDK is modeled in layers. Each layer has a single purpose. This
 // package is the lowest layer, and it's singular purpose is to adapt each
-// Compute@Edge hostcall to a function which is basically idiomatic Go.
+// Compute hostcall to a function which is basically idiomatic Go.
 //
 // In support of that purpose, the package defines a few types, e.g. HTTPBody,
 // which model the modules of the hostcalls, and implement corresponding
