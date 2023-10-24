@@ -11,6 +11,7 @@ package secretstore
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
@@ -58,7 +59,7 @@ func Open(name string) (*Store, error) {
 		case ok && status == fastly.FastlyStatusInval:
 			return nil, ErrInvalidSecretStoreName
 		case ok:
-			return nil, ErrUnexpected
+			return nil, fmt.Errorf("%w (%s)", ErrUnexpected, status)
 		default:
 			return nil, err
 		}
@@ -79,7 +80,7 @@ func (st *Store) Get(name string) (*Secret, error) {
 		case ok && status == fastly.FastlyStatusInval:
 			return nil, ErrInvalidSecretName
 		case ok:
-			return nil, ErrUnexpected
+			return nil, fmt.Errorf("%w (%s)", ErrUnexpected, status)
 		default:
 			return nil, err
 		}
@@ -92,9 +93,9 @@ func (st *Store) Get(name string) (*Secret, error) {
 func (s *Secret) Plaintext() ([]byte, error) {
 	plaintext, err := s.s.Plaintext()
 	if err != nil {
-		_, ok := fastly.IsFastlyError(err)
+		status, ok := fastly.IsFastlyError(err)
 		if ok {
-			return nil, ErrUnexpected
+			return nil, fmt.Errorf("%w (%s)", ErrUnexpected, status)
 		}
 		return nil, err
 	}
