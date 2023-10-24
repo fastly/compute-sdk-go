@@ -17,6 +17,16 @@ import (
 
 var ErrKeyNotFound = errors.New("kvstore: key not found")
 
+// Entry represents a KV store value.
+//
+// It embeds an [io.Reader] which holds the contents of the value, and
+// can be passed to other functions.
+//
+// For smaller values, a [String] method is provided to consume the
+// contents of the underlying reader and return a string.
+//
+// Do not mix-and-match these approaches: use either the [io.Reader] or
+// the [String] method, not both.
 type Entry struct {
 	io.Reader
 
@@ -24,6 +34,11 @@ type Entry struct {
 	s           string
 }
 
+// String consumes the entire contents of the Entry and returns it as a
+// string.
+//
+// Take care when using this method, as large values might exceed the
+// per-request memory limit.
 func (e *Entry) String() string {
 	if e.validString {
 		return e.s
@@ -40,7 +55,7 @@ func (e *Entry) String() string {
 	return e.s
 }
 
-// Store represents a Fastly kv store
+// Store represents a Fastly KV store
 type Store struct {
 	kvstore *fastly.KVStore
 }
@@ -55,8 +70,8 @@ func Open(name string) (*Store, error) {
 	return &Store{kvstore: o}, nil
 }
 
-// Lookup fetches a key from the associated kv store.  If the key does not
-// exist, Lookup returns the sentinel error ErrKeyNotFound.
+// Lookup fetches a key from the associated KV store.  If the key does not
+// exist, Lookup returns the sentinel error [ErrKeyNotFound].
 func (s *Store) Lookup(key string) (*Entry, error) {
 	val, err := s.kvstore.Lookup(key)
 	if err != nil {
@@ -72,7 +87,7 @@ func (s *Store) Lookup(key string) (*Entry, error) {
 	return &Entry{Reader: val}, err
 }
 
-// Insert adds a key to the associated kv store.
+// Insert adds a key to the associated KV store.
 func (s *Store) Insert(key string, value io.Reader) error {
 	err := s.kvstore.Insert(key, value)
 	return err
