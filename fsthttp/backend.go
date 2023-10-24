@@ -2,6 +2,7 @@ package fsthttp
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -18,6 +19,9 @@ var (
 
 	// ErrBackendNotFound indicates the provided backend was not found.
 	ErrBackendNotFound = errors.New("backend not found")
+
+	// ErrUnexpected indicates an unexpected error occurred.
+	ErrUnexpected = errors.New("unexpected error")
 )
 
 type BackendHealth uint32
@@ -291,6 +295,8 @@ func RegisterDynamicBackend(name string, target string, options *BackendOptions)
 			return nil, ErrDynamicBackendDisallowed
 		case ok && status == fastly.FastlyStatusError:
 			return nil, ErrBackendNameInUse
+		case ok:
+			return nil, fmt.Errorf("%w (%s)", ErrUnexpected, status)
 		default:
 			return nil, err
 		}
