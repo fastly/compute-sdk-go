@@ -128,13 +128,16 @@ func (s FastlyStatus) toError() error {
 	}
 }
 
-func (s FastlyStatus) toErrorDetailed(d sendErrorDetail) error {
-	switch s {
-	case FastlyStatusOK:
+func (s FastlyStatus) toSendError(d sendErrorDetail) error {
+	if s == FastlyStatusOK {
 		return nil
-	default:
-		return FastlyError{Status: s, detail: d}
 	}
+
+	if !d.valid() {
+		return FastlyError{Status: s}
+	}
+
+	return FastlyError{Status: s, Detail: d}
 }
 
 // FastlyError decorates error-class FastlyStatus values and implements the
@@ -144,16 +147,18 @@ func (s FastlyStatus) toErrorDetailed(d sendErrorDetail) error {
 // IsFastlyError helper instead.
 type FastlyError struct {
 	Status FastlyStatus
-	detail sendErrorDetail
+
+	// Detail contains an additional detailed error, if any.
+	Detail error
 }
 
 // Error implements the error interface.
 func (e FastlyError) Error() string {
-	if detail := e.detail.String(); detail != "" {
-		return fmt.Sprintf("Fastly error: send error: %s", detail)
+	if e.Detail != nil && e.Detail.Error() != "" {
+		return "Fastly error: " + e.Detail.Error()
 	}
 
-	return fmt.Sprintf("Fastly error: %s", e.Status.String())
+	return "Fastly error: " + e.Status.String()
 }
 
 func (e FastlyError) getStatus() FastlyStatus {
@@ -1022,18 +1027,28 @@ func newSendErrorDetail() sendErrorDetail {
 	}
 }
 
-func (d sendErrorDetail) String() string {
+func (d sendErrorDetail) valid() bool {
 	switch d.tag {
 	case sendErrorDetailTagUninitialized:
 		// Not enough information to convert to an error.  In this case,
 		// the caller should use the FastlyStatus as the basis for the
 		// error instead.
-		return ""
+		return false
 
 	case sendErrorDetailTagOK:
 		// No error
-		return ""
+		return false
+	}
 
+	return true
+}
+
+func (d sendErrorDetail) Error() string {
+	return "send error: " + d.String()
+}
+
+func (d sendErrorDetail) String() string {
+	switch d.tag {
 	case sendErrorDetailTagDNSTimeout:
 		return "DNS timeout"
 	case sendErrorDetailTagDNSError:
@@ -1080,11 +1095,18 @@ func (d sendErrorDetail) String() string {
 		return fmt.Sprintf("TLS alert received (%s)", tlsAlertString(d.tlsAlertID))
 	case sendErrorDetailTagTLSProtocolError:
 		return "TLS protocol error"
+
+	case sendErrorDetailTagUninitialized:
+		panic("should not be reached: sendErrorDetailTagUninitialized")
+	case sendErrorDetailTagOK:
+		panic("should not be reached: sendErrorDetailTagOK")
+
 	default:
 		return fmt.Sprintf("unknown error (%d)", d.tag)
 	}
 }
 
+// Source: https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-6
 func tlsAlertString(id prim.U8) string {
 	switch id {
 	case 0:

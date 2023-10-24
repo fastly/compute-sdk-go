@@ -1231,7 +1231,7 @@ func (r *HTTPRequest) Send(requestBody *HTTPBody, backend string) (response *HTT
 		prim.ToPointer(&errDetail),
 		prim.ToPointer(&resp.h),
 		prim.ToPointer(&respBody.h),
-	).toErrorDetailed(errDetail); err != nil {
+	).toSendError(errDetail); err != nil {
 		return nil, nil, err
 	}
 
@@ -1364,7 +1364,7 @@ func (r *PendingRequest) Poll() (done bool, response *HTTPResponse, responseBody
 		prim.ToPointer(&isDone),
 		prim.ToPointer(&resp.h),
 		prim.ToPointer(&respBody.h),
-	).toErrorDetailed(errDetail); err != nil {
+	).toSendError(errDetail); err != nil {
 		return false, nil, nil, err
 	}
 
@@ -1410,7 +1410,7 @@ func (r *PendingRequest) Wait() (response *HTTPResponse, responseBody *HTTPBody,
 		prim.ToPointer(&errDetail),
 		prim.ToPointer(&resp.h),
 		prim.ToPointer(&respBody.h),
-	).toErrorDetailed(errDetail); err != nil {
+	).toSendError(errDetail); err != nil {
 		return nil, nil, err
 	}
 
