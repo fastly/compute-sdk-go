@@ -10,12 +10,26 @@ package kvstore
 
 import (
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
 
-var ErrKeyNotFound = errors.New("kvstore: key not found")
+var (
+	// ErrStoreNotFound indicates that the named store doesn't exist.
+	ErrStoreNotFound = errors.New("kvstore: store not found")
+
+	// ErrKeyNotFound indicates that the named key doesn't exist in this
+	// KV store.
+	ErrKeyNotFound = errors.New("kvstore: key not found")
+
+	// ErrInvalidKey indicates that the given key is invalid.
+	ErrInvalidKey = errors.New("kvstore: invalid key")
+
+	// ErrUnexpected indicates than an unexpected error occurred.
+	ErrUnexpected = errors.New("kvstore: unexpected error")
+)
 
 type Entry struct {
 	io.Reader
@@ -49,7 +63,15 @@ type Store struct {
 func Open(name string) (*Store, error) {
 	o, err := fastly.OpenKVStore(name)
 	if err != nil {
-		return nil, err
+		status, ok := fastly.IsFastlyError(err)
+		switch {
+		case ok && status == fastly.FastlyStatusInval:
+			return nil, ErrStoreNotFound
+		case ok:
+			return nil, fmt.Errorf("%w (%s)", ErrUnexpected, status)
+		default:
+			return nil, err
+		}
 	}
 
 	return &Store{kvstore: o}, nil
@@ -60,13 +82,17 @@ func Open(name string) (*Store, error) {
 func (s *Store) Lookup(key string) (*Entry, error) {
 	val, err := s.kvstore.Lookup(key)
 	if err != nil {
-
-		// turn FastlyStatusNone into NotFound
-		if status, ok := fastly.IsFastlyError(err); ok && status == fastly.FastlyStatusNone {
+		status, ok := fastly.IsFastlyError(err)
+		switch {
+		case ok && status == fastly.FastlyStatusNone:
 			return nil, ErrKeyNotFound
+		case ok && status == fastly.FastlyStatusInval:
+			return nil, ErrInvalidKey
+		case ok:
+			return nil, fmt.Errorf("%w (%s)", ErrUnexpected, status)
+		default:
+			return nil, err
 		}
-
-		return nil, err
 	}
 
 	return &Entry{Reader: val}, err
@@ -75,5 +101,16 @@ func (s *Store) Lookup(key string) (*Entry, error) {
 // Insert adds a key to the associated kv store.
 func (s *Store) Insert(key string, value io.Reader) error {
 	err := s.kvstore.Insert(key, value)
-	return err
+	if err != nil {
+		status, ok := fastly.IsFastlyError(err)
+		switch {
+		case ok && status == fastly.FastlyStatusInval:
+			return ErrInvalidKey
+		case ok:
+			return fmt.Errorf("%w (%s)", ErrUnexpected, status)
+		default:
+			return err
+		}
+	}
+	return nil
 }
