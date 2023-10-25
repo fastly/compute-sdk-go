@@ -20,13 +20,13 @@ var ErrKeyNotFound = errors.New("kvstore: key not found")
 // Entry represents a KV store value.
 //
 // It embeds an [io.Reader] which holds the contents of the value, and
-// can be passed to other functions.
+// can be passed to functions that accept an [io.Reader].
 //
-// For smaller values, a [String] method is provided to consume the
+// For smaller values, an [Entry.String] method is provided to consume the
 // contents of the underlying reader and return a string.
 //
 // Do not mix-and-match these approaches: use either the [io.Reader] or
-// the [String] method, not both.
+// the [Entry.String] method, not both.
 type Entry struct {
 	io.Reader
 
