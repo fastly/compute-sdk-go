@@ -4,6 +4,7 @@ package configstore
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
@@ -26,6 +27,9 @@ var (
 
 	// ErrKeyNotFound indicates a key isn't in a config store.
 	ErrKeyNotFound = errors.New("key not found")
+
+	// ErrUnexpected indicates an unexpected error occurred.
+	ErrUnexpected = errors.New("unexpected error")
 )
 
 // Store is a read-only representation of a config store.
@@ -48,6 +52,8 @@ func Open(name string) (*Store, error) {
 			return nil, ErrStoreNameTooLong
 		case ok && status == fastly.FastlyStatusInval:
 			return nil, ErrStoreNameInvalid
+		case ok:
+			return nil, fmt.Errorf("%w (%s)", ErrUnexpected, status)
 		default:
 			return nil, err
 		}
@@ -69,6 +75,8 @@ func (s *Store) Get(key string) (string, error) {
 			return "", ErrStoreNotFound
 		case ok && status == fastly.FastlyStatusNone:
 			return "", ErrKeyNotFound
+		case ok:
+			return "", fmt.Errorf("%w (%s)", ErrUnexpected, status)
 		default:
 			return "", err
 		}

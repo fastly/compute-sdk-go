@@ -74,6 +74,9 @@ var (
 	// ErrUnsupported is returned when a cache operation is not
 	// supported.
 	ErrUnsupported = errors.New("cache: operation not supported")
+
+	// ErrUnexpected is returned when an unexpected error occurs.
+	ErrUnexpected = errors.New("cache: unexpected error")
 )
 
 // Found represents a cached object found by a cache lookup.
@@ -750,7 +753,7 @@ func mapFastlyError(err error) error {
 	case fastly.FastlyStatusUnsupported:
 		return ErrUnsupported
 	default:
-		return err
+		return fmt.Errorf("%w (%s)", ErrUnexpected, status)
 	}
 }
 
