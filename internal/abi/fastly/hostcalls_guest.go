@@ -1179,21 +1179,35 @@ func (r *HTTPRequest) SetVersion(v HTTPVersion) error {
 
 // witx:
 //
-//	(@interface func (export "send")
-//	   (param $h $request_handle)
-//	   (param $b $body_handle)
-//	   (param $backend string)
-//	   (result $err $fastly_status)
-//	   (result $resp $response_handle)
-//	   (result $resp_body $body_handle)
+//	;; The behavior of this method is identical to the original except for the `$error_detail`
+//	;; out-parameter.
+//	;;
+//	;; If the returned `$fastly_status` is OK, `$error_detail` will not be read. Otherwise,
+//	;; the status is returned identically to the original `send`, but `$error_detail` is populated.
+//	;; Since `$send_error_detail` provides much more granular information about failures, it should
+//	;; be used by SDKs as the primary source of error information in favor of `$fastly_status`.
+//	;;
+//	;; Make sure to initialize `$error_detail` with the full complement of mask values that the
+//	;; guest supports. If the corresponding bits in the mask are not set, the host will not populate
+//	;; fields in the `$error_detail` struct even if there are values available for those fields.
+//	;; This allows forward compatibility when new fields are added.
+//	(@interface func (export "send_v2")
+//	    (param $h $request_handle)
+//	    (param $b $body_handle)
+//	    (param $backend string)
+//	    (param $error_detail (@witx pointer $send_error_detail))
+//	    (result $err (expected
+//	            (tuple $response_handle $body_handle)
+//	            (error $fastly_status)))
 //	)
 //
-//go:wasmimport fastly_http_req send
+//go:wasmimport fastly_http_req send_v2
 //go:noescape
-func fastlyHTTPReqSend(
+func fastlyHTTPReqSendV2(
 	h requestHandle,
 	b bodyHandle,
 	backendData prim.Pointer[prim.U8], backendLen prim.Usize,
+	errDetail prim.Pointer[sendErrorDetail],
 	resp prim.Pointer[responseHandle],
 	respBody prim.Pointer[bodyHandle],
 ) FastlyStatus
@@ -1207,15 +1221,17 @@ func (r *HTTPRequest) Send(requestBody *HTTPBody, backend string) (response *HTT
 		respBody HTTPBody
 	)
 
+	errDetail := newSendErrorDetail()
 	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
 
-	if err := fastlyHTTPReqSend(
+	if err := fastlyHTTPReqSendV2(
 		r.h,
 		requestBody.h,
 		backendBuffer.Data, backendBuffer.Len,
+		prim.ToPointer(&errDetail),
 		prim.ToPointer(&resp.h),
 		prim.ToPointer(&respBody.h),
-	).toError(); err != nil {
+	).toSendError(errDetail); err != nil {
 		return nil, nil, err
 	}
 
@@ -1311,18 +1327,21 @@ func (r *HTTPRequest) SendAsyncStreaming(requestBody *HTTPBody, backend string) 
 
 // witx:
 //
-//	(@interface func (export "pending_req_poll")
-//	   (param $h $pending_request_handle)
-//	   (result $err $fastly_status)
-//	   (result $is_done u32)
-//	   (result $resp $response_handle)
-//	   (result $resp_body $body_handle)
+//	(@interface func (export "pending_req_poll_v2")
+//	    (param $h $pending_request_handle)
+//	    (param $error_detail (@witx pointer $send_error_detail))
+//	    (result $err (expected
+//	            (tuple $is_done
+//	                $response_handle
+//	                $body_handle)
+//	            (error $fastly_status)))
 //	)
 //
-//go:wasmimport fastly_http_req pending_req_poll
+//go:wasmimport fastly_http_req pending_req_poll_v2
 //go:noescape
-func fastlyHTTPReqPendingReqPoll(
+func fastlyHTTPReqPendingReqPollV2(
 	h pendingRequestHandle,
+	errDetail prim.Pointer[sendErrorDetail],
 	isDone prim.Pointer[prim.U32],
 	resp prim.Pointer[responseHandle],
 	respBody prim.Pointer[bodyHandle],
@@ -1333,17 +1352,19 @@ func fastlyHTTPReqPendingReqPoll(
 // err is nil.
 func (r *PendingRequest) Poll() (done bool, response *HTTPResponse, responseBody *HTTPBody, err error) {
 	var (
-		resp     HTTPResponse
-		respBody HTTPBody
-		isDone   prim.U32
+		resp      HTTPResponse
+		respBody  HTTPBody
+		isDone    prim.U32
+		errDetail = newSendErrorDetail()
 	)
 
-	if err := fastlyHTTPReqPendingReqPoll(
+	if err := fastlyHTTPReqPendingReqPollV2(
 		r.h,
+		prim.ToPointer(&errDetail),
 		prim.ToPointer(&isDone),
 		prim.ToPointer(&resp.h),
 		prim.ToPointer(&respBody.h),
-	).toError(); err != nil {
+	).toSendError(errDetail); err != nil {
 		return false, nil, nil, err
 	}
 
@@ -1352,17 +1373,19 @@ func (r *PendingRequest) Poll() (done bool, response *HTTPResponse, responseBody
 
 // witx:
 //
-//	(@interface func (export "pending_req_wait")
-//	   (param $h $pending_request_handle)
-//	   (result $err $fastly_status)
-//	   (result $resp $response_handle)
-//	   (result $resp_body $body_handle)
+//	(@interface func (export "pending_req_wait_v2")
+//	    (param $h $pending_request_handle)
+//	    (param $error_detail (@witx pointer $send_error_detail))
+//	    (result $err (expected
+//	            (tuple $response_handle $body_handle)
+//	            (error $fastly_status)))
 //	)
 //
-//go:wasmimport fastly_http_req pending_req_wait
+//go:wasmimport fastly_http_req pending_req_wait_v2
 //go:noescape
-func fastlyHTTPReqPendingReqWait(
+func fastlyHTTPReqPendingReqWaitV2(
 	h pendingRequestHandle,
+	errDetail prim.Pointer[sendErrorDetail],
 	resp prim.Pointer[responseHandle],
 	respBody prim.Pointer[bodyHandle],
 ) FastlyStatus
@@ -1380,29 +1403,19 @@ func (r *PendingRequest) Wait() (response *HTTPResponse, responseBody *HTTPBody,
 		return nil, nil, fmt.Errorf("response body: %w", err)
 	}
 
-	if err := fastlyHTTPReqPendingReqWait(
+	errDetail := newSendErrorDetail()
+
+	if err := fastlyHTTPReqPendingReqWaitV2(
 		r.h,
+		prim.ToPointer(&errDetail),
 		prim.ToPointer(&resp.h),
 		prim.ToPointer(&respBody.h),
-	).toError(); err != nil {
+	).toSendError(errDetail); err != nil {
 		return nil, nil, err
 	}
 
 	return resp, respBody, nil
 }
-
-// witx:
-//
-//	(@interface func (export "pending_req_select")
-//	   (param $hs (array $pending_request_handle))
-//	   (result $err $fastly_status)
-//	   (result $done_idx u32)
-//	   (result $resp $response_handle)
-//	   (result $resp_body $body_handle)
-//	)
-//
-//go:wasmimport fastly_http_req pending_req_select
-//go:noescape
 
 // witx:
 //

@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
@@ -127,6 +128,18 @@ func (s FastlyStatus) toError() error {
 	}
 }
 
+func (s FastlyStatus) toSendError(d sendErrorDetail) error {
+	if s == FastlyStatusOK {
+		return nil
+	}
+
+	if !d.valid() {
+		return FastlyError{Status: s}
+	}
+
+	return FastlyError{Status: s, Detail: d}
+}
+
 // FastlyError decorates error-class FastlyStatus values and implements the
 // error interface.
 //
@@ -134,11 +147,18 @@ func (s FastlyStatus) toError() error {
 // IsFastlyError helper instead.
 type FastlyError struct {
 	Status FastlyStatus
+
+	// Detail contains an additional detailed error, if any.
+	Detail error
 }
 
 // Error implements the error interface.
 func (e FastlyError) Error() string {
-	return fmt.Sprintf("Fastly error: %s", e.Status.String())
+	if e.Detail != nil && e.Detail.Error() != "" {
+		return "Fastly error: " + e.Detail.Error()
+	}
+
+	return "Fastly error: " + e.Status.String()
 }
 
 func (e FastlyError) getStatus() FastlyStatus {
@@ -861,4 +881,303 @@ func (b *BackendConfigOptions) SNIHostname(sniHostname string) {
 	buf := prim.NewReadBufferFromString(sniHostname)
 	b.opts.sniHostnamePtr = prim.ToPointer(buf.Char8Pointer())
 	b.opts.sniHostnameLen = prim.U32(buf.Len())
+}
+
+// witx:
+//
+//	(typename $send_error_detail_tag
+//	    (enum (@witx tag u32)
+//	        ;;; The $send_error_detail struct has not been populated.
+//	        $uninitialized
+//	        ;;; There was no send error.
+//	        $ok
+//	        ;;; The system encountered a timeout when trying to find an IP address for the backend
+//	        ;;; hostname.
+//	        $dns_timeout
+//	        ;;; The system encountered a DNS error when trying to find an IP address for the backend
+//	        ;;; hostname. The fields $dns_error_rcode and $dns_error_info_code may be set in the
+//	        ;;; $send_error_detail.
+//	        $dns_error
+//	        ;;; The system cannot determine which backend to use, or the specified backend was invalid.
+//	        $destination_not_found
+//	        ;;; The system considers the backend to be unavailable; e.g., recent attempts to communicate
+//	        ;;; with it may have failed, or a health check may indicate that it is down.
+//	        $destination_unavailable
+//	        ;;; The system cannot find a route to the next-hop IP address.
+//	        $destination_ip_unroutable
+//	        ;;; The system's connection to the backend was refused.
+//	        $connection_refused
+//	        ;;; The system's connection to the backend was closed before a complete response was
+//	        ;;; received.
+//	        $connection_terminated
+//	        ;;; The system's attempt to open a connection to the backend timed out.
+//	        $connection_timeout
+//	        ;;; The system is configured to limit the number of connections it has to the backend, and
+//	        ;;; that limit has been exceeded.
+//	        $connection_limit_reached
+//	        ;;; The system encountered an error when verifying the certificate presented by the backend.
+//	        $tls_certificate_error
+//	        ;;; The system encountered an error with the backend TLS configuration.
+//	        $tls_configuration_error
+//	        ;;; The system received an incomplete response to the request from the backend.
+//	        $http_incomplete_response
+//	        ;;; The system received a response to the request whose header section was considered too
+//	        ;;; large.
+//	        $http_response_header_section_too_large
+//	        ;;; The system received a response to the request whose body was considered too large.
+//	        $http_response_body_too_large
+//	        ;;; The system reached a configured time limit waiting for the complete response.
+//	        $http_response_timeout
+//	        ;;; The system received a response to the request whose status code or reason phrase was
+//	        ;;; invalid.
+//	        $http_response_status_invalid
+//	        ;;; The process of negotiating an upgrade of the HTTP version between the system and the
+//	        ;;; backend failed.
+//	        $http_upgrade_failed
+//	        ;;; The system encountered an HTTP protocol error when communicating with the backend. This
+//	        ;;; error will only be used when a more specific one is not defined.
+//	        $http_protocol_error
+//	        ;;; An invalid cache key was provided for the request.
+//	        $http_request_cache_key_invalid
+//	        ;;; An invalid URI was provided for the request.
+//	        $http_request_uri_invalid
+//	        ;;; The system encountered an unexpected internal error.
+//	        $internal_error
+//	        ;;; The system received a TLS alert from the backend. The field $tls_alert_id may be set in
+//	        ;;; the $send_error_detail.
+//	        $tls_alert_received
+//	        ;;; The system encountered a TLS error when communicating with the backend, either during
+//	        ;;; the handshake or afterwards.
+//	        $tls_protocol_error
+//	        ))
+type sendErrorDetailTag prim.U32
+
+const (
+	sendErrorDetailTagUninitialized                     sendErrorDetailTag = 0
+	sendErrorDetailTagOK                                sendErrorDetailTag = 1
+	sendErrorDetailTagDNSTimeout                        sendErrorDetailTag = 2
+	sendErrorDetailTagDNSError                          sendErrorDetailTag = 3
+	sendErrorDetailTagDestinationNotFound               sendErrorDetailTag = 4
+	sendErrorDetailTagDestinationUnavailable            sendErrorDetailTag = 5
+	sendErrorDetailTagDestinationIPUnroutable           sendErrorDetailTag = 6
+	sendErrorDetailTagConnectionRefused                 sendErrorDetailTag = 7
+	sendErrorDetailTagConnectionTerminated              sendErrorDetailTag = 8
+	sendErrorDetailTagConnectionTimeout                 sendErrorDetailTag = 9
+	sendErrorDetailTagConnectionLimitReached            sendErrorDetailTag = 10
+	sendErrorDetailTagTLSCertificateError               sendErrorDetailTag = 11
+	sendErrorDetailTagTLSConfigurationError             sendErrorDetailTag = 12
+	sendErrorDetailTagHTTPIncompleteResponse            sendErrorDetailTag = 13
+	sendErrorDetailTagHTTPResponseHeaderSectionTooLarge sendErrorDetailTag = 14
+	sendErrorDetailTagHTTPResponseBodyTooLarge          sendErrorDetailTag = 15
+	sendErrorDetailTagHTTPResponseTimeout               sendErrorDetailTag = 16
+	sendErrorDetailTagHTTPResponseStatusInvalid         sendErrorDetailTag = 17
+	sendErrorDetailTagHTTPUpgradeFailed                 sendErrorDetailTag = 18
+	sendErrorDetailTagHTTPProtocolError                 sendErrorDetailTag = 19
+	sendErrorDetailTagHTTPRequestCacheKeyInvalid        sendErrorDetailTag = 20
+	sendErrorDetailTagHTTPRequestURIInvalid             sendErrorDetailTag = 21
+	sendErrorDetailTagInternalError                     sendErrorDetailTag = 22
+	sendErrorDetailTagTLSAlertReceived                  sendErrorDetailTag = 23
+	sendErrorDetailTagTLSProtocolError                  sendErrorDetailTag = 24
+)
+
+// witx:
+//
+//	;;; Mask representing which fields are understood by the guest, and which have been set by the host.
+//	;;;
+//	;;; When the guest calls hostcalls with a mask, it should set every bit in the mask that corresponds
+//	;;; to a defined flag. This signals the host to write only to fields with a set bit, allowing
+//	;;; forward compatibility for existing guest programs even after new fields are added to the struct.
+//	(typename $send_error_detail_mask
+//	    (flags (@witx repr u32)
+//	       $reserved
+//	       $dns_error_rcode
+//	       $dns_error_info_code
+//	       $tls_alert_id
+//	       ))
+type sendErrorDetailMask prim.U32
+
+const (
+	sendErrorDetailMaskReserved      = 1 << 0 // $reserved
+	sendErrorDetailMaskDNSErrorRCode = 1 << 1 // $dns_error_rcode
+	sendErrorDetailMaskDNSErrorInfo  = 1 << 2 // $dns_error_info_code
+	sendErrorDetailMaskTLSAlertID    = 1 << 3 // $tls_alert_id
+)
+
+// witx:
+//
+//	(typename $send_error_detail
+//	  (record
+//	    (field $tag $send_error_detail_tag)
+//	    (field $mask $send_error_detail_mask)
+//	    (field $dns_error_rcode u16)
+//	    (field $dns_error_info_code u16)
+//	    (field $tls_alert_id u8)
+//	    ))
+type sendErrorDetail struct {
+	tag              sendErrorDetailTag
+	mask             sendErrorDetailMask
+	dnsErrorRCode    prim.U16
+	dnsErrorInfoCode prim.U16
+	tlsAlertID       prim.U8
+}
+
+func newSendErrorDetail() sendErrorDetail {
+	return sendErrorDetail{
+		mask: sendErrorDetailMaskDNSErrorRCode | sendErrorDetailMaskDNSErrorInfo | sendErrorDetailMaskTLSAlertID,
+	}
+}
+
+func (d sendErrorDetail) valid() bool {
+	switch d.tag {
+	case sendErrorDetailTagUninitialized:
+		// Not enough information to convert to an error.  In this case,
+		// the caller should use the FastlyStatus as the basis for the
+		// error instead.
+		return false
+
+	case sendErrorDetailTagOK:
+		// No error
+		return false
+	}
+
+	return true
+}
+
+func (d sendErrorDetail) Error() string {
+	return "send error: " + d.String()
+}
+
+func (d sendErrorDetail) String() string {
+	switch d.tag {
+	case sendErrorDetailTagDNSTimeout:
+		return "DNS timeout"
+	case sendErrorDetailTagDNSError:
+		return fmt.Sprintf("DNS error (rcode=%d, info_code=%d)", d.dnsErrorRCode, d.dnsErrorInfoCode)
+	case sendErrorDetailTagDestinationNotFound:
+		return "destination not found"
+	case sendErrorDetailTagDestinationUnavailable:
+		return "destination unavailable"
+	case sendErrorDetailTagDestinationIPUnroutable:
+		return "destination IP unroutable"
+	case sendErrorDetailTagConnectionRefused:
+		return "connection refused"
+	case sendErrorDetailTagConnectionTerminated:
+		return "connection terminated"
+	case sendErrorDetailTagConnectionTimeout:
+		return "connection timeout"
+	case sendErrorDetailTagConnectionLimitReached:
+		return "connection limit reached"
+	case sendErrorDetailTagTLSCertificateError:
+		return "TLS certificate error"
+	case sendErrorDetailTagTLSConfigurationError:
+		return "TLS configuration error"
+	case sendErrorDetailTagHTTPIncompleteResponse:
+		return "incomplete HTTP response"
+	case sendErrorDetailTagHTTPResponseHeaderSectionTooLarge:
+		return "HTTP response header section too large"
+	case sendErrorDetailTagHTTPResponseBodyTooLarge:
+		return "HTTP response body too large"
+	case sendErrorDetailTagHTTPResponseTimeout:
+		return "HTTP response timeout"
+	case sendErrorDetailTagHTTPResponseStatusInvalid:
+		return "HTTP response status invalid"
+	case sendErrorDetailTagHTTPUpgradeFailed:
+		return "HTTP upgrade failed"
+	case sendErrorDetailTagHTTPProtocolError:
+		return "HTTP protocol error"
+	case sendErrorDetailTagHTTPRequestCacheKeyInvalid:
+		return "HTTP request cache key invalid"
+	case sendErrorDetailTagHTTPRequestURIInvalid:
+		return "HTTP request URI invalid"
+	case sendErrorDetailTagInternalError:
+		return "internal error"
+	case sendErrorDetailTagTLSAlertReceived:
+		return fmt.Sprintf("TLS alert received (%s)", tlsAlertString(d.tlsAlertID))
+	case sendErrorDetailTagTLSProtocolError:
+		return "TLS protocol error"
+
+	case sendErrorDetailTagUninitialized:
+		panic("should not be reached: sendErrorDetailTagUninitialized")
+	case sendErrorDetailTagOK:
+		panic("should not be reached: sendErrorDetailTagOK")
+
+	default:
+		return fmt.Sprintf("unknown error (%d)", d.tag)
+	}
+}
+
+// Source: https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-6
+func tlsAlertString(id prim.U8) string {
+	switch id {
+	case 0:
+		return "close notify"
+	case 10:
+		return "unexpected message"
+	case 20:
+		return "bad record MAC"
+	case 21:
+		return "decryption failed"
+	case 22:
+		return "record overflow"
+	case 30:
+		return "decompression failure"
+	case 40:
+		return "handshake failure"
+	case 41:
+		return "no certificate"
+	case 42:
+		return "bad certificate"
+	case 43:
+		return "unsupported certificate"
+	case 44:
+		return "certificate revoked"
+	case 45:
+		return "certificate expired"
+	case 46:
+		return "certificate unknown"
+	case 47:
+		return "illegal parameter"
+	case 48:
+		return "unknown certificate authority"
+	case 49:
+		return "access denied"
+	case 50:
+		return "error decoding message"
+	case 51:
+		return "error decrypting message"
+	case 60:
+		return "export restriction"
+	case 70:
+		return "protocol version not supported"
+	case 71:
+		return "insufficient security level"
+	case 80:
+		return "internal error"
+	case 86:
+		return "inappropriate fallback"
+	case 90:
+		return "user canceled"
+	case 100:
+		return "no renegotiation"
+	case 109:
+		return "missing extension"
+	case 110:
+		return "unsupported extension"
+	case 111:
+		return "certificate unobtainable"
+	case 112:
+		return "unrecognized name"
+	case 113:
+		return "bad certificate status response"
+	case 114:
+		return "bad certificate hash value"
+	case 115:
+		return "unknown PSK identity"
+	case 116:
+		return "certificate required"
+	case 120:
+		return "no application protocol"
+	default:
+		return strconv.Itoa(int(id))
+	}
 }
