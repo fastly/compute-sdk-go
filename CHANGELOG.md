@@ -1,4 +1,4 @@
-## Unreleased
+## 1.1.0 (2023-10-31)
 
 - Improve error handling and documentation in `kvstore` package
 - Use new hostcalls for better error messages when sending requests to a backend
