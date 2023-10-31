@@ -1,9 +1,18 @@
 name: Integration Tests
 on: [push]
 env:
-  VICEROY_VERSION: 0.8.1
+  VICEROY_VERSION: 0.9.2
 jobs:
   integration-tests-tinygo:
+    strategy:
+      matrix:
+        include:
+          # Newest supported configuration
+          - go-version: '~1.21.0'
+            tinygo-version: '0.30.0'
+          # Oldest supported configuration
+          - go-version: '~1.19.0'
+            tinygo-version: '0.28.1'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout fastly/compute-sdk-go
@@ -11,11 +20,11 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: '~1.20.0'
+          go-version: ${{ matrix.go-version }}
       - name: Install TinyGo
         uses: ./.github/actions/install-tinygo
         with:
-          tinygo-version: '0.28.1'
+          tinygo-version: ${{ matrix.tinygo-version }}
       - name: Setup Fastly CLI
         uses: fastly/compute-actions/setup@v5
       - name: Install Viceroy ${{ env.VICEROY_VERSION }}
