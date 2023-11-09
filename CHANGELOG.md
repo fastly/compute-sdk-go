@@ -1,5 +1,7 @@
 ## 1.1.0 (2023-10-31)
 
+### Added
+
 - Improve error handling and documentation in `kvstore` package
 - Use new hostcalls for better error messages when sending requests to a backend
 - Add better unexpected error handling (`cache/core`, `configstore`, `secretstore`)
@@ -7,6 +9,10 @@
 ## 1.0.0 (2023-09-13)
 
 - Unchanged from 0.2.0
+
+### Added
+
+- Tag version 1.0.0
 
 ## 0.2.0 (2023-08-11)
 
