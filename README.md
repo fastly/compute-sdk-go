@@ -60,15 +60,15 @@ Write your tests as ordinary Go tests.  Viceroy provides the Compute APIs locall
 
 ### TinyGo
 
-The `compute-at-edge.json` file provides a TinyGo target to run Viceroy.  (In the future, we will include this in the Go starter kits.)
+The `fastly-compute.json` file provides a TinyGo target to run Viceroy.  (In the future, we will include this in the Go starter kits.)
 
 To run your tests:
 
-    tinygo test -target=compute-at-edge.json ./...
+    tinygo test -target=fastly-compute.json ./...
 
 You can try it out and make sure your local Viceroy environment is set up correctly by running the integration tests in this repository:
 
-    tinygo test -target=compute-at-edge.json ./integration_tests/...
+    tinygo test -target=fastly-compute.json ./integration_tests/...
 
 ###  Go
 
