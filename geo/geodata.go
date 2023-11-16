@@ -3,7 +3,7 @@
 package geo
 
 import (
-	"fmt"
+	"encoding/json"
 	"net"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
@@ -38,79 +38,15 @@ func Lookup(ip net.IP) (*Geo, error) {
 		return nil, err
 	}
 
-	return parseGeoJSON(buf)
-}
+	var g Geo
 
-func parseGeoJSON(buf []byte) (*Geo, error) {
 	// Check if there is geographic data for this IP address.
 	if len(buf) == 0 {
-		return &Geo{}, nil
+		return &g, nil
 	}
 
-	s := newScanner(buf)
-	if tok := s.scan(); tok != tokenObjectStart {
-		return nil, fmt.Errorf("unexpected JSON type %s", tok)
+	if err := json.Unmarshal(buf, &g); err != nil {
+		return nil, err
 	}
-
-	var g Geo
-	for tok := s.scan(); tok != tokenObjectEnd; tok = s.scan() {
-		key, err := s.decodeString()
-		if err != nil {
-			return nil, err
-		}
-
-		if tok := s.scan(); tok <= tokenEOF {
-			return nil, fmt.Errorf("unexpected JSON type %s", tok)
-		}
-
-		switch key {
-		case "as_name":
-			g.AsName, err = s.decodeString()
-		case "as_number":
-			g.AsNumber, err = s.decodeInt()
-		case "area_code":
-			g.AreaCode, err = s.decodeInt()
-		case "city":
-			g.City, err = s.decodeString()
-		case "conn_speed":
-			g.ConnSpeed, err = s.decodeString()
-		case "conn_type":
-			g.ConnType, err = s.decodeString()
-		case "continent":
-			g.ContinentCode, err = s.decodeString()
-		case "country_code":
-			g.CountryCode, err = s.decodeString()
-		case "country_code3":
-			g.CountryCode3, err = s.decodeString()
-		case "country_name":
-			g.CountryName, err = s.decodeString()
-		case "latitude":
-			g.Latitude, err = s.decodeFloat()
-		case "longitude":
-			g.Longitude, err = s.decodeFloat()
-		case "metro_code":
-			g.MetroCode, err = s.decodeInt()
-		case "postal_code":
-			g.PostalCode, err = s.decodeString()
-		case "proxy_description":
-			g.ProxyDescription, err = s.decodeString()
-		case "proxy_type":
-			g.ProxyType, err = s.decodeString()
-		case "region":
-			g.Region, err = s.decodeString()
-		case "utc_offset":
-			g.UTCOffset, err = s.decodeInt()
-		default:
-			s.skipValue()
-		}
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if tok := s.scan(); tok != tokenEOF {
-		return nil, fmt.Errorf("unexpected JSON type %s", tok)
-	}
-
 	return &g, nil
 }
