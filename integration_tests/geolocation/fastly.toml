@@ -1,0 +1,35 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["oss@fastly.com"]
+description = ""
+language = "go"
+manifest_version = 2
+name = "geolocation"
+service_id = ""
+
+[local_server]
+[local_server.geolocation]
+use_default_loopback = false
+format = "inline-toml"
+
+[local_server.geolocation.addresses]
+[local_server.geolocation.addresses."127.0.0.1"]
+as_name = "Fastly Test"
+as_number = 12345
+area_code = 123
+city = "Test City"
+conn_speed = "broadband"
+conn_type = "wired"
+continent = "NA"
+country_code = "CA"
+country_code3 = "CAN"
+country_name = "Canada"
+latitude = 12.345
+longitude = 54.321
+metro_code = 1
+postal_code = "12345"
+proxy_description = "?"
+proxy_type = "?"
+region = "BC"
+utc_offset = -700
