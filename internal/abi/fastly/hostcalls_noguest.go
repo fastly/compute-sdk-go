@@ -468,3 +468,7 @@ func (o *PurgeOptions) SoftPurge(v bool) error {
 func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
 	return fmt.Errorf("not implemented")
 }
+
+func DeviceLookup(userAgent string) ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}

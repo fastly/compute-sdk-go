@@ -3387,3 +3387,55 @@ func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
 		prim.ToPointer(&opts.opts),
 	).toError()
 }
+
+// witx:
+//
+//	(module $fastly_device_detection
+//	    (@interface func (export "lookup")
+//	        (param $user_agent string)
+//
+//	        (param $buf (@witx pointer (@witx char8)))
+//	        (param $buf_len (@witx usize))
+//	        (param $nwritten_out (@witx pointer (@witx usize)))
+//	        (result $err (expected (error $fastly_status)))
+//	    )
+//	)
+//
+//go:wasmimport fastly_device_detection lookup
+//go:noescape
+func fastlyDeviceDetectionLookup(
+	userAgentData prim.Pointer[prim.U8], userAgentLen prim.Usize,
+	buf prim.Pointer[prim.Char8],
+	bufLen prim.Usize,
+	nWritten prim.Pointer[prim.Usize],
+) FastlyStatus
+
+func DeviceLookup(userAgent string) ([]byte, error) {
+	buf := prim.NewWriteBuffer(defaultBufferLen)
+
+	userAgentBuffer := prim.NewReadBufferFromString(userAgent).Wstring()
+
+	status := fastlyDeviceDetectionLookup(
+		userAgentBuffer.Data, userAgentBuffer.Len,
+		prim.ToPointer(buf.Char8Pointer()),
+		buf.Cap(),
+		prim.ToPointer(buf.NPointer()),
+	)
+	if status == FastlyStatusBufLen {
+		// The buffer was too small, but it'll tell us how big it will
+		// need to be in order to fit the content.
+		buf = prim.NewWriteBuffer(int(buf.NValue()))
+
+		status = fastlyDeviceDetectionLookup(
+			userAgentBuffer.Data, userAgentBuffer.Len,
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+	}
+	if err := status.toError(); err != nil {
+		return nil, err
+	}
+
+	return buf.AsBytes(), nil
+}
