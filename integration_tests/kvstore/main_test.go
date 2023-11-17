@@ -5,79 +5,38 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/fastly/compute-sdk-go/fsthttp"
-	"github.com/fastly/compute-sdk-go/fsttest"
 	"github.com/fastly/compute-sdk-go/kvstore"
 )
 
 func TestKVStore(t *testing.T) {
-	handler := func(ctx context.Context, res fsthttp.ResponseWriter, req *fsthttp.Request) {
-		store, err := kvstore.Open("example-test-kv-store")
-		if err != nil {
-			fsthttp.Error(res, err.Error(), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		switch req.URL.Path {
-		case "/lookup":
-			{
-				hello, err := store.Lookup("hello")
-				if err != nil {
-					fsthttp.Error(res, err.Error(), fsthttp.StatusInternalServerError)
-					return
-				}
-
-				fmt.Fprint(res, hello.String())
-			}
-		case "/insert":
-			{
-				err := store.Insert("animal", strings.NewReader("cat"))
-				if err != nil {
-					fsthttp.Error(res, err.Error(), fsthttp.StatusInternalServerError)
-					return
-				}
-
-				animal, err := store.Lookup("animal")
-				if err != nil {
-					fsthttp.Error(res, err.Error(), fsthttp.StatusInternalServerError)
-					return
-				}
-
-				fmt.Fprint(res, animal.String())
-			}
-		}
+	store, err := kvstore.Open("example-test-kv-store")
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	testcases := []struct {
-		name     string
-		wantBody string
-	}{
-		{"lookup", "world"},
-		{"insert", "cat"},
+	hello, err := store.Lookup("hello")
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			r, err := fsthttp.NewRequest("GET", "/"+tc.name, nil)
-			if err != nil {
-				t.Fatalf("NewRequest: %v", err)
-			}
-			w := fsttest.NewRecorder()
+	if got, want := hello.String(), "world"; got != want {
+		t.Errorf("Lookup: got %q, want %q", got, want)
+	}
 
-			handler(context.Background(), w, r)
+	err = store.Insert("animal", strings.NewReader("cat"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
-			if got, want := w.Code, fsthttp.StatusOK; got != want {
-				t.Errorf("Code = %d, want %d", got, want)
-			}
+	animal, err := store.Lookup("animal")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-			if got, want := w.Body.String(), tc.wantBody; got != want {
-				t.Errorf("Body = %q, want %q", got, want)
-			}
-		})
+	if got, want := animal.String(), "cat"; got != want {
+		t.Errorf("Insert: got %q, want %q", got, want)
 	}
 }

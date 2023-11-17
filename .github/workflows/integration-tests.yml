@@ -42,7 +42,7 @@ jobs:
           fastly version
           viceroy --version
       - name: Run Integration Tests
-        run: RUST_LOG="viceroy=info,viceroy-lib=info" tinygo test -v -target=compute-at-edge.json ./integration_tests/...
+        run: RUST_LOG="viceroy=info,viceroy-lib=info" tinygo test -v -target=fastly-compute.json ./integration_tests/...
   integration-tests-go:
     runs-on: ubuntu-latest
     steps:
