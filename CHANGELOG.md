@@ -1,8 +1,12 @@
-## Unreleased
+## 1.2.0 (2023-11-17)
 
 ### Added
 
 - Add support for device detection (`device`)
+
+### Changed
+
+- Switch geolocation internals to use `encoding/json` from a custom built parser
 
 ## 1.1.0 (2023-10-31)
 
