@@ -1181,3 +1181,34 @@ func tlsAlertString(id prim.U8) string {
 		return strconv.Itoa(int(id))
 	}
 }
+
+type RateWindow struct {
+	value prim.U32
+}
+
+func (r RateWindow) String() string {
+	return strconv.FormatUint(uint64(r.value), 10)
+}
+
+var (
+	RateWindow1s  = RateWindow{value: 1}
+	RateWindow10s = RateWindow{value: 10}
+	RateWindow60s = RateWindow{value: 60}
+)
+
+type CounterDuration struct {
+	value prim.U32
+}
+
+func (c CounterDuration) String() string {
+	return strconv.FormatUint(uint64(c.value), 10)
+}
+
+var (
+	CounterDuration10s = CounterDuration{value: 10}
+	CounterDuration20s = CounterDuration{value: 20}
+	CounterDuration30s = CounterDuration{value: 30}
+	CounterDuration40s = CounterDuration{value: 40}
+	CounterDuration50s = CounterDuration{value: 50}
+	CounterDuration60s = CounterDuration{value: 60}
+)

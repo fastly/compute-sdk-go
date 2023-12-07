@@ -472,3 +472,27 @@ func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
 func DeviceLookup(userAgent string) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
+func ERLCheckRate(rateCounter, entry string, delta uint32, window RateWindow, limit uint32, penaltyBox string, ttl time.Duration) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func RateCounterIncrement(rateCounter, entry string, delta uint32) error {
+	return fmt.Errorf("not implemented")
+}
+
+func RateCounterLookupRate(rateCounter, entry string, window RateWindow) (uint32, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func RateCounterLookupCount(rateCounter, entry string, duration CounterDuration) (uint32, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func PenaltyBoxAdd(penaltyBox, entry string, ttl time.Duration) error {
+	return fmt.Errorf("not implemented")
+}
+
+func PenaltyBoxHas(penaltyBox, entry string) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
