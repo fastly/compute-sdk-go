@@ -4,9 +4,22 @@ package geo
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
+)
+
+var (
+	// ErrNotFound indicates there was no geo data returned.
+	ErrNotFound = errors.New("geo: no data found")
+
+	// ErrInvalidIP indicates the input IP was invalid.
+	ErrInvalidIP = errors.New("geo: invalid IP")
+
+	// ErrUnexpected indicates an unexpected error occurred.
+	ErrUnexpected = errors.New("geo: unexpected error")
 )
 
 // Geo represents the geographic data for an IP address.
@@ -35,7 +48,17 @@ type Geo struct {
 func Lookup(ip net.IP) (*Geo, error) {
 	buf, err := fastly.GeoLookup(ip)
 	if err != nil {
-		return nil, err
+		status, ok := fastly.IsFastlyError(err)
+		switch {
+		case ok && status == fastly.FastlyStatusNone:
+			return nil, ErrNotFound
+		case ok && status == fastly.FastlyStatusInval:
+			return nil, ErrInvalidIP
+		case ok:
+			return nil, fmt.Errorf("%w (%s)", ErrUnexpected, status)
+		default:
+			return nil, err
+		}
 	}
 
 	var g Geo
