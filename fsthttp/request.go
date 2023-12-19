@@ -3,11 +3,13 @@
 package fsthttp
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
@@ -303,20 +305,39 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 
 	// When the request's ManualFramingMode is false, SendAsyncStreaming
 	// streams the request body to the backend using "Transfer-Encoding:
-	// chunked".  This is the default behavior we want for requests with
-	// a body.  For requests without a body, we want to avoid
-	// unnecessary chunked encoding, and have observed servers that
-	// error when seeing it in certain contexts.  Calling SendAsync
-	// instead causes the entire body to be buffered (in this case, zero
-	// bytes) and "Content-Length: 0" to be sent instead.
+	// chunked".  SendAsync buffers the entire body and sends it with a
+	// "Content-Length" header.
+	//
+	// For requests without a body, we want to avoid unnecessary chunked
+	// encoding, and have observed servers that error when seeing it in
+	// certain contexts.
+	//
+	// For requests where the body is an io.Reader implementer where the
+	// size is known in advance, we want to send that along with a
+	// Content-Length as well.  Those types are *bytes.Buffer,
+	// *bytes.Reader, and *strings.Reader.
+	//
+	// For all other requests, we stream with chunked encoding.
 	var (
 		abiPending *fastly.PendingRequest
 		err        error
+		streaming  bool = true
+		errc            = make(chan error, 3) // needs to be buffered to the max number of writes in copyBody()
 	)
-	if req.Body == nil {
-		abiPending, err = req.abi.req.SendAsync(req.abi.body, backend)
-	} else {
+
+	switch underlyingReaderFrom(req.Body).(type) {
+	case nil, *bytes.Buffer, *bytes.Reader, *strings.Reader:
+		streaming = false
+	}
+
+	req.sent = true
+
+	if streaming {
+		go req.copyBody(errc)
 		abiPending, err = req.abi.req.SendAsyncStreaming(req.abi.body, backend)
+	} else {
+		req.copyBody(errc)
+		abiPending, err = req.abi.req.SendAsync(req.abi.body, backend)
 	}
 	if err != nil {
 		if status, ok := fastly.IsFastlyError(err); ok && status == fastly.FastlyStatusInval {
@@ -324,31 +345,6 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 		}
 
 		return nil, fmt.Errorf("begin send: %w", err)
-	}
-	req.sent = true
-
-	var (
-		errc         = make(chan error, 3)
-		bodyExists   = req.Body != nil
-		_, bodyIsABI = req.Body.(*fastly.HTTPBody)
-		shouldCopy   = bodyExists && !bodyIsABI
-	)
-
-	if shouldCopy {
-		go func() {
-			_, copyErr := io.Copy(req.abi.body, req.Body)
-			errc <- maybeWrap(copyErr, "copy body")
-			errc <- maybeWrap(req.Body.Close(), "close user body")
-			if copyErr == nil {
-				// If there was an error copying the body, we *don't* want to Close() the abi req.
-				// This tells the wasm server that the body is incomplete so it knows not to
-				// terminate the sent chunked body with a valid final chunk.
-				// Thus, only Close if copyErr == nil.
-				errc <- maybeWrap(req.abi.body.Close(), "close request body")
-			}
-		}()
-	} else {
-		errc <- maybeWrap(req.abi.body.Close(), "close request body")
 	}
 
 	pollInterval := safePollInterval(req.SendPollInterval)
@@ -385,6 +381,27 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 	}
 
 	return resp, nil
+}
+
+func (req *Request) copyBody(errc chan<- error) {
+	var (
+		bodyExists   = req.Body != nil
+		_, bodyIsABI = req.Body.(*fastly.HTTPBody)
+		shouldCopy   = bodyExists && !bodyIsABI
+	)
+
+	if shouldCopy {
+		_, copyErr := io.Copy(req.abi.body, req.Body)
+		errc <- maybeWrap(copyErr, "copy body")
+		errc <- maybeWrap(req.Body.Close(), "close user body")
+		if copyErr == nil {
+			errc <- maybeWrap(req.abi.body.Close(), "close request body")
+		} else {
+			errc <- maybeWrap(req.abi.body.Abandon(), "abandon request body")
+		}
+	} else {
+		errc <- maybeWrap(req.abi.body.Close(), "close request body")
+	}
 }
 
 func (req *Request) constructABIRequest() error {
@@ -500,6 +517,30 @@ type DecompressResponseOptions struct {
 	Gzip bool
 }
 
+// nopCloser is functionally the same as io.NopCloser, except that we
+// can get to the underlying io.Reader.
+type nopCloser struct {
+	io.Reader
+}
+
+func (nopCloser) Close() error { return nil }
+
+func (n nopCloser) reader() io.Reader {
+	return n.Reader
+}
+
+func underlyingReaderFrom(rc io.ReadCloser) io.Reader {
+	if rc == nil {
+		return nil
+	}
+
+	if nc, ok := rc.(nopCloser); ok {
+		return nc.reader()
+	}
+
+	return rc.(io.Reader)
+}
+
 func abiBodyFrom(rc io.ReadCloser) (*fastly.HTTPBody, error) {
 	b, ok := rc.(*fastly.HTTPBody)
 	if ok {
@@ -523,7 +564,7 @@ func makeBodyFor(r io.Reader) io.ReadCloser {
 		return b
 	}
 
-	return io.NopCloser(r)
+	return nopCloser{r}
 }
 
 func safePollInterval(d time.Duration) time.Duration {
