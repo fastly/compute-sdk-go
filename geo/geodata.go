@@ -12,9 +12,6 @@ import (
 )
 
 var (
-	// ErrNotFound indicates there was no geo data returned.
-	ErrNotFound = errors.New("geo: no data found")
-
 	// ErrInvalidIP indicates the input IP was invalid.
 	ErrInvalidIP = errors.New("geo: invalid IP")
 
@@ -51,7 +48,12 @@ func Lookup(ip net.IP) (*Geo, error) {
 		status, ok := fastly.IsFastlyError(err)
 		switch {
 		case ok && status == fastly.FastlyStatusNone:
-			return nil, ErrNotFound
+			// Viceroy <= 0.9.3 returns fastly.FastlyStatusNone when no geolocation
+			// data is available. The Compute production environment instead returns
+			// empty data, which is handled by falling through to code below this switch.
+
+			// TODO: potential breaking change if bumping major version
+			// return nil, ErrNotFound
 		case ok && status == fastly.FastlyStatusInval:
 			return nil, ErrInvalidIP
 		case ok:

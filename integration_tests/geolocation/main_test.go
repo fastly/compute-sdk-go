@@ -47,8 +47,8 @@ func TestGeolocation(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		g, err := geo.Lookup(net.ParseIP("127.0.0.9"))
-		assert(t, "Geo{}", g, nil)
-		assert(t, "err", err, geo.ErrNotFound)
+		assert(t, "Geo{}", *g, geo.Geo{})
+		assert(t, "err", err, nil)
 	})
 
 	t.Run("invalid", func(t *testing.T) {
