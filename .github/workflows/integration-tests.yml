@@ -42,7 +42,7 @@ jobs:
           fastly version
           viceroy --version
       - name: Run Integration Tests
-        run: RUST_LOG="viceroy=info,viceroy-lib=info" tinygo test -v -target=fastly-compute.json ./integration_tests/...
+        run: RUST_LOG="viceroy=info,viceroy-lib=info" tinygo test -v -target=fastly-compute.json -tags fastlyinternaldebug ./integration_tests/...
   integration-tests-go:
     runs-on: ubuntu-latest
     steps:
@@ -68,4 +68,4 @@ jobs:
           fastly version
           viceroy --version
       - name: Run Integration Tests
-        run: RUST_LOG="viceroy=info,viceroy-lib=info" GOARCH=wasm GOOS=wasip1 go test -exec "viceroy run -C fastly.toml" -v ./integration_tests/...
+        run: RUST_LOG="viceroy=info,viceroy-lib=info" GOARCH=wasm GOOS=wasip1 go test -tags fastlyinternaldebug -exec "viceroy run -C fastly.toml" -v ./integration_tests/...
