@@ -5,12 +5,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"io"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
 	"github.com/fastly/compute-sdk-go/fsttest"
+	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
 
 func TestRequestUpstream(t *testing.T) {
@@ -74,5 +79,84 @@ func requestUpstream(useAppend bool, t *testing.T) {
 
 	if got, want := w.Body.String(), "Hello from Origin"; got != want {
 		t.Errorf("Body = %q, want %q", got, want)
+	}
+}
+
+const bodySize = 64 * 1024
+
+func TestRequestUpstreamBody(t *testing.T) {
+	body := make([]byte, bodySize)
+	for i := range body {
+		body[i] = byte(i)
+	}
+
+	b, err := fastly.NewHTTPBody()
+	if err != nil {
+		t.Fatalf("NewHTTPBody: %v", err)
+	}
+	_, err = b.Write(body)
+	if err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if err := b.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	testcases := []struct {
+		name    string
+		body    io.Reader
+		size    int
+		chunked bool
+	}{
+		{name: "nil", body: nil},
+		{name: "bytes.Reader", body: bytes.NewReader(body), size: bodySize},
+		{name: "bytes.Buffer", body: bytes.NewBuffer(body), size: bodySize},
+		{name: "strings.Reader", body: strings.NewReader(string(body)), size: bodySize},
+		{name: "io.NopCloser", body: io.NopCloser(bytes.NewReader(body)), chunked: true},
+		{name: "fastly.HTTPBody", body: b, chunked: true},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			requestUpstreamBody(t, tc.body, tc.size, tc.chunked)
+		})
+	}
+}
+
+func requestUpstreamBody(t *testing.T, body io.Reader, size int, chunked bool) {
+	req, err := fsthttp.NewRequest("POST", "https://http-me.glitch.me/?anything", body)
+	if err != nil {
+		t.Fatalf("NewRequest: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/octet-stream")
+	req.CacheOptions.Pass = true
+
+	resp, err := req.Send(context.Background(), "httpme")
+	if err != nil {
+		t.Fatalf("Send: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var respData struct {
+		Headers map[string]string `json:"headers"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
+		t.Fatalf("Decode: %v", err)
+	}
+
+	var teWant, clWant string
+	if chunked {
+		teWant = "chunked"
+	} else {
+		clWant = strconv.Itoa(size)
+	}
+
+	if got, want := respData.Headers["transfer-encoding"], teWant; got != want {
+		t.Errorf("Header[transfer-encoding] = %q, want %q", got, want)
+	}
+	if got, want := respData.Headers["content-length"], clWant; got != want {
+		t.Errorf("Header[content-length] = %q, want %q", got, want)
 	}
 }

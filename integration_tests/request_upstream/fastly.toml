@@ -20,3 +20,6 @@ service_id = ""
 
     [local_server.backends.example_backend]
       url = "https://example.org/"
+
+    [local_server.backends.httpme]
+      url = "https://http-me.glitch.me"
