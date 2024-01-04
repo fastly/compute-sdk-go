@@ -35,8 +35,8 @@ func Serve(h Handler) {
 		}
 	})
 
-	defer clientResponseWriter.Close()
 	h.ServeHTTP(ctx, clientResponseWriter, clientRequest)
+	clientResponseWriter.Close()
 }
 
 // ServeFunc is sugar for Serve(HandlerFunc(f)).
