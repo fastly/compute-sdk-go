@@ -1,3 +1,14 @@
+## 1.2.1 (2024-01-19)
+
+### Added
+
+- Better error handling for geo data
+
+### Changed
+
+- Copy, don't stream, in-memory io.Readers like bytes.Buffer, bytes.Reader and strings.Reader
+- Fix a bug where a panic under Go (but not TinyGo) would result in handlers returning 200 OK instead of 500 Internal Server Error by not deferring Close() on the response writer internally.
+
 ## 1.2.0 (2023-11-17)
 
 ### Added
