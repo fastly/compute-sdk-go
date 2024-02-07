@@ -188,15 +188,15 @@ func (pb *PenaltyBox) Has(entry string) (bool, error) {
 // easy way to check whether a given entry should be rate limited given
 // a rate window and upper limit.
 type RateLimiter struct {
-	rc *RateCounter
-	pb *PenaltyBox
+	RateCounter *RateCounter
+	PenaltyBox  *PenaltyBox
 }
 
 // NewRateLimiter creates a new rate limiter.
 func NewRateLimiter(rc *RateCounter, pb *PenaltyBox) *RateLimiter {
 	return &RateLimiter{
-		rc: rc,
-		pb: pb,
+		RateCounter: rc,
+		PenaltyBox:  pb,
 	}
 }
 
@@ -211,7 +211,7 @@ func NewRateLimiter(rc *RateCounter, pb *PenaltyBox) *RateLimiter {
 // other parameter values follow the same rules as the methods
 // referenced above.
 func (erl *RateLimiter) CheckRate(entry string, delta uint32, window RateWindow, limit uint32, ttl time.Duration) (bool, error) {
-	blocked, err := fastly.ERLCheckRate(erl.rc.name, entry, delta, window, limit, erl.pb.name, ttl)
+	blocked, err := fastly.ERLCheckRate(erl.RateCounter.name, entry, delta, window, limit, erl.PenaltyBox.name, ttl)
 	if err != nil {
 		return false, mapFastlyError(err)
 	}
