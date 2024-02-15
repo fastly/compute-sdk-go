@@ -1,3 +1,9 @@
+## Unreleased
+
+### Added
+
+- Add support for edge rate limiting (`erl`)
+
 ## 1.2.1 (2024-01-19)
 
 ### Added
