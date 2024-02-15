@@ -27,6 +27,7 @@
 package erl
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -184,6 +185,61 @@ func (pb *PenaltyBox) Has(entry string) (bool, error) {
 	return ok, nil
 }
 
+// Policy contains the rules for applying a [RateLimiter].
+type Policy struct {
+	// RateWindow is the window of time to consider when checking the
+	// rate of events per second.
+	RateWindow RateWindow
+
+	// MaxRate is the maximum number of events per second to allow over
+	// the rate window.  The minimum value is 10 and the maximum is
+	// 10000.
+	MaxRate uint32
+
+	// PenaltyBoxDuration is the duration to penalize entries that
+	// exceed the maximum rate.  As with PenaltyBox.Add, the minimum
+	// value is 1 minute and the maximum is 60 minutes.
+	PenaltyBoxDuration time.Duration
+}
+
+// UnmarshalJSON unmarshals a JSON value into a [Policy].  The JSON
+// value must be in the form:
+//
+//	{
+//	    "rate_window": 10,
+//	    "max_rate": 100,
+//	    "penalty_box_duration": 60
+//	}
+//
+// The rate window must be one of the valid rate window values (1, 10,
+// or 60), or an error is returned.  The penalty box duration is in
+// minutes.
+func (p *Policy) UnmarshalJSON(data []byte) error {
+	var jsonPolicy struct {
+		RateWindow         uint32 `json:"rate_window"` // Must be one of the valid rate window values.
+		MaxRate            uint32 `json:"max_rate"`
+		PenaltyBoxDuration uint32 `json:"penalty_box_duration"` // Value in minutes
+	}
+	if err := json.Unmarshal(data, &jsonPolicy); err != nil {
+		return err
+	}
+
+	switch jsonPolicy.RateWindow {
+	case 1:
+		p.RateWindow = RateWindow1s
+	case 10:
+		p.RateWindow = RateWindow10s
+	case 60:
+		p.RateWindow = RateWindow60s
+	default:
+		return fmt.Errorf("invalid rate window: %d", jsonPolicy.RateWindow)
+	}
+
+	p.MaxRate = jsonPolicy.MaxRate
+	p.PenaltyBoxDuration = time.Duration(jsonPolicy.PenaltyBoxDuration) * time.Minute
+	return nil
+}
+
 // RateLimiter combines a [RateCounter] and a [PenaltyBox] to provide an
 // easy way to check whether a given entry should be rate limited given
 // a rate window and upper limit.
@@ -201,17 +257,24 @@ func NewRateLimiter(rc *RateCounter, pb *PenaltyBox) *RateLimiter {
 }
 
 // CheckRate increments an entry's rate counter by the delta value
-// ([RateCounter.Increment]), gets the rate over the provided rate
-// window ([RateCounter.LookupRate]), checks if it exceeds the provided
-// limit, and adds it to the penalty box for the given TTL if so
-// ([PenaltyBox.Add]).  It returns true if the entry is in the penalty
-// box.
+// ([RateCounter.Increment]), and checks it against the provided
+// [Policy].  If the count after increment exceeds the policy's MaxRate
+// over the RateWindow, it will add the entry to the penalty box for the
+// policy's PenaltyBoxDuration.  It returns true if the entry is in the
+// penalty box.
 //
-// The minimum value for limit is 10 and the maximum is 10000.  The
-// other parameter values follow the same rules as the methods
-// referenced above.
-func (erl *RateLimiter) CheckRate(entry string, delta uint32, window RateWindow, limit uint32, ttl time.Duration) (bool, error) {
-	blocked, err := fastly.ERLCheckRate(erl.RateCounter.name, entry, delta, window, limit, erl.PenaltyBox.name, ttl)
+// The limits for the delta value are the same as
+// [RateCounter.Increment].
+func (erl *RateLimiter) CheckRate(entry string, delta uint32, policy *Policy) (bool, error) {
+	blocked, err := fastly.ERLCheckRate(
+		erl.RateCounter.name,
+		entry,
+		delta,
+		policy.RateWindow,
+		policy.MaxRate,
+		erl.PenaltyBox.name,
+		policy.PenaltyBoxDuration,
+	)
 	if err != nil {
 		return false, mapFastlyError(err)
 	}
