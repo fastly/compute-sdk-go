@@ -2,6 +2,7 @@ package erl_test
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/erl"
@@ -35,5 +36,34 @@ func ExampleRateLimiter() {
 		}
 
 		// Otherwise, continue processing the request.
+	})
+}
+
+func ExampleLookups() {
+	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
+		rc := erl.OpenRateCounter("requests")
+
+		// Increment the request counter by 1
+		rc.Increment(r.RemoteAddr, 1)
+
+		// Get the current rate of requests per second over the past 60
+		// seconds
+		rate, err := rc.LookupRate(r.RemoteAddr, erl.RateWindow60s)
+		if err != nil {
+			w.WriteHeader(fsthttp.StatusInternalServerError)
+			return
+		}
+
+		// Get an estimated count of total number of requests over the
+		// past 60 seconds
+		count, err := rc.LookupCount(r.RemoteAddr, erl.CounterDuration60s)
+		if err != nil {
+			w.WriteHeader(fsthttp.StatusInternalServerError)
+			return
+		}
+
+		fmt.Fprintf(w, "Stats over the past 60 seconds:\n")
+		fmt.Fprintf(w, "  Rate: %d requests per second\n", rate)
+		fmt.Fprintf(w, "  Count: %d requests (estimated)\n", count)
 	})
 }
