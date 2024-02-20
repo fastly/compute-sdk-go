@@ -27,7 +27,6 @@
 package erl
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -200,44 +199,6 @@ type Policy struct {
 	// exceed the maximum rate.  As with PenaltyBox.Add, the minimum
 	// value is 1 minute and the maximum is 60 minutes.
 	PenaltyBoxDuration time.Duration
-}
-
-// UnmarshalJSON unmarshals a JSON value into a [Policy].  The JSON
-// value must be in the form:
-//
-//	{
-//	    "rate_window": 10,
-//	    "max_rate": 100,
-//	    "penalty_box_duration": 60
-//	}
-//
-// The rate window must be one of the valid rate window values (1, 10,
-// or 60), or an error is returned.  The penalty box duration is in
-// minutes.
-func (p *Policy) UnmarshalJSON(data []byte) error {
-	var jsonPolicy struct {
-		RateWindow         uint32 `json:"rate_window"` // Must be one of the valid rate window values.
-		MaxRate            uint32 `json:"max_rate"`
-		PenaltyBoxDuration uint32 `json:"penalty_box_duration"` // Value in minutes
-	}
-	if err := json.Unmarshal(data, &jsonPolicy); err != nil {
-		return err
-	}
-
-	switch jsonPolicy.RateWindow {
-	case 1:
-		p.RateWindow = RateWindow1s
-	case 10:
-		p.RateWindow = RateWindow10s
-	case 60:
-		p.RateWindow = RateWindow60s
-	default:
-		return fmt.Errorf("invalid rate window: %d", jsonPolicy.RateWindow)
-	}
-
-	p.MaxRate = jsonPolicy.MaxRate
-	p.PenaltyBoxDuration = time.Duration(jsonPolicy.PenaltyBoxDuration) * time.Minute
-	return nil
 }
 
 // RateLimiter combines a [RateCounter] and a [PenaltyBox] to provide an
