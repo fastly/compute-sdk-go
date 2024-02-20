@@ -152,7 +152,7 @@ func (rc *RateCounter) LookupCount(entry string, duration CounterDuration) (uint
 	return v, nil
 }
 
-// PenaltyBox is a type that allows entries to penalized for a given
+// PenaltyBox is a type that allows entries to be penalized for a given
 // number of minutes in the future.
 type PenaltyBox struct {
 	name string
