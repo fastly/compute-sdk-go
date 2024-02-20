@@ -9,7 +9,7 @@ import (
 	"github.com/fastly/compute-sdk-go/fsthttp"
 )
 
-func ExampleRateLimiter() {
+func ExampleRateLimiter_CheckRate() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
 		limiter := erl.NewRateLimiter(
 			erl.OpenRateCounter("requests"),
@@ -39,7 +39,7 @@ func ExampleRateLimiter() {
 	})
 }
 
-func ExampleLookups() {
+func ExampleRateCounter_LookupRate() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
 		rc := erl.OpenRateCounter("requests")
 
@@ -54,6 +54,17 @@ func ExampleLookups() {
 			return
 		}
 
+		fmt.Fprintf(w, "Rate over the past 60 seconds: %d requests per second\n", rate)
+	})
+}
+
+func ExampleRateCounter_LookupCount() {
+	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
+		rc := erl.OpenRateCounter("requests")
+
+		// Increment the request counter by 1
+		rc.Increment(r.RemoteAddr, 1)
+
 		// Get an estimated count of total number of requests over the
 		// past 60 seconds
 		count, err := rc.LookupCount(r.RemoteAddr, erl.CounterDuration60s)
@@ -62,8 +73,6 @@ func ExampleLookups() {
 			return
 		}
 
-		fmt.Fprintf(w, "Stats over the past 60 seconds:\n")
-		fmt.Fprintf(w, "  Rate: %d requests per second\n", rate)
-		fmt.Fprintf(w, "  Count: %d requests (estimated)\n", count)
+		fmt.Fprintf(w, "Estimated count over the past 60 seconds: %d requests\n", count)
 	})
 }
