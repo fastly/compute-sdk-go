@@ -57,12 +57,9 @@ type Request struct {
 	// reads may return immediately with EOF. For outgoing requests, the body is
 	// optional. A body may only be read once.
 	//
-	// It is possible to assign the unread body of the incoming client request
-	// to the body field of a different request. When that second request is
-	// sent, the body will be efficiently streamed from the incoming request.
-	//
-	// It is also possible to assign the unread body of a received response to
-	// the body field of a request, with the same results.
+	// Prefer using the SetBody method over assigning to this value directly,
+	// as it enables optimizations when sending outgoing requests.  See the
+	// SetBody documentation for more information.
 	Body io.ReadCloser
 
 	// Host is the hostname parsed from the incoming request URL.
@@ -116,11 +113,16 @@ func NewRequest(method string, uri string, body io.Reader) (*Request, error) {
 		return nil, err
 	}
 
+	rc, ok := body.(io.ReadCloser)
+	if !ok && body != nil {
+		rc = nopCloser{body}
+	}
+
 	return &Request{
 		Method: method,
 		URL:    u,
 		Header: NewHeader(),
-		Body:   makeBodyFor(body),
+		Body:   rc,
 		Host:   u.Host,
 	}, nil
 }
@@ -209,8 +211,30 @@ func newClientRequest() (*Request, error) {
 	}, nil
 }
 
+// SetBody sets the [Request]'s body to the provided [io.Reader]. Prefer
+// using this method over setting the Body field directly, as it enables
+// optimizations in the runtime.
+//
+// If an unread body from an incoming client request is set on an
+// outgoing upstream request, the body will be efficiently streamed from
+// the incoming request.  It is also possible to set the unread body of
+// a received response to the body of a request, with the same results.
+//
+// If the body is set from an in-memory reader such as [bytes.Buffer],
+// [bytes.Reader], or [strings.Reader], the runtime will send the
+// request with a Content-Length header instead of Transfer-Encoding:
+// chunked.
+func (req *Request) SetBody(body io.Reader) {
+	rc, ok := body.(io.ReadCloser)
+	if !ok && body != nil {
+		rc = nopCloser{body}
+	}
+
+	req.Body = rc
+}
+
 // Clone returns a copy of the request. The returned copy will have a nil Body
-// field, and it's URL will have a nil User field.
+// field, and its URL will have a nil User field.
 func (req *Request) Clone() *Request {
 	return &Request{
 		Method:                    req.Method,
@@ -228,6 +252,14 @@ func (req *Request) Clone() *Request {
 		DecompressResponseOptions: req.DecompressResponseOptions,
 		ManualFramingMode:         req.ManualFramingMode,
 	}
+}
+
+// CloneWithBody returns a copy of the request, with the Body field set
+// to the provided io.Reader.  Its URL will have a nil User field.
+func (req *Request) CloneWithBody(body io.Reader) *Request {
+	r := req.Clone()
+	r.SetBody(body)
+	return r
 }
 
 func cloneURL(u *url.URL) *url.URL {
@@ -553,18 +585,6 @@ func abiBodyFrom(rc io.ReadCloser) (*fastly.HTTPBody, error) {
 	}
 
 	return b, nil
-}
-
-func makeBodyFor(r io.Reader) io.ReadCloser {
-	if r == nil {
-		return nil
-	}
-
-	if b, ok := r.(*fastly.HTTPBody); ok {
-		return b
-	}
-
-	return nopCloser{r}
 }
 
 func safePollInterval(d time.Duration) time.Duration {
