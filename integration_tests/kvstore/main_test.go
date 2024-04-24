@@ -39,4 +39,20 @@ func TestKVStore(t *testing.T) {
 	if got, want := animal.String(), "cat"; got != want {
 		t.Errorf("Insert: got %q, want %q", got, want)
 	}
+
+	if err = store.Delete("animal"); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = store.Lookup("animal")
+	if err == nil {
+		t.Error("expected Lookup failure")
+	}
+
+	/*
+		// TODO(athomason) address inconsistent behavior in viceroy and production
+		if err = store.Delete("nonexistent"); err != nil {
+			t.Fatal(err)
+		}
+	*/
 }
