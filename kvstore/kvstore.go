@@ -129,3 +129,22 @@ func (s *Store) Insert(key string, value io.Reader) error {
 	}
 	return nil
 }
+
+// Delete removes a key from the associated KV store.
+func (s *Store) Delete(key string) error {
+	err := s.kvstore.Delete(key)
+	if err != nil {
+		status, ok := fastly.IsFastlyError(err)
+		switch {
+		case ok && status == fastly.FastlyStatusNone:
+			return ErrKeyNotFound
+		case ok && status == fastly.FastlyStatusInval:
+			return ErrInvalidKey
+		case ok:
+			return fmt.Errorf("%w (%s)", ErrUnexpected, status)
+		default:
+			return err
+		}
+	}
+	return nil
+}

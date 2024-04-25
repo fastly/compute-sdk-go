@@ -2606,6 +2606,52 @@ func (o *KVStore) Insert(key string, value io.Reader) error {
 	return nil
 }
 
+// witx:
+//
+//  (@interface func (export "delete_async")
+//      (param $store $object_store_handle)
+//      (param $key string)
+//      (param $pending_handle_out (@witx pointer $pending_kv_delete_handle))
+//      (result $err (expected (error $fastly_status)))
+//  )
+
+//go:wasmimport fastly_object_store delete_async
+//go:noescape
+func fastlyObjectStoreDeleteAsync(
+	h objectStoreHandle,
+	keyData prim.Pointer[prim.U8], keyLen prim.Usize,
+	pendingReq prim.Pointer[pendingRequestHandle],
+) FastlyStatus
+
+// witx:
+//
+//  (@interface func (export "pending_delete_wait")
+//      (param $pending_handle $pending_kv_delete_handle)
+//      (result $err (expected (error $fastly_status)))
+//  )
+
+//go:wasmimport fastly_object_store pending_delete_wait
+//go:noescape
+func fastlyObjectStorePendingDeleteWait(
+	pendingReq pendingRequestHandle,
+) FastlyStatus
+
+// Delete removes a key from the kv store.
+func (o *KVStore) Delete(key string) error {
+	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
+
+	var handle pendingRequestHandle
+	if err := fastlyObjectStoreDeleteAsync(
+		o.h,
+		keyBuffer.Data, keyBuffer.Len,
+		prim.ToPointer(&handle),
+	).toError(); err != nil {
+		return err
+	}
+
+	return fastlyObjectStorePendingDeleteWait(handle).toError()
+}
+
 // SecretStore represents a Fastly secret store, a collection of
 // key/value pairs for storing sensitive data.
 type SecretStore struct {

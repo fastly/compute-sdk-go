@@ -319,6 +319,10 @@ func (o *KVStore) Insert(key string, value io.Reader) error {
 	return fmt.Errorf("not implemented")
 }
 
+func (o *KVStore) Delete(key string) error {
+	return fmt.Errorf("not implemented")
+}
+
 type (
 	SecretStore struct{}
 	Secret      struct{}
