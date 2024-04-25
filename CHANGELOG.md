@@ -1,3 +1,13 @@
+## 1.3.1 (2024-04-25)
+
+### Added
+
+- `kvstore`: add Store.Delete method
+
+### Changed
+
+- Update Viceroy requirement to 0.9.6
+
 ## 1.3.0 (2024-02-21)
 
 ### Added
