@@ -2443,7 +2443,7 @@ func (d *Dictionary) Get(key string) (string, error) {
 	return buf.ToString(), nil
 }
 
-// Check if a value exists.
+// Has returns whether a value exists.
 func (d *Dictionary) Has(key string) (bool, error) {
 	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
 	var npointer prim.Usize = 0
