@@ -61,7 +61,8 @@ func Open(name string) (*Store, error) {
 	return &Store{d}, nil
 }
 
-// Get returns the item in the config store with the given key.
+// Has checks to see if the item exists in the config store, without allocating
+// any space to read it.
 func (s *Store) Has(key string) (bool, error) {
 	if s == nil {
 		return false, ErrKeyNotFound
