@@ -2443,6 +2443,32 @@ func (d *Dictionary) Get(key string) (string, error) {
 	return buf.ToString(), nil
 }
 
+// Has returns whether a value exists.
+func (d *Dictionary) Has(key string) (bool, error) {
+	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
+	var npointer prim.Usize = 0
+
+	if err := fastlyDictionaryGet(
+		d.h,
+		keyBuffer.Data, keyBuffer.Len,
+		prim.NullChar8Pointer(),
+		0,
+		prim.ToPointer(&npointer),
+	); err != FastlyStatusOK {
+		if err == FastlyStatusBufLen {
+			return true, nil
+		}
+
+		if err == FastlyStatusNone {
+			return false, nil
+		}
+
+		return false, err.toError()
+	}
+
+	return true, nil
+}
+
 // witx:
 //
 //	(module $fastly_geo
