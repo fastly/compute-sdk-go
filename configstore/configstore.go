@@ -62,6 +62,30 @@ func Open(name string) (*Store, error) {
 }
 
 // Get returns the item in the config store with the given key.
+func (s *Store) Has(key string) (bool, error) {
+	if s == nil {
+		return false, ErrKeyNotFound
+	}
+
+	v, err := s.abiDict.Has(key)
+	if err != nil {
+		status, ok := fastly.IsFastlyError(err)
+		switch {
+		case ok && status == fastly.FastlyStatusBadf:
+			return false, ErrStoreNotFound
+		case ok && status == fastly.FastlyStatusNone:
+			return false, ErrKeyNotFound
+		case ok:
+			return false, fmt.Errorf("%w (%s)", ErrUnexpected, status)
+		default:
+			return false, err
+		}
+	}
+
+	return v, nil
+}
+
+// Get returns the item in the config store with the given key.
 func (s *Store) Get(key string) (string, error) {
 	if s == nil {
 		return "", ErrKeyNotFound
