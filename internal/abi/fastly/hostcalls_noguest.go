@@ -297,6 +297,10 @@ func OpenDictionary(name string) (*Dictionary, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
+func (d *Dictionary) GetBytes(key string) ([]byte, error) {
+	return []byte{}, fmt.Errorf("not implemented")
+}
+
 func (d *Dictionary) Get(key string) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
