@@ -25,7 +25,7 @@ func TestConfigStore(t *testing.T) {
 		t.Errorf("Has reported `true` for a missing key")
 	}
 
-	present, err := d.Has("empty-value")
+	present, err = d.Has("empty-value")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +34,7 @@ func TestConfigStore(t *testing.T) {
 		t.Errorf("Has reported `false` for a `empty-key`")
 	}
 
-	present, err := d.Has("twitter")
+	present, err = d.Has("twitter")
 	if err != nil {
 		t.Fatal(err)
 	}
