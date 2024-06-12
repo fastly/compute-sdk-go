@@ -11,10 +11,10 @@ jobs:
       matrix:
         include:
           # Newest supported configuration
-          - go-version: 'stable'
-            tinygo-version: '0.31.0'
+          - go-version: '1.22' # pairs with TinyGo 0.31.2
+            tinygo-version: '0.31.2'
           # Oldest supported configuration
-          - go-version: 'oldstable'
+          - go-version: '1.20' # pairs with TinyGo 0.28.1
             tinygo-version: '0.28.1'
 
     steps:
