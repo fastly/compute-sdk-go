@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/fastly/compute-sdk-go/configstore"
@@ -41,6 +42,14 @@ func TestConfigStore(t *testing.T) {
 
 	if !present {
 		t.Errorf("Missing key \"twitter\"")
+	}
+
+	tb, err := d.GetBytes("twitter")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := tb, "https://twitter.com/fastly"; !bytes.Equal(tb, []byte(want)) {
+		t.Errorf("Body = %q, want %q", got, want)
 	}
 
 	twitter, err := d.Get("twitter")
