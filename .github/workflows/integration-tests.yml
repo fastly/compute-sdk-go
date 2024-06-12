@@ -42,12 +42,16 @@ jobs:
           tar -xzf viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz --directory $HOME/bin
           echo "$HOME/bin" >> $GITHUB_PATH
 
+      - name: Set up Wasmtime
+        uses: bytecodealliance/actions/wasmtime/setup@v1
+
       - name: Check our dependencies
         run: |
           go version
           tinygo version
           fastly version
           viceroy --version
+          wasmtime --version
 
       - name: Tests - Go
         run: go test -v -race -tags="fastlyinternaldebug nofastlyhostcalls" ./...

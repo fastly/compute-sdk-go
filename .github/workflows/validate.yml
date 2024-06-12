@@ -44,10 +44,14 @@ jobs:
         with:
           tinygo-version: '0.31.2'
 
+      - name: Set up Wasmtime
+        uses: bytecodealliance/actions/wasmtime/setup@v1
+
       - name: Check our dependencies
         run: |
           go version
           tinygo version
+          wasmtime --version
 
       - name: Tests - Go
         run: go test -v -race -tags="fastlyinternaldebug nofastlyhostcalls" ./...
