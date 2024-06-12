@@ -86,26 +86,36 @@ func (s *Store) Has(key string) (bool, error) {
 	return v, nil
 }
 
-// Get returns the item in the config store with the given key.
-func (s *Store) Get(key string) (string, error) {
+// Get returns the item in the config store with the given key, as a byte slice.
+func (s *Store) GetBytes(key string) ([]byte, error) {
 	if s == nil {
-		return "", ErrKeyNotFound
+		return nil, ErrKeyNotFound
 	}
 
-	v, err := s.abiDict.Get(key)
+	v, err := s.abiDict.GetBytes(key)
 	if err != nil {
 		status, ok := fastly.IsFastlyError(err)
 		switch {
 		case ok && status == fastly.FastlyStatusBadf:
-			return "", ErrStoreNotFound
+			return nil, ErrStoreNotFound
 		case ok && status == fastly.FastlyStatusNone:
-			return "", ErrKeyNotFound
+			return nil, ErrKeyNotFound
 		case ok:
-			return "", fmt.Errorf("%w (%s)", ErrUnexpected, status)
+			return nil, fmt.Errorf("%w (%s)", ErrUnexpected, status)
 		default:
-			return "", err
+			return nil, err
 		}
 	}
 
 	return v, nil
+}
+
+// Get returns the item in the config store with the given key.
+func (s *Store) Get(key string) (string, error) {
+	buf, err := s.GetBytes(key)
+	if err != nil {
+		return "", err
+	}
+
+	return string(buf), nil
 }

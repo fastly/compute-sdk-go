@@ -2425,8 +2425,8 @@ func fastlyDictionaryGet(
 	nWritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
-// Get the value for key, if it exists.
-func (d *Dictionary) Get(key string) (string, error) {
+// Get the value for key, as a byte slice, if it exists.
+func (d *Dictionary) GetBytes(key string) ([]byte, error) {
 	buf := prim.NewWriteBuffer(dictionaryValueMaxLen)
 	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
 
@@ -2437,10 +2437,20 @@ func (d *Dictionary) Get(key string) (string, error) {
 		buf.Cap(),
 		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
+		return nil, err
+	}
+
+	return buf.AsBytes(), nil
+}
+
+// Get the value for key, if it exists.
+func (d *Dictionary) Get(key string) (string, error) {
+	buf, err := d.GetBytes(key)
+	if err != nil {
 		return "", err
 	}
 
-	return buf.ToString(), nil
+	return string(buf), nil
 }
 
 // Has returns whether a value exists.
