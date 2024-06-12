@@ -40,7 +40,7 @@ jobs:
           VICEROY_VERSION: 0.9.7
         run: |
           echo "Install Viceroy ${{ env.VICEROY_VERSION }}..."
-          wget https://github.com/fastly/Viceroy/releases/download/v${{ env.VICEROY_VERSION }}/viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz
+          wget --no-verbose https://github.com/fastly/Viceroy/releases/download/v${{ env.VICEROY_VERSION }}/viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz
           mkdir -p $HOME/bin
           tar -xzf viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz --directory $HOME/bin
           echo "$HOME/bin" >> $GITHUB_PATH
@@ -55,12 +55,10 @@ jobs:
       - name: Run Integration Tests Go
         env:
           RUST_LOG: viceroy=info,viceroy-lib=info
-          GOARCH: wasm
-          GOOS: wasip1
         run: |
           for i in integration_tests/*/; do
             echo ${GITHUB_WORKSPACE}/$i
-            cd ${GITHUB_WORKSPACE}/$i && go test -v -tags fastlyinternaldebug -exec "viceroy run -C fastly.toml" ./...
+            cd ${GITHUB_WORKSPACE}/$i && env GOARCH=wasm GOOS=wasip1 go test -v -tags fastlyinternaldebug -exec "viceroy run -C fastly.toml" ./...
           done
 
       - name: Run Integration Tests TinyGo
