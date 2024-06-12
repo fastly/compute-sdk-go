@@ -40,6 +40,20 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: stable
+      - uses: ./.github/actions/install-tinygo
+        with:
+          tinygo-version: '0.31.2'
 
-      - name: Run tests that only require Go
-        run: go test -race ./...
+      - name: Check our dependencies
+        run: |
+          go version
+          tinygo version
+
+      - name: Tests - Go
+        run: go test -v -race -tags="fastlyinternaldebug nofastlyhostcalls" ./...
+
+      - name: Tests - TinyGo
+        env:
+          GOARCH: wasm
+          GOOS: wasip1
+        run: tinygo test -v -tags="fastlyinternaldebug nofastlyhostcalls" ./...

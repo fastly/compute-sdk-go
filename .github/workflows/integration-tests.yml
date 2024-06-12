@@ -24,8 +24,7 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
-      - name: Install TinyGo
-        uses: ./.github/actions/install-tinygo
+      - uses: ./.github/actions/install-tinygo
         with:
           tinygo-version: ${{ matrix.tinygo-version }}
 
@@ -50,6 +49,15 @@ jobs:
           fastly version
           viceroy --version
 
+      - name: Tests - Go
+        run: go test -v -race -tags="fastlyinternaldebug nofastlyhostcalls" ./...
+
+      - name: Tests - TinyGo
+        env:
+          GOARCH: wasm
+          GOOS: wasip1
+        run: tinygo test -v -tags="fastlyinternaldebug nofastlyhostcalls" ./...
+
       - name: Integration Tests - Go
         env:
           RUST_LOG: viceroy=info,viceroy-lib=info
@@ -58,10 +66,10 @@ jobs:
         run: |
           for i in integration_tests/*/; do
             echo ${GITHUB_WORKSPACE}/$i
-            cd ${GITHUB_WORKSPACE}/$i && env go test -v -tags fastlyinternaldebug -exec "viceroy run -C fastly.toml" ./...
+            cd ${GITHUB_WORKSPACE}/$i && env go test -v -tags="fastlyinternaldebug" -exec "viceroy run -C fastly.toml" ./...
           done
 
       - name: Integration Tests - TinyGo
         env:
           RUST_LOG: viceroy=info,viceroy-lib=info
-        run: tinygo test -v -tags fastlyinternaldebug -target=fastly-compute.json ./integration_tests/...
+        run: tinygo test -v -tags="fastlyinternaldebug" -target=fastly-compute.json ./integration_tests/...
