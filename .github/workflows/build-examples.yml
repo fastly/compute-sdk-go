@@ -1,5 +1,10 @@
 name: Build Examples
-on: [push]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
 jobs:
   build-examples:
     runs-on: ubuntu-latest
