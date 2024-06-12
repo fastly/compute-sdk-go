@@ -41,4 +41,5 @@ jobs:
         with:
           go-version: stable
 
-      - run: go test -race ./...
+      - name: Run tests that only require Go
+        run: go test -race ./...

@@ -19,16 +19,11 @@ jobs:
             tinygo-version: '0.29.0'
 
     steps:
-      - name: Checkout fastly/compute-sdk-go
-        uses: actions/checkout@v4
-
-      - name: Install Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-
-      - name: Install TinyGo
-        uses: ./.github/actions/install-tinygo
+      - uses: ./.github/actions/install-tinygo
         with:
           tinygo-version: ${{ matrix.tinygo-version }}
 

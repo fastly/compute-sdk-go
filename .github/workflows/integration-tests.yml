@@ -19,11 +19,8 @@ jobs:
             tinygo-version: '0.29.0'
 
     steps:
-      - name: Checkout fastly/compute-sdk-go
-        uses: actions/checkout@v4
-
-      - name: Install Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -53,16 +50,18 @@ jobs:
           fastly version
           viceroy --version
 
-      - name: Run Integration Tests Go
+      - name: Integration Tests - Go
         env:
           RUST_LOG: viceroy=info,viceroy-lib=info
+          GOARCH: wasm
+          GOOS: wasip1
         run: |
           for i in integration_tests/*/; do
             echo ${GITHUB_WORKSPACE}/$i
-            cd ${GITHUB_WORKSPACE}/$i && env GOARCH=wasm GOOS=wasip1 go test -v -tags fastlyinternaldebug -exec "viceroy run -C fastly.toml" ./...
+            cd ${GITHUB_WORKSPACE}/$i && env go test -v -tags fastlyinternaldebug -exec "viceroy run -C fastly.toml" ./...
           done
 
-      - name: Run Integration Tests TinyGo
+      - name: Integration Tests - TinyGo
         env:
           RUST_LOG: viceroy=info,viceroy-lib=info
         run: tinygo test -v -tags fastlyinternaldebug -target=fastly-compute.json ./integration_tests/...
