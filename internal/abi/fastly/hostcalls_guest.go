@@ -902,7 +902,7 @@ func fastlyHTTPReqHeaderValuesSet(
 func (r *HTTPRequest) SetHeaderValues(name string, values []string) error {
 	var buf bytes.Buffer
 	for _, value := range values {
-		fmt.Fprint(&buf, value)
+		buf.WriteString(value)
 		buf.WriteByte(0)
 	}
 
@@ -2118,7 +2118,7 @@ func fastlyHTTPRespHeaderValuesSet(
 func (r *HTTPResponse) SetHeaderValues(name string, values []string) error {
 	var buf bytes.Buffer
 	for _, value := range values {
-		fmt.Fprint(&buf, value)
+		buf.WriteString(value)
 		buf.WriteByte(0)
 	}
 
