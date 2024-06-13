@@ -1021,15 +1021,21 @@ func fastlyHTTPReqMethodGet(
 ) FastlyStatus
 
 // GetMethod returns the HTTP method of the request.
-func (r *HTTPRequest) GetMethod(maxMethodLen int) (string, error) {
-	buf := prim.NewWriteBuffer(maxMethodLen)
-
-	if err := fastlyHTTPReqMethodGet(
+func (r *HTTPRequest) GetMethod() (string, error) {
+	n := DefaultMaxMethodLen
+alloc:
+	buf := prim.NewWriteBuffer(n)
+	status := fastlyHTTPReqMethodGet(
 		r.h,
 		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
 		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
+	)
+	if status == FastlyStatusBufLen && buf.NValue() > 0 {
+		n = int(buf.NValue())
+		goto alloc // avoid all the allocations of a new stack, etc.
+	}
+	if err := status.toError(); err != nil {
 		return "", err
 	}
 
@@ -1081,15 +1087,21 @@ func fastlyHTTPReqURIGet(
 ) FastlyStatus
 
 // GetURI returns the fully qualified URI of the request.
-func (r *HTTPRequest) GetURI(maxURLLen int) (string, error) {
-	buf := prim.NewWriteBuffer(maxURLLen)
-
-	if err := fastlyHTTPReqURIGet(
+func (r *HTTPRequest) GetURI() (string, error) {
+	n := DefaultMaxURLLen
+alloc:
+	buf := prim.NewWriteBuffer(n)
+	status := fastlyHTTPReqURIGet(
 		r.h,
 		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
 		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
+	)
+	if status == FastlyStatusBufLen && buf.NValue() > 0 {
+		n = int(buf.NValue())
+		goto alloc // avoid all the allocations of a new stack, etc.
+	}
+	if err := status.toError(); err != nil {
 		return "", err
 	}
 

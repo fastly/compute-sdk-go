@@ -133,12 +133,12 @@ func newClientRequest() (*Request, error) {
 		return nil, fmt.Errorf("get client request and body: %w", err)
 	}
 
-	method, err := abiReq.GetMethod(RequestLimits.maxMethodLen)
+	method, err := abiReq.GetMethod()
 	if err != nil {
 		return nil, fmt.Errorf("get method: %w", err)
 	}
 
-	uri, err := abiReq.GetURI(RequestLimits.maxURLLen)
+	uri, err := abiReq.GetURI()
 	if err != nil {
 		return nil, fmt.Errorf("get URI: %w", err)
 	}
