@@ -67,11 +67,7 @@ jobs:
           RUST_LOG: viceroy=info,viceroy-lib=info
           GOARCH: wasm
           GOOS: wasip1
-        run: |
-          for i in integration_tests/*/; do
-            echo ${GITHUB_WORKSPACE}/$i
-            cd ${GITHUB_WORKSPACE}/$i && env go test -v -tags="fastlyinternaldebug" -exec "viceroy run -C fastly.toml" ./...
-          done
+        run: go test -v -tags="fastlyinternaldebug" -exec "viceroy run -C fastly.toml" ./integration_tests/...
 
       - name: Integration Tests - TinyGo
         env:
