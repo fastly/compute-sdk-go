@@ -3306,7 +3306,7 @@ func fastlyCacheGetUserMetadata(
 ) FastlyStatus
 
 func (c *CacheEntry) UserMetadata() ([]byte, error) {
-	n := DefaultSmallBufLen
+	n := DefaultMediumBufLen
 alloc:
 	buf := prim.NewWriteBuffer(n) // Longest (unknown)
 	status := fastlyCacheGetUserMetadata(
@@ -3541,7 +3541,7 @@ func fastlyDeviceDetectionLookup(
 
 func DeviceLookup(userAgent string) ([]byte, error) {
 	userAgentBuffer := prim.NewReadBufferFromString(userAgent).Wstring()
-	n := DefaultSmallBufLen // Longest JSON of https://www.fastly.com/documentation/reference/vcl/variables/client-request/client-identified/
+	n := DefaultMediumBufLen // Longest JSON of https://www.fastly.com/documentation/reference/vcl/variables/client-request/client-identified/
 alloc:
 	buf := prim.NewWriteBuffer(n)
 	status := fastlyDeviceDetectionLookup(
