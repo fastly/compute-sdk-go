@@ -1,71 +1,75 @@
 name: Integration Tests
-on: [push]
-env:
-  VICEROY_VERSION: 0.9.6
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
 jobs:
-  integration-tests-tinygo:
+  integration-tests:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
           # Newest supported configuration
-          - go-version: '~1.21.0'
-            tinygo-version: '0.30.0'
+          - go-version: '1.22' # pairs with TinyGo 0.31.2
+            tinygo-version: '0.31.2'
           # Oldest supported configuration
-          - go-version: '~1.19.0'
-            tinygo-version: '0.28.1'
-    runs-on: ubuntu-latest
+          - go-version: '1.21' # pairs with TinyGo 0.29.0
+            tinygo-version: '0.29.0'
+
     steps:
-      - name: Checkout fastly/compute-sdk-go
-        uses: actions/checkout@v3
-      - name: Install Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-      - name: Install TinyGo
-        uses: ./.github/actions/install-tinygo
+
+      - uses: ./.github/actions/install-tinygo
         with:
           tinygo-version: ${{ matrix.tinygo-version }}
+
       - name: Setup Fastly CLI
-        uses: fastly/compute-actions/setup@v5
+        uses: fastly/compute-actions/setup@v7
+
       - name: Install Viceroy ${{ env.VICEROY_VERSION }}
+        shell: 'bash'
+        env:
+          VICEROY_VERSION: 0.9.7
         run: |
           echo "Install Viceroy ${{ env.VICEROY_VERSION }}..."
-          wget https://github.com/fastly/Viceroy/releases/download/v${{ env.VICEROY_VERSION }}/viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz
+          wget --no-verbose https://github.com/fastly/Viceroy/releases/download/v${{ env.VICEROY_VERSION }}/viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz
           mkdir -p $HOME/bin
           tar -xzf viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz --directory $HOME/bin
           echo "$HOME/bin" >> $GITHUB_PATH
-        shell: "bash"
+
+      - name: Set up Wasmtime
+        uses: bytecodealliance/actions/wasmtime/setup@v1
+
       - name: Check our dependencies
         run: |
           go version
           tinygo version
           fastly version
           viceroy --version
-      - name: Run Integration Tests
-        run: RUST_LOG="viceroy=info,viceroy-lib=info" tinygo test -v -target=fastly-compute.json -tags fastlyinternaldebug ./integration_tests/...
-  integration-tests-go:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout fastly/compute-sdk-go
-        uses: actions/checkout@v3
-      - name: Install Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: '~1.21.0'
-      - name: Setup Fastly CLI
-        uses: fastly/compute-actions/setup@v5
-      - name: Install Viceroy ${{ env.VICEROY_VERSION }}
-        run: |
-          echo "Install Viceroy ${{ env.VICEROY_VERSION }}..."
-          wget https://github.com/fastly/Viceroy/releases/download/v${{ env.VICEROY_VERSION }}/viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz
-          mkdir -p $HOME/bin
-          tar -xzf viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz --directory $HOME/bin
-          echo "$HOME/bin" >> $GITHUB_PATH
-        shell: "bash"
-      - name: Check our dependencies
-        run: |
-          go version
-          fastly version
-          viceroy --version
-      - name: Run Integration Tests
-        run: RUST_LOG="viceroy=info,viceroy-lib=info" GOARCH=wasm GOOS=wasip1 go test -tags fastlyinternaldebug -exec "viceroy run -C fastly.toml" -v ./integration_tests/...
+          wasmtime --version
+
+      - name: Tests - Go
+        run: go test -v -race -tags="fastlyinternaldebug nofastlyhostcalls" ./...
+
+      - name: Tests - TinyGo
+        env:
+          GOARCH: wasm
+          GOOS: wasip1
+        run: tinygo test -v -tags="fastlyinternaldebug nofastlyhostcalls" ./...
+
+      - name: Integration Tests - Go
+        env:
+          RUST_LOG: viceroy=info,viceroy-lib=info
+          GOARCH: wasm
+          GOOS: wasip1
+        run: go test -v -tags="fastlyinternaldebug" -exec "viceroy run -C fastly.toml" ./integration_tests/...
+
+      - name: Integration Tests - TinyGo
+        env:
+          RUST_LOG: viceroy=info,viceroy-lib=info
+        run: tinygo test -v -tags="fastlyinternaldebug" -target=fastly-compute.json ./integration_tests/...
