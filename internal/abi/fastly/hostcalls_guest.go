@@ -711,8 +711,7 @@ func (r *HTTPRequest) GetHeaderNames(maxHeaderNameLen int) *Values {
 
 		return fastlyHTTPReqHeaderNamesGet(
 			r.h,
-			prim.ToPointer(buf),
-			bufLen,
+			prim.ToPointer(buf), bufLen,
 			cursor,
 			prim.ToPointer(endingCursorOut),
 			prim.ToPointer(nwrittenOut),
@@ -755,8 +754,7 @@ func GetOriginalHeaderNames(maxHeaderNameLen int) *Values {
 	) FastlyStatus {
 
 		return fastlyHTTPReqOriginalHeaderNamesGet(
-			prim.ToPointer(buf),
-			bufLen,
+			prim.ToPointer(buf), bufLen,
 			cursor,
 			prim.ToPointer(endingCursorOut),
 			prim.ToPointer(nwrittenOut),
@@ -873,8 +871,7 @@ func (r *HTTPRequest) GetHeaderValues(name string, maxHeaderValueLen int) *Value
 		return fastlyHTTPReqHeaderValuesGet(
 			r.h,
 			nameBuffer.Data, nameBuffer.Len,
-			prim.ToPointer(buf),
-			bufLen,
+			prim.ToPointer(buf), bufLen,
 			cursor,
 			prim.ToPointer(endingCursorOut),
 			prim.ToPointer(nwrittenOut),
@@ -1541,7 +1538,12 @@ func HandoffFanout(backend string) error {
 //
 //go:wasmimport fastly_http_req register_dynamic_backend
 //go:noescape
-func fastlyRegisterDynamicBackend(nameData prim.Pointer[prim.U8], nameLen prim.Usize, targetData prim.Pointer[prim.U8], targetLen prim.Usize, mask backendConfigOptionsMask, opts prim.Pointer[backendConfigOptions]) FastlyStatus
+func fastlyRegisterDynamicBackend(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	targetData prim.Pointer[prim.U8], targetLen prim.Usize,
+	mask backendConfigOptionsMask,
+	opts prim.Pointer[backendConfigOptions],
+) FastlyStatus
 
 func RegisterDynamicBackend(name string, target string, opts *BackendConfigOptions) error {
 	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
@@ -1570,7 +1572,10 @@ func RegisterDynamicBackend(name string, target string, opts *BackendConfigOptio
 //
 //go:wasmimport fastly_backend exists
 //go:noescape
-func fastlyBackendExists(nameData prim.Pointer[prim.U8], nameLen prim.Usize, exists prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendExists(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	exists prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendExists(name string) (bool, error) {
 	var exists prim.U32
@@ -1596,7 +1601,10 @@ func BackendExists(name string) (bool, error) {
 //
 //go:wasmimport fastly_backend is_healthy
 //go:noescape
-func fastlyBackendIsHealthy(nameData prim.Pointer[prim.U8], nameLen prim.Usize, healthy prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendIsHealthy(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	healthy prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendIsHealthy(name string) (BackendHealth, error) {
 	var health prim.U32
@@ -1622,7 +1630,10 @@ func BackendIsHealthy(name string) (BackendHealth, error) {
 //
 //go:wasmimport fastly_backend is_dynamic
 //go:noescape
-func fastlyBackendIsDynamic(nameData prim.Pointer[prim.U8], nameLen prim.Usize, dynamic prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendIsDynamic(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	dynamic prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendIsDynamic(name string) (bool, error) {
 	var dynamic prim.U32
@@ -1719,7 +1730,10 @@ func BackendGetOverrideHost(name string) (string, error) {
 //
 //go:wasmimport fastly_backend get_port
 //go:noescape
-func fastlyBackendGetPort(nameData prim.Pointer[prim.U8], nameLen prim.Usize, port prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendGetPort(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	port prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendGetPort(name string) (int, error) {
 	var port prim.U32
@@ -1745,7 +1759,10 @@ func BackendGetPort(name string) (int, error) {
 //
 //go:wasmimport fastly_backend get_connect_timeout_ms
 //go:noescape
-func fastlyBackendGetConnectTimeoutMs(nameData prim.Pointer[prim.U8], nameLen prim.Usize, timeout prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendGetConnectTimeoutMs(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	timeout prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendGetConnectTimeout(name string) (time.Duration, error) {
 	var timeout prim.U32
@@ -1771,7 +1788,10 @@ func BackendGetConnectTimeout(name string) (time.Duration, error) {
 //
 //go:wasmimport fastly_backend get_first_byte_timeout_ms
 //go:noescape
-func fastlyBackendGetFirstByteTimeoutMs(nameData prim.Pointer[prim.U8], nameLen prim.Usize, timeout prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendGetFirstByteTimeoutMs(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	timeout prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendGetFirstByteTimeout(name string) (time.Duration, error) {
 	var timeout prim.U32
@@ -1797,7 +1817,10 @@ func BackendGetFirstByteTimeout(name string) (time.Duration, error) {
 //
 //go:wasmimport fastly_backend get_between_bytes_timeout_ms
 //go:noescape
-func fastlyBackendGetBetweenBytesTimeoutMs(nameData prim.Pointer[prim.U8], nameLen prim.Usize, timeout prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendGetBetweenBytesTimeoutMs(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	timeout prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendGetBetweenBytesTimeout(name string) (time.Duration, error) {
 	var timeout prim.U32
@@ -1823,7 +1846,10 @@ func BackendGetBetweenBytesTimeout(name string) (time.Duration, error) {
 //
 //go:wasmimport fastly_backend is_ssl
 //go:noescape
-func fastlyBackendIsSSL(nameData prim.Pointer[prim.U8], nameLen prim.Usize, ssl prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendIsSSL(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	ssl prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendIsSSL(name string) (bool, error) {
 	var ssl prim.U32
@@ -1849,7 +1875,10 @@ func BackendIsSSL(name string) (bool, error) {
 //
 //go:wasmimport fastly_backend get_ssl_min_version
 //go:noescape
-func fastlyBackendGetSSLMinVersion(nameData prim.Pointer[prim.U8], nameLen prim.Usize, version prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendGetSSLMinVersion(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	version prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendGetSSLMinVersion(name string) (TLSVersion, error) {
 	var version prim.U32
@@ -1875,7 +1904,10 @@ func BackendGetSSLMinVersion(name string) (TLSVersion, error) {
 //
 //go:wasmimport fastly_backend get_ssl_max_version
 //go:noescape
-func fastlyBackendGetSSLMaxVersion(nameData prim.Pointer[prim.U8], nameLen prim.Usize, version prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendGetSSLMaxVersion(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	version prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendGetSSLMaxVersion(name string) (TLSVersion, error) {
 	var version prim.U32
@@ -2496,10 +2528,8 @@ func (d *Dictionary) Has(key string) (bool, error) {
 //go:wasmimport fastly_geo lookup
 //go:noescape
 func fastlyGeoLookup(
-	addrOctets prim.Pointer[prim.Char8],
-	addLen prim.Usize,
-	buf prim.Pointer[prim.Char8],
-	bufLen prim.Usize,
+	addrOctets prim.Pointer[prim.Char8], addrLen prim.Usize,
+	buf prim.Pointer[prim.Char8], bufLen prim.Usize,
 	nWrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
@@ -2512,10 +2542,8 @@ func GeoLookup(ip net.IP) ([]byte, error) {
 	addrOctets := prim.NewReadBufferFromBytes(ip)
 
 	if err := fastlyGeoLookup(
-		prim.ToPointer(addrOctets.Char8Pointer()),
-		addrOctets.Len(),
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
+		prim.ToPointer(addrOctets.Char8Pointer()), addrOctets.Len(),
+		prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
 		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return nil, err
@@ -3458,7 +3486,11 @@ func (o *PurgeOptions) SoftPurge(v bool) {
 //
 //go:wasmimport fastly_purge purge_surrogate_key
 //go:noescape
-func fastlyPurgeSurrogateKey(surrogateKeyData prim.Pointer[prim.U8], surrogateKeyLen prim.Usize, mask purgeOptionsMask, opts prim.Pointer[purgeOptions]) FastlyStatus
+func fastlyPurgeSurrogateKey(
+	surrogateKeyData prim.Pointer[prim.U8], surrogateKeyLen prim.Usize,
+	mask purgeOptionsMask,
+	opts prim.Pointer[purgeOptions],
+) FastlyStatus
 
 func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
 	surrogateKeyBuffer := prim.NewReadBufferFromString(surrogateKey).Wstring()
@@ -3487,8 +3519,7 @@ func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
 //go:noescape
 func fastlyDeviceDetectionLookup(
 	userAgentData prim.Pointer[prim.U8], userAgentLen prim.Usize,
-	buf prim.Pointer[prim.Char8],
-	bufLen prim.Usize,
+	buf prim.Pointer[prim.Char8], bufLen prim.Usize,
 	nWritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
