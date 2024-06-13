@@ -648,7 +648,7 @@ alloc:
 	)
 	if status == FastlyStatusBufLen && buf.NValue() > 0 {
 		n = int(buf.NValue())
-		goto alloc // avoid all the allocations of a new stack, etc.
+		goto alloc // goto saves having to allocate a function closure and avoids having to duplicate the hostcall
 	}
 	if err := status.toError(); err != nil {
 		return nil, err
@@ -1041,7 +1041,7 @@ alloc:
 	)
 	if status == FastlyStatusBufLen && buf.NValue() > 0 {
 		n = int(buf.NValue())
-		goto alloc // avoid all the allocations of a new stack, etc.
+		goto alloc // goto saves having to allocate a function closure and avoids having to duplicate the hostcall
 	}
 	if err := status.toError(); err != nil {
 		return "", err
@@ -1107,7 +1107,7 @@ alloc:
 	)
 	if status == FastlyStatusBufLen && buf.NValue() > 0 {
 		n = int(buf.NValue())
-		goto alloc // avoid all the allocations of a new stack, etc.
+		goto alloc // goto saves having to allocate a function closure and avoids having to duplicate the hostcall
 	}
 	if err := status.toError(); err != nil {
 		return "", err
@@ -2493,7 +2493,7 @@ alloc:
 	)
 	if status == FastlyStatusBufLen && buf.NValue() > 0 {
 		n = int(buf.NValue())
-		goto alloc // avoid all the allocations of a new stack, etc.
+		goto alloc // goto saves having to allocate a function closure and avoids having to duplicate the hostcall
 	}
 
 	if err := status.toError(); err != nil {
@@ -2578,7 +2578,7 @@ alloc:
 	)
 	if status == FastlyStatusBufLen && buf.NValue() > 0 {
 		n = int(buf.NValue())
-		goto alloc // avoid all the allocations of a new stack, etc.
+		goto alloc // goto saves having to allocate a function closure and avoids having to duplicate the hostcall
 	}
 	if err := status.toError(); err != nil {
 		return nil, err
@@ -2863,7 +2863,7 @@ alloc:
 	)
 	if status == FastlyStatusBufLen && buf.NValue() > 0 {
 		n = int(buf.NValue())
-		goto alloc // avoid all the allocations of a new stack, etc.
+		goto alloc // goto saves having to allocate a function closure and avoids having to duplicate the hostcall
 	}
 
 	if err := status.toError(); err != nil {
@@ -3317,7 +3317,7 @@ alloc:
 	)
 	if status == FastlyStatusBufLen && buf.NValue() > 0 {
 		n = int(buf.NValue())
-		goto alloc // avoid all the allocations of a new stack, etc.
+		goto alloc // goto saves having to allocate a function closure and avoids having to duplicate the hostcall
 	}
 	if err := status.toError(); err != nil {
 		return nil, err
@@ -3552,7 +3552,7 @@ alloc:
 	)
 	if status == FastlyStatusBufLen && buf.NValue() > 0 {
 		n = int(buf.NValue())
-		goto alloc // avoid all the allocations of a new stack, etc.
+		goto alloc // goto saves having to allocate a function closure and avoids having to duplicate the hostcall
 	}
 	if err := status.toError(); err != nil {
 		return nil, err
