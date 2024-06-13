@@ -531,14 +531,14 @@ func (r *HTTPRequest) SetCacheOverride(options CacheOverrideOptions) error {
 //go:wasmimport fastly_http_req downstream_client_ip_addr
 //go:noescape
 func fastlyHTTPReqDownstreamClientIPAddr(
-	addrOctetsOut prim.Pointer[prim.Char8], // must be 16-byte array
+	addrOctetsOut prim.Pointer[prim.Char8], // ipBufLen is 16 bytes
 	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // DownstreamClientIPAddr returns the IP address of the downstream client that
 // performed the singleton downstream request.
 func DownstreamClientIPAddr() (net.IP, error) {
-	buf := prim.NewWriteBuffer(16) // must be a 16-byte array
+	buf := prim.NewWriteBuffer(ipBufLen)
 
 	if err := fastlyHTTPReqDownstreamClientIPAddr(
 		prim.ToPointer(buf.Char8Pointer()),
@@ -570,7 +570,8 @@ func fastlyHTTPReqDownstreamTLSCipherOpenSSLName(
 // DownstreamTLSCipherOpenSSLName returns the name of the OpenSSL TLS cipher
 // used with the singleton downstream request, if any.
 func DownstreamTLSCipherOpenSSLName() (string, error) {
-	buf := prim.NewWriteBuffer(defaultBufferLen)
+	// https://www.fastly.com/documentation/reference/vcl/variables/client-connection/tls-client-cipher/
+	buf := prim.NewWriteBuffer(DefaultSmallBufLen) // Longest (49) = TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256_OLD
 
 	if err := fastlyHTTPReqDownstreamTLSCipherOpenSSLName(
 		prim.ToPointer(buf.Char8Pointer()),
@@ -603,7 +604,8 @@ func fastlyHTTPReqDownstreamTLSProtocol(
 // DownstreamTLSProtocol returns the name of the TLS protocol used with the
 // singleton downstream request, if any.
 func DownstreamTLSProtocol() (string, error) {
-	buf := prim.NewWriteBuffer(defaultBufferLen)
+	// https://www.fastly.com/documentation/reference/vcl/variables/client-connection/tls-client-protocol/
+	buf := prim.NewWriteBuffer(DefaultSmallBufLen) // Longest (~8) = TLSv1.2
 
 	if err := fastlyHTTPReqDownstreamTLSProtocol(
 		prim.ToPointer(buf.Char8Pointer()),
@@ -636,13 +638,19 @@ func fastlyHTTPReqDownstreamTLSClientHello(
 // DownstreamTLSClientHello returns the ClientHello message sent by the client
 // in the singleton downstream request, if any.
 func DownstreamTLSClientHello() ([]byte, error) {
-	buf := prim.NewWriteBuffer(defaultBufferLen)
-
-	if err := fastlyHTTPReqDownstreamTLSClientHello(
+	n := DefaultLargeBufLen
+alloc:
+	buf := prim.NewWriteBuffer(n) // Longest (~132,000); typically < 2^14; RFC https://datatracker.ietf.org/doc/html/rfc8446#section-4.1.2
+	status := fastlyHTTPReqDownstreamTLSClientHello(
 		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
 		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
+	)
+	if status == FastlyStatusBufLen && buf.NValue() > 0 {
+		n = int(buf.NValue())
+		goto alloc // avoid all the allocations of a new stack, etc.
+	}
+	if err := status.toError(); err != nil {
 		return nil, err
 	}
 
@@ -1022,7 +1030,7 @@ func fastlyHTTPReqMethodGet(
 
 // GetMethod returns the HTTP method of the request.
 func (r *HTTPRequest) GetMethod() (string, error) {
-	n := DefaultMaxMethodLen
+	n := DefaultSmallBufLen
 alloc:
 	buf := prim.NewWriteBuffer(n)
 	status := fastlyHTTPReqMethodGet(
@@ -1088,7 +1096,7 @@ func fastlyHTTPReqURIGet(
 
 // GetURI returns the fully qualified URI of the request.
 func (r *HTTPRequest) GetURI() (string, error) {
-	n := DefaultMaxURLLen
+	n := DefaultMediumBufLen // Longest (unknown); Typically less than 1024, but some browsers accept much longer
 alloc:
 	buf := prim.NewWriteBuffer(n)
 	status := fastlyHTTPReqURIGet(
@@ -1679,21 +1687,21 @@ func fastlyBackendGetHost(nameData prim.Pointer[prim.U8], nameLen prim.Usize,
 ) FastlyStatus
 
 func BackendGetHost(name string) (string, error) {
-	hostBuf := prim.NewWriteBuffer(defaultBufferLen)
+	buf := prim.NewWriteBuffer(dnsBufLen) // Longest (255) by DNS RFCs https://datatracker.ietf.org/doc/html/rfc2181#section-11
 
 	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
 
 	if err := fastlyBackendGetHost(
 		nameBuffer.Data, nameBuffer.Len,
 
-		prim.ToPointer(hostBuf.Char8Pointer()),
-		hostBuf.Cap(),
-		prim.ToPointer(hostBuf.NPointer()),
+		prim.ToPointer(buf.Char8Pointer()),
+		buf.Cap(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
 
-	return hostBuf.ToString(), nil
+	return buf.ToString(), nil
 }
 
 // witx:
@@ -1715,20 +1723,20 @@ func fastlyBackendGetOverrideHost(nameData prim.Pointer[prim.U8], nameLen prim.U
 ) FastlyStatus
 
 func BackendGetOverrideHost(name string) (string, error) {
-	hostBuf := prim.NewWriteBuffer(defaultBufferLen)
+	buf := prim.NewWriteBuffer(dnsBufLen) // Longest (255) by DNS RFCs https://datatracker.ietf.org/doc/html/rfc2181#section-11
 
 	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
 
 	if err := fastlyBackendGetOverrideHost(
 		nameBuffer.Data, nameBuffer.Len,
-		prim.ToPointer(hostBuf.Char8Pointer()),
-		hostBuf.Cap(),
-		prim.ToPointer(hostBuf.NPointer()),
+		prim.ToPointer(buf.Char8Pointer()),
+		buf.Cap(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
 
-	return hostBuf.ToString(), nil
+	return buf.ToString(), nil
 }
 
 // witx:
@@ -2471,16 +2479,24 @@ func fastlyDictionaryGet(
 
 // Get the value for key, as a byte slice, if it exists.
 func (d *Dictionary) GetBytes(key string) ([]byte, error) {
-	buf := prim.NewWriteBuffer(dictionaryValueMaxLen)
 	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
 
-	if err := fastlyDictionaryGet(
+	n := DefaultMediumBufLen // Longest (8192) = Config Store limit; typical values likely less than 1024
+alloc:
+	buf := prim.NewWriteBuffer(n)
+	status := fastlyDictionaryGet(
 		d.h,
 		keyBuffer.Data, keyBuffer.Len,
 		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
 		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
+	)
+	if status == FastlyStatusBufLen && buf.NValue() > 0 {
+		n = int(buf.NValue())
+		goto alloc // avoid all the allocations of a new stack, etc.
+	}
+
+	if err := status.toError(); err != nil {
 		return nil, err
 	}
 
@@ -2547,17 +2563,24 @@ func fastlyGeoLookup(
 
 // GeoLookup returns the geographic data associated with the IP address.
 func GeoLookup(ip net.IP) ([]byte, error) {
-	buf := prim.NewWriteBuffer(1024) // initial geo buf size
 	if x := ip.To4(); x != nil {
 		ip = x
 	}
 	addrOctets := prim.NewReadBufferFromBytes(ip)
 
-	if err := fastlyGeoLookup(
+	n := DefaultMediumBufLen
+alloc:
+	buf := prim.NewWriteBuffer(n) // initial geo buf size
+	status := fastlyGeoLookup(
 		prim.ToPointer(addrOctets.Char8Pointer()), addrOctets.Len(),
 		prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
 		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
+	)
+	if status == FastlyStatusBufLen && buf.NValue() > 0 {
+		n = int(buf.NValue())
+		goto alloc // avoid all the allocations of a new stack, etc.
+	}
+	if err := status.toError(); err != nil {
 		return nil, err
 	}
 
@@ -2823,35 +2846,24 @@ func (st *SecretStore) Get(name string) (*Secret, error) {
 //go:noescape
 func fastlySecretPlaintext(
 	h secretHandle,
-	buf prim.Pointer[prim.Char8],
-	bufLen prim.Usize,
+	buf prim.Pointer[prim.Char8], bufLen prim.Usize,
 	nwritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // Plaintext decrypts and returns the secret value as a byte slice.
 func (s *Secret) Plaintext() ([]byte, error) {
-	// Most secrets will fit into the initial secret buffer size, so
-	// we'll start with that. If it doesn't fit, we'll know the exact
-	// size of the buffer to try again.
-	buf := prim.NewWriteBuffer(initialSecretLen)
-
+	n := DefaultMediumBufLen
+alloc:
+	buf := prim.NewWriteBuffer(n)
 	status := fastlySecretPlaintext(
 		s.h,
 		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
 		prim.ToPointer(buf.NPointer()),
 	)
-	if status == FastlyStatusBufLen {
-		// The buffer was too small, but it'll tell us how big it will
-		// need to be in order to fit the plaintext.
-		buf = prim.NewWriteBuffer(int(buf.NValue()))
-
-		status = fastlySecretPlaintext(
-			s.h,
-			prim.ToPointer(buf.Char8Pointer()),
-			buf.Cap(),
-			prim.ToPointer(buf.NPointer()),
-		)
+	if status == FastlyStatusBufLen && buf.NValue() > 0 {
+		n = int(buf.NValue())
+		goto alloc // avoid all the allocations of a new stack, etc.
 	}
 
 	if err := status.toError(); err != nil {
@@ -3294,27 +3306,19 @@ func fastlyCacheGetUserMetadata(
 ) FastlyStatus
 
 func (c *CacheEntry) UserMetadata() ([]byte, error) {
-	buf := prim.NewWriteBuffer(defaultBufferLen)
-
+	n := DefaultSmallBufLen
+alloc:
+	buf := prim.NewWriteBuffer(n) // Longest (unknown)
 	status := fastlyCacheGetUserMetadata(
 		c.h,
 		prim.ToPointer(buf.U8Pointer()),
 		buf.Cap(),
 		prim.ToPointer(buf.NPointer()),
 	)
-	if status == FastlyStatusBufLen {
-		// The buffer was too small, but it'll tell us how big it will
-		// need to be in order to fit the content.
-		buf = prim.NewWriteBuffer(int(buf.NValue()))
-
-		status = fastlyCacheGetUserMetadata(
-			c.h,
-			prim.ToPointer(buf.U8Pointer()),
-			buf.Cap(),
-			prim.ToPointer(buf.NPointer()),
-		)
+	if status == FastlyStatusBufLen && buf.NValue() > 0 {
+		n = int(buf.NValue())
+		goto alloc // avoid all the allocations of a new stack, etc.
 	}
-
 	if err := status.toError(); err != nil {
 		return nil, err
 	}
@@ -3536,27 +3540,19 @@ func fastlyDeviceDetectionLookup(
 ) FastlyStatus
 
 func DeviceLookup(userAgent string) ([]byte, error) {
-	buf := prim.NewWriteBuffer(defaultBufferLen)
-
 	userAgentBuffer := prim.NewReadBufferFromString(userAgent).Wstring()
-
+	n := DefaultSmallBufLen // Longest JSON of https://www.fastly.com/documentation/reference/vcl/variables/client-request/client-identified/
+alloc:
+	buf := prim.NewWriteBuffer(n)
 	status := fastlyDeviceDetectionLookup(
 		userAgentBuffer.Data, userAgentBuffer.Len,
 		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
 		prim.ToPointer(buf.NPointer()),
 	)
-	if status == FastlyStatusBufLen {
-		// The buffer was too small, but it'll tell us how big it will
-		// need to be in order to fit the content.
-		buf = prim.NewWriteBuffer(int(buf.NValue()))
-
-		status = fastlyDeviceDetectionLookup(
-			userAgentBuffer.Data, userAgentBuffer.Len,
-			prim.ToPointer(buf.Char8Pointer()),
-			buf.Cap(),
-			prim.ToPointer(buf.NPointer()),
-		)
+	if status == FastlyStatusBufLen && buf.NValue() > 0 {
+		n = int(buf.NValue())
+		goto alloc // avoid all the allocations of a new stack, etc.
 	}
 	if err := status.toError(); err != nil {
 		return nil, err

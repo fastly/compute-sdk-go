@@ -17,10 +17,10 @@ import (
 
 // RequestLimits are the limits for the components of an HTTP request.
 var RequestLimits = Limits{
-	maxHeaderNameLen:  fastly.DefaultMaxHeaderNameLen,
-	maxHeaderValueLen: fastly.DefaultMaxHeaderValueLen,
-	maxMethodLen:      fastly.DefaultMaxMethodLen,
-	maxURLLen:         fastly.DefaultMaxURLLen,
+	maxHeaderNameLen:  fastly.DefaultLargeBufLen,
+	maxHeaderValueLen: fastly.DefaultLargeBufLen,
+	maxMethodLen:      fastly.DefaultMediumBufLen,
+	maxURLLen:         fastly.DefaultLargeBufLen,
 }
 
 // Request represents an HTTP request received by this server from a requesting

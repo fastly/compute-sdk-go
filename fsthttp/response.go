@@ -12,8 +12,8 @@ import (
 
 // ResponseLimits are the limits for the components of an HTTP response.
 var ResponseLimits = Limits{
-	maxHeaderNameLen:  fastly.DefaultMaxHeaderNameLen,
-	maxHeaderValueLen: fastly.DefaultMaxHeaderValueLen,
+	maxHeaderNameLen:  fastly.DefaultLargeBufLen,
+	maxHeaderValueLen: fastly.DefaultLargeBufLen,
 }
 
 // Response to an outgoing HTTP request made by this server.
