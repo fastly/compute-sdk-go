@@ -486,36 +486,44 @@ func (req *Request) constructABIRequest() error {
 
 // CacheOptions control caching behavior for outgoing requests.
 type CacheOptions struct {
-	// Pass controls whether or not the request should be cached at all. By
-	// default pass is false, which means the request will only reach the
-	// backend if a cached response is not available. If pass is set to true,
-	// the request will always be sent directly to the backend.
+	// Pass controls whether or not to force a request to bypass the cache.
+	// By default this is false, which means the request will only reach the
+	// backend if the request is not normally cacheable (such as a POST), or
+	// if a cached response is not available. If pass is set to true, the
+	// request will always be sent directly to the backend.
+	//
+	// Setting Pass to false does not guarantee that a response will be
+	// cached for this request, it only allows a caching attempt to be made.
+	// For example, a `GET` request may appear cacheable, but if the backend
+	// response contains `cache-control: no-store`, the response will not be
+	// cached.
 	//
 	// Pass is mutually exclusive with all other cache options. Setting any
-	// other option will force pass to false.
+	// other option will change Pass to false.
 	Pass bool
 
 	// PCI controls the PCI/HIPAA compliant, non-volatile caching of the
 	// request. PCI is false by default, which means the request may not be
 	// PCI/HIPAA compliant. If PCI is set to true, caching will be made
-	// compliant, and pass will be forced to false.
+	// compliant, and the request will not be forced to bypass the cache.
 	//
 	// https://docs.fastly.com/products/pci-compliant-caching-and-delivery
 	PCI bool
 
 	// TTL represents a Time-to-Live for cached responses to the request, in
 	// seconds. If greater than zero, it overrides any behavior specified in the
-	// response headers, and forces pass to false.
+	// response headers, and the request will not be forced to bypass the cache.
 	TTL uint32
 
 	// StaleWhileRevalidate represents a stale-while-revalidate time for the
 	// request, in seconds. If greater than zero, it overrides any behavior
-	// specified in the response headers, and forces pass to false.
+	// specified in the response headers, and the request will not be forced to
+	// bypass the cache.
 	StaleWhileRevalidate uint32
 
 	// SurrogateKey represents an explicit surrogate key for the request, which
 	// will be added to any `Surrogate-Key` response headers received from the
-	// backend. If nonempty, it forces pass to false.
+	// backend. If nonempty, the request will not be forced to bypass the cache.
 	//
 	// https://docs.fastly.com/en/guides/purging-api-cache-with-surrogate-keys
 	SurrogateKey string
