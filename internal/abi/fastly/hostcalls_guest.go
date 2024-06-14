@@ -2487,12 +2487,13 @@ alloc:
 	status := fastlyDictionaryGet(
 		d.h,
 		keyBuffer.Data, keyBuffer.Len,
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
+		prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
 		prim.ToPointer(buf.NPointer()),
 	)
-	if status == FastlyStatusBufLen && buf.NValue() > 0 {
-		n = int(buf.NValue())
+	// The Dictionary API cannot return the needed size with this error.
+	// Instead of perfectly adapting, we allocate the maximum length a value can have.
+	if status == FastlyStatusBufLen && n < dictionaryValueMaxLen {
+		n = dictionaryValueMaxLen
 		goto alloc // goto saves having to allocate a function closure and avoids having to duplicate the hostcall
 	}
 
@@ -2521,8 +2522,7 @@ func (d *Dictionary) Has(key string) (bool, error) {
 	if err := fastlyDictionaryGet(
 		d.h,
 		keyBuffer.Data, keyBuffer.Len,
-		prim.NullChar8Pointer(),
-		0,
+		prim.NullChar8Pointer(), 0,
 		prim.ToPointer(&npointer),
 	); err != FastlyStatusOK {
 		if err == FastlyStatusBufLen {

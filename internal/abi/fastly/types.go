@@ -185,8 +185,9 @@ func IsFastlyError(err error) (FastlyStatus, bool) {
 }
 
 const (
-	ipBufLen  = 16  // known size for IP address buffers
-	dnsBufLen = 256 // known size for "DNS" values, enough to hold the longest possible hostname or domain name
+	ipBufLen              = 16   // known size for IP address buffers
+	dnsBufLen             = 256  // known size for "DNS" values, enough to hold the longest possible hostname or domain name
+	dictionaryValueMaxLen = 8192 // known size for maximum config store value https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
 
 	DefaultSmallBufLen  = 128  // default size for "typically-small" values with variable sizes: HTTP methods, header names, tls protocol names, cipher suites
 	DefaultMediumBufLen = 1024 // default size for values between small and large with variable sizes
