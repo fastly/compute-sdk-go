@@ -531,14 +531,14 @@ func (r *HTTPRequest) SetCacheOverride(options CacheOverrideOptions) error {
 //go:wasmimport fastly_http_req downstream_client_ip_addr
 //go:noescape
 func fastlyHTTPReqDownstreamClientIPAddr(
-	addrOctetsOut prim.Pointer[prim.Char8], // must be 16-byte array
+	addrOctetsOut prim.Pointer[prim.Char8], // ipBufLen is 16 bytes
 	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // DownstreamClientIPAddr returns the IP address of the downstream client that
 // performed the singleton downstream request.
 func DownstreamClientIPAddr() (net.IP, error) {
-	buf := prim.NewWriteBuffer(16) // must be a 16-byte array
+	buf := prim.NewWriteBuffer(ipBufLen)
 
 	if err := fastlyHTTPReqDownstreamClientIPAddr(
 		prim.ToPointer(buf.Char8Pointer()),
@@ -570,7 +570,8 @@ func fastlyHTTPReqDownstreamTLSCipherOpenSSLName(
 // DownstreamTLSCipherOpenSSLName returns the name of the OpenSSL TLS cipher
 // used with the singleton downstream request, if any.
 func DownstreamTLSCipherOpenSSLName() (string, error) {
-	buf := prim.NewWriteBuffer(defaultBufferLen)
+	// https://www.fastly.com/documentation/reference/vcl/variables/client-connection/tls-client-cipher/
+	buf := prim.NewWriteBuffer(DefaultSmallBufLen) // Longest (49) = TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256_OLD
 
 	if err := fastlyHTTPReqDownstreamTLSCipherOpenSSLName(
 		prim.ToPointer(buf.Char8Pointer()),
@@ -603,7 +604,8 @@ func fastlyHTTPReqDownstreamTLSProtocol(
 // DownstreamTLSProtocol returns the name of the TLS protocol used with the
 // singleton downstream request, if any.
 func DownstreamTLSProtocol() (string, error) {
-	buf := prim.NewWriteBuffer(defaultBufferLen)
+	// https://www.fastly.com/documentation/reference/vcl/variables/client-connection/tls-client-protocol/
+	buf := prim.NewWriteBuffer(DefaultSmallBufLen) // Longest (~8) = TLSv1.2
 
 	if err := fastlyHTTPReqDownstreamTLSProtocol(
 		prim.ToPointer(buf.Char8Pointer()),
@@ -636,17 +638,23 @@ func fastlyHTTPReqDownstreamTLSClientHello(
 // DownstreamTLSClientHello returns the ClientHello message sent by the client
 // in the singleton downstream request, if any.
 func DownstreamTLSClientHello() ([]byte, error) {
-	buf := prim.NewWriteBuffer(defaultBufferLen)
-
-	if err := fastlyHTTPReqDownstreamTLSClientHello(
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
-		return nil, err
+	n := DefaultLargeBufLen // Longest (~132,000); typically < 2^14; RFC https://datatracker.ietf.org/doc/html/rfc8446#section-4.1.2
+	for {
+		buf := prim.NewWriteBuffer(n)
+		status := fastlyHTTPReqDownstreamTLSClientHello(
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+		if status == FastlyStatusBufLen && buf.NValue() > 0 {
+			n = int(buf.NValue())
+			continue
+		}
+		if err := status.toError(); err != nil {
+			return nil, err
+		}
+		return buf.AsBytes(), nil
 	}
-
-	return buf.AsBytes(), nil
 }
 
 // witx:
@@ -711,8 +719,7 @@ func (r *HTTPRequest) GetHeaderNames(maxHeaderNameLen int) *Values {
 
 		return fastlyHTTPReqHeaderNamesGet(
 			r.h,
-			prim.ToPointer(buf),
-			bufLen,
+			prim.ToPointer(buf), bufLen,
 			cursor,
 			prim.ToPointer(endingCursorOut),
 			prim.ToPointer(nwrittenOut),
@@ -755,8 +762,7 @@ func GetOriginalHeaderNames(maxHeaderNameLen int) *Values {
 	) FastlyStatus {
 
 		return fastlyHTTPReqOriginalHeaderNamesGet(
-			prim.ToPointer(buf),
-			bufLen,
+			prim.ToPointer(buf), bufLen,
 			cursor,
 			prim.ToPointer(endingCursorOut),
 			prim.ToPointer(nwrittenOut),
@@ -873,8 +879,7 @@ func (r *HTTPRequest) GetHeaderValues(name string, maxHeaderValueLen int) *Value
 		return fastlyHTTPReqHeaderValuesGet(
 			r.h,
 			nameBuffer.Data, nameBuffer.Len,
-			prim.ToPointer(buf),
-			bufLen,
+			prim.ToPointer(buf), bufLen,
 			cursor,
 			prim.ToPointer(endingCursorOut),
 			prim.ToPointer(nwrittenOut),
@@ -905,7 +910,7 @@ func fastlyHTTPReqHeaderValuesSet(
 func (r *HTTPRequest) SetHeaderValues(name string, values []string) error {
 	var buf bytes.Buffer
 	for _, value := range values {
-		fmt.Fprint(&buf, value)
+		buf.WriteString(value)
 		buf.WriteByte(0)
 	}
 
@@ -1024,19 +1029,25 @@ func fastlyHTTPReqMethodGet(
 ) FastlyStatus
 
 // GetMethod returns the HTTP method of the request.
-func (r *HTTPRequest) GetMethod(maxMethodLen int) (string, error) {
-	buf := prim.NewWriteBuffer(maxMethodLen)
-
-	if err := fastlyHTTPReqMethodGet(
-		r.h,
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
-		return "", err
+func (r *HTTPRequest) GetMethod() (string, error) {
+	n := DefaultSmallBufLen // HTTP Methods are short: GET, POST, etc.
+	for {
+		buf := prim.NewWriteBuffer(n)
+		status := fastlyHTTPReqMethodGet(
+			r.h,
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+		if status == FastlyStatusBufLen && buf.NValue() > 0 {
+			n = int(buf.NValue())
+			continue
+		}
+		if err := status.toError(); err != nil {
+			return "", err
+		}
+		return buf.ToString(), nil
 	}
-
-	return buf.ToString(), nil
 }
 
 // witx:
@@ -1084,19 +1095,25 @@ func fastlyHTTPReqURIGet(
 ) FastlyStatus
 
 // GetURI returns the fully qualified URI of the request.
-func (r *HTTPRequest) GetURI(maxURLLen int) (string, error) {
-	buf := prim.NewWriteBuffer(maxURLLen)
-
-	if err := fastlyHTTPReqURIGet(
-		r.h,
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
-		return "", err
+func (r *HTTPRequest) GetURI() (string, error) {
+	n := DefaultMediumBufLen // Longest (unknown); Typically less than 1024, but some browsers accept much longer
+	for {
+		buf := prim.NewWriteBuffer(n)
+		status := fastlyHTTPReqURIGet(
+			r.h,
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+		if status == FastlyStatusBufLen && buf.NValue() > 0 {
+			n = int(buf.NValue())
+			continue
+		}
+		if err := status.toError(); err != nil {
+			return "", err
+		}
+		return buf.ToString(), nil
 	}
-
-	return buf.ToString(), nil
 }
 
 // witx:
@@ -1541,7 +1558,12 @@ func HandoffFanout(backend string) error {
 //
 //go:wasmimport fastly_http_req register_dynamic_backend
 //go:noescape
-func fastlyRegisterDynamicBackend(nameData prim.Pointer[prim.U8], nameLen prim.Usize, targetData prim.Pointer[prim.U8], targetLen prim.Usize, mask backendConfigOptionsMask, opts prim.Pointer[backendConfigOptions]) FastlyStatus
+func fastlyRegisterDynamicBackend(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	targetData prim.Pointer[prim.U8], targetLen prim.Usize,
+	mask backendConfigOptionsMask,
+	opts prim.Pointer[backendConfigOptions],
+) FastlyStatus
 
 func RegisterDynamicBackend(name string, target string, opts *BackendConfigOptions) error {
 	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
@@ -1570,7 +1592,10 @@ func RegisterDynamicBackend(name string, target string, opts *BackendConfigOptio
 //
 //go:wasmimport fastly_backend exists
 //go:noescape
-func fastlyBackendExists(nameData prim.Pointer[prim.U8], nameLen prim.Usize, exists prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendExists(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	exists prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendExists(name string) (bool, error) {
 	var exists prim.U32
@@ -1596,7 +1621,10 @@ func BackendExists(name string) (bool, error) {
 //
 //go:wasmimport fastly_backend is_healthy
 //go:noescape
-func fastlyBackendIsHealthy(nameData prim.Pointer[prim.U8], nameLen prim.Usize, healthy prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendIsHealthy(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	healthy prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendIsHealthy(name string) (BackendHealth, error) {
 	var health prim.U32
@@ -1622,7 +1650,10 @@ func BackendIsHealthy(name string) (BackendHealth, error) {
 //
 //go:wasmimport fastly_backend is_dynamic
 //go:noescape
-func fastlyBackendIsDynamic(nameData prim.Pointer[prim.U8], nameLen prim.Usize, dynamic prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendIsDynamic(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	dynamic prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendIsDynamic(name string) (bool, error) {
 	var dynamic prim.U32
@@ -1656,21 +1687,21 @@ func fastlyBackendGetHost(nameData prim.Pointer[prim.U8], nameLen prim.Usize,
 ) FastlyStatus
 
 func BackendGetHost(name string) (string, error) {
-	hostBuf := prim.NewWriteBuffer(defaultBufferLen)
+	buf := prim.NewWriteBuffer(dnsBufLen) // Longest (255) by DNS RFCs https://datatracker.ietf.org/doc/html/rfc2181#section-11
 
 	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
 
 	if err := fastlyBackendGetHost(
 		nameBuffer.Data, nameBuffer.Len,
 
-		prim.ToPointer(hostBuf.Char8Pointer()),
-		hostBuf.Cap(),
-		prim.ToPointer(hostBuf.NPointer()),
+		prim.ToPointer(buf.Char8Pointer()),
+		buf.Cap(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
 
-	return hostBuf.ToString(), nil
+	return buf.ToString(), nil
 }
 
 // witx:
@@ -1692,20 +1723,20 @@ func fastlyBackendGetOverrideHost(nameData prim.Pointer[prim.U8], nameLen prim.U
 ) FastlyStatus
 
 func BackendGetOverrideHost(name string) (string, error) {
-	hostBuf := prim.NewWriteBuffer(defaultBufferLen)
+	buf := prim.NewWriteBuffer(dnsBufLen) // Longest (255) by DNS RFCs https://datatracker.ietf.org/doc/html/rfc2181#section-11
 
 	nameBuffer := prim.NewReadBufferFromString(name).Wstring()
 
 	if err := fastlyBackendGetOverrideHost(
 		nameBuffer.Data, nameBuffer.Len,
-		prim.ToPointer(hostBuf.Char8Pointer()),
-		hostBuf.Cap(),
-		prim.ToPointer(hostBuf.NPointer()),
+		prim.ToPointer(buf.Char8Pointer()),
+		buf.Cap(),
+		prim.ToPointer(buf.NPointer()),
 	).toError(); err != nil {
 		return "", err
 	}
 
-	return hostBuf.ToString(), nil
+	return buf.ToString(), nil
 }
 
 // witx:
@@ -1719,7 +1750,10 @@ func BackendGetOverrideHost(name string) (string, error) {
 //
 //go:wasmimport fastly_backend get_port
 //go:noescape
-func fastlyBackendGetPort(nameData prim.Pointer[prim.U8], nameLen prim.Usize, port prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendGetPort(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	port prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendGetPort(name string) (int, error) {
 	var port prim.U32
@@ -1745,7 +1779,10 @@ func BackendGetPort(name string) (int, error) {
 //
 //go:wasmimport fastly_backend get_connect_timeout_ms
 //go:noescape
-func fastlyBackendGetConnectTimeoutMs(nameData prim.Pointer[prim.U8], nameLen prim.Usize, timeout prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendGetConnectTimeoutMs(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	timeout prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendGetConnectTimeout(name string) (time.Duration, error) {
 	var timeout prim.U32
@@ -1771,7 +1808,10 @@ func BackendGetConnectTimeout(name string) (time.Duration, error) {
 //
 //go:wasmimport fastly_backend get_first_byte_timeout_ms
 //go:noescape
-func fastlyBackendGetFirstByteTimeoutMs(nameData prim.Pointer[prim.U8], nameLen prim.Usize, timeout prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendGetFirstByteTimeoutMs(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	timeout prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendGetFirstByteTimeout(name string) (time.Duration, error) {
 	var timeout prim.U32
@@ -1797,7 +1837,10 @@ func BackendGetFirstByteTimeout(name string) (time.Duration, error) {
 //
 //go:wasmimport fastly_backend get_between_bytes_timeout_ms
 //go:noescape
-func fastlyBackendGetBetweenBytesTimeoutMs(nameData prim.Pointer[prim.U8], nameLen prim.Usize, timeout prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendGetBetweenBytesTimeoutMs(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	timeout prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendGetBetweenBytesTimeout(name string) (time.Duration, error) {
 	var timeout prim.U32
@@ -1823,7 +1866,10 @@ func BackendGetBetweenBytesTimeout(name string) (time.Duration, error) {
 //
 //go:wasmimport fastly_backend is_ssl
 //go:noescape
-func fastlyBackendIsSSL(nameData prim.Pointer[prim.U8], nameLen prim.Usize, ssl prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendIsSSL(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	ssl prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendIsSSL(name string) (bool, error) {
 	var ssl prim.U32
@@ -1849,7 +1895,10 @@ func BackendIsSSL(name string) (bool, error) {
 //
 //go:wasmimport fastly_backend get_ssl_min_version
 //go:noescape
-func fastlyBackendGetSSLMinVersion(nameData prim.Pointer[prim.U8], nameLen prim.Usize, version prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendGetSSLMinVersion(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	version prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendGetSSLMinVersion(name string) (TLSVersion, error) {
 	var version prim.U32
@@ -1875,7 +1924,10 @@ func BackendGetSSLMinVersion(name string) (TLSVersion, error) {
 //
 //go:wasmimport fastly_backend get_ssl_max_version
 //go:noescape
-func fastlyBackendGetSSLMaxVersion(nameData prim.Pointer[prim.U8], nameLen prim.Usize, version prim.Pointer[prim.U32]) FastlyStatus
+func fastlyBackendGetSSLMaxVersion(
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	version prim.Pointer[prim.U32],
+) FastlyStatus
 
 func BackendGetSSLMaxVersion(name string) (TLSVersion, error) {
 	var version prim.U32
@@ -2086,7 +2138,7 @@ func fastlyHTTPRespHeaderValuesSet(
 func (r *HTTPResponse) SetHeaderValues(name string, values []string) error {
 	var buf bytes.Buffer
 	for _, value := range values {
-		fmt.Fprint(&buf, value)
+		buf.WriteString(value)
 		buf.WriteByte(0)
 	}
 
@@ -2427,20 +2479,27 @@ func fastlyDictionaryGet(
 
 // Get the value for key, as a byte slice, if it exists.
 func (d *Dictionary) GetBytes(key string) ([]byte, error) {
-	buf := prim.NewWriteBuffer(dictionaryValueMaxLen)
 	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
-
-	if err := fastlyDictionaryGet(
-		d.h,
-		keyBuffer.Data, keyBuffer.Len,
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
-		return nil, err
+	n := DefaultMediumBufLen // Longest (8192) = Config Store limit; typical values likely less than 1024
+	for {
+		buf := prim.NewWriteBuffer(n)
+		status := fastlyDictionaryGet(
+			d.h,
+			keyBuffer.Data, keyBuffer.Len,
+			prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+		if status == FastlyStatusBufLen && n < dictionaryValueMaxLen {
+			// The Dictionary API cannot return the needed size with this error.
+			// Instead of perfectly adapting, we allocate the maximum length a value can have.
+			n = dictionaryValueMaxLen
+			continue
+		}
+		if err := status.toError(); err != nil {
+			return nil, err
+		}
+		return buf.AsBytes(), nil
 	}
-
-	return buf.AsBytes(), nil
 }
 
 // Get the value for key, if it exists.
@@ -2458,25 +2517,20 @@ func (d *Dictionary) Has(key string) (bool, error) {
 	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
 	var npointer prim.Usize = 0
 
-	if err := fastlyDictionaryGet(
+	status := fastlyDictionaryGet(
 		d.h,
 		keyBuffer.Data, keyBuffer.Len,
-		prim.NullChar8Pointer(),
-		0,
+		prim.NullChar8Pointer(), 0,
 		prim.ToPointer(&npointer),
-	); err != FastlyStatusOK {
-		if err == FastlyStatusBufLen {
-			return true, nil
-		}
-
-		if err == FastlyStatusNone {
-			return false, nil
-		}
-
-		return false, err.toError()
+	)
+	switch status {
+	case FastlyStatusOK, FastlyStatusBufLen:
+		return true, nil
+	case FastlyStatusNone:
+		return false, nil
+	default:
+		return false, status.toError()
 	}
-
-	return true, nil
 }
 
 // witx:
@@ -2496,32 +2550,35 @@ func (d *Dictionary) Has(key string) (bool, error) {
 //go:wasmimport fastly_geo lookup
 //go:noescape
 func fastlyGeoLookup(
-	addrOctets prim.Pointer[prim.Char8],
-	addLen prim.Usize,
-	buf prim.Pointer[prim.Char8],
-	bufLen prim.Usize,
+	addrOctets prim.Pointer[prim.Char8], addrLen prim.Usize,
+	buf prim.Pointer[prim.Char8], bufLen prim.Usize,
 	nWrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // GeoLookup returns the geographic data associated with the IP address.
 func GeoLookup(ip net.IP) ([]byte, error) {
-	buf := prim.NewWriteBuffer(1024) // initial geo buf size
 	if x := ip.To4(); x != nil {
 		ip = x
 	}
 	addrOctets := prim.NewReadBufferFromBytes(ip)
 
-	if err := fastlyGeoLookup(
-		prim.ToPointer(addrOctets.Char8Pointer()),
-		addrOctets.Len(),
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
-		return nil, err
+	n := DefaultMediumBufLen
+	for {
+		buf := prim.NewWriteBuffer(n) // initial geo buf size
+		status := fastlyGeoLookup(
+			prim.ToPointer(addrOctets.Char8Pointer()), addrOctets.Len(),
+			prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+		if status == FastlyStatusBufLen && buf.NValue() > 0 {
+			n = int(buf.NValue())
+			continue
+		}
+		if err := status.toError(); err != nil {
+			return nil, err
+		}
+		return buf.AsBytes(), nil
 	}
-
-	return buf.AsBytes(), nil
 }
 
 // witx:
@@ -2783,42 +2840,30 @@ func (st *SecretStore) Get(name string) (*Secret, error) {
 //go:noescape
 func fastlySecretPlaintext(
 	h secretHandle,
-	buf prim.Pointer[prim.Char8],
-	bufLen prim.Usize,
+	buf prim.Pointer[prim.Char8], bufLen prim.Usize,
 	nwritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 // Plaintext decrypts and returns the secret value as a byte slice.
 func (s *Secret) Plaintext() ([]byte, error) {
-	// Most secrets will fit into the initial secret buffer size, so
-	// we'll start with that. If it doesn't fit, we'll know the exact
-	// size of the buffer to try again.
-	buf := prim.NewWriteBuffer(initialSecretLen)
-
-	status := fastlySecretPlaintext(
-		s.h,
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	)
-	if status == FastlyStatusBufLen {
-		// The buffer was too small, but it'll tell us how big it will
-		// need to be in order to fit the plaintext.
-		buf = prim.NewWriteBuffer(int(buf.NValue()))
-
-		status = fastlySecretPlaintext(
+	n := DefaultMediumBufLen
+	for {
+		buf := prim.NewWriteBuffer(n)
+		status := fastlySecretPlaintext(
 			s.h,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
+		if status == FastlyStatusBufLen && buf.NValue() > 0 {
+			n = int(buf.NValue())
+			continue
+		}
+		if err := status.toError(); err != nil {
+			return nil, err
+		}
+		return buf.AsBytes(), nil
 	}
-
-	if err := status.toError(); err != nil {
-		return nil, err
-	}
-
-	return buf.AsBytes(), nil
 }
 
 // witx:
@@ -3254,32 +3299,24 @@ func fastlyCacheGetUserMetadata(
 ) FastlyStatus
 
 func (c *CacheEntry) UserMetadata() ([]byte, error) {
-	buf := prim.NewWriteBuffer(defaultBufferLen)
-
-	status := fastlyCacheGetUserMetadata(
-		c.h,
-		prim.ToPointer(buf.U8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	)
-	if status == FastlyStatusBufLen {
-		// The buffer was too small, but it'll tell us how big it will
-		// need to be in order to fit the content.
-		buf = prim.NewWriteBuffer(int(buf.NValue()))
-
-		status = fastlyCacheGetUserMetadata(
+	n := DefaultMediumBufLen
+	for {
+		buf := prim.NewWriteBuffer(n) // Longest (unknown)
+		status := fastlyCacheGetUserMetadata(
 			c.h,
 			prim.ToPointer(buf.U8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
+		if status == FastlyStatusBufLen && buf.NValue() > 0 {
+			n = int(buf.NValue())
+			continue
+		}
+		if err := status.toError(); err != nil {
+			return nil, err
+		}
+		return buf.AsBytes(), nil
 	}
-
-	if err := status.toError(); err != nil {
-		return nil, err
-	}
-
-	return buf.AsBytes(), nil
 }
 
 // witx:
@@ -3458,7 +3495,11 @@ func (o *PurgeOptions) SoftPurge(v bool) {
 //
 //go:wasmimport fastly_purge purge_surrogate_key
 //go:noescape
-func fastlyPurgeSurrogateKey(surrogateKeyData prim.Pointer[prim.U8], surrogateKeyLen prim.Usize, mask purgeOptionsMask, opts prim.Pointer[purgeOptions]) FastlyStatus
+func fastlyPurgeSurrogateKey(
+	surrogateKeyData prim.Pointer[prim.U8], surrogateKeyLen prim.Usize,
+	mask purgeOptionsMask,
+	opts prim.Pointer[purgeOptions],
+) FastlyStatus
 
 func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
 	surrogateKeyBuffer := prim.NewReadBufferFromString(surrogateKey).Wstring()
@@ -3487,39 +3528,30 @@ func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
 //go:noescape
 func fastlyDeviceDetectionLookup(
 	userAgentData prim.Pointer[prim.U8], userAgentLen prim.Usize,
-	buf prim.Pointer[prim.Char8],
-	bufLen prim.Usize,
+	buf prim.Pointer[prim.Char8], bufLen prim.Usize,
 	nWritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
 func DeviceLookup(userAgent string) ([]byte, error) {
-	buf := prim.NewWriteBuffer(defaultBufferLen)
-
 	userAgentBuffer := prim.NewReadBufferFromString(userAgent).Wstring()
-
-	status := fastlyDeviceDetectionLookup(
-		userAgentBuffer.Data, userAgentBuffer.Len,
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	)
-	if status == FastlyStatusBufLen {
-		// The buffer was too small, but it'll tell us how big it will
-		// need to be in order to fit the content.
-		buf = prim.NewWriteBuffer(int(buf.NValue()))
-
-		status = fastlyDeviceDetectionLookup(
+	n := DefaultMediumBufLen // Longest JSON of https://www.fastly.com/documentation/reference/vcl/variables/client-request/client-identified/
+	for {
+		buf := prim.NewWriteBuffer(n)
+		status := fastlyDeviceDetectionLookup(
 			userAgentBuffer.Data, userAgentBuffer.Len,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
+		if status == FastlyStatusBufLen && buf.NValue() > 0 {
+			n = int(buf.NValue())
+			continue
+		}
+		if err := status.toError(); err != nil {
+			return nil, err
+		}
+		return buf.AsBytes(), nil
 	}
-	if err := status.toError(); err != nil {
-		return nil, err
-	}
-
-	return buf.AsBytes(), nil
 }
 
 // witx:

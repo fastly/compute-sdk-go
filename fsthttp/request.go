@@ -17,10 +17,10 @@ import (
 
 // RequestLimits are the limits for the components of an HTTP request.
 var RequestLimits = Limits{
-	maxHeaderNameLen:  fastly.DefaultMaxHeaderNameLen,
-	maxHeaderValueLen: fastly.DefaultMaxHeaderValueLen,
-	maxMethodLen:      fastly.DefaultMaxMethodLen,
-	maxURLLen:         fastly.DefaultMaxURLLen,
+	maxHeaderNameLen:  fastly.DefaultLargeBufLen,
+	maxHeaderValueLen: fastly.DefaultLargeBufLen,
+	maxMethodLen:      fastly.DefaultMediumBufLen,
+	maxURLLen:         fastly.DefaultLargeBufLen,
 }
 
 // Request represents an HTTP request received by this server from a requesting
@@ -133,12 +133,12 @@ func newClientRequest() (*Request, error) {
 		return nil, fmt.Errorf("get client request and body: %w", err)
 	}
 
-	method, err := abiReq.GetMethod(RequestLimits.maxMethodLen)
+	method, err := abiReq.GetMethod()
 	if err != nil {
 		return nil, fmt.Errorf("get method: %w", err)
 	}
 
-	uri, err := abiReq.GetURI(RequestLimits.maxURLLen)
+	uri, err := abiReq.GetURI()
 	if err != nil {
 		return nil, fmt.Errorf("get URI: %w", err)
 	}

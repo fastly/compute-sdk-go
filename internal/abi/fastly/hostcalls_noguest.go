@@ -119,7 +119,7 @@ func (r *HTTPRequest) RemoveHeader(name string) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) GetMethod(maxMethodLen int) (string, error) {
+func (r *HTTPRequest) GetMethod() (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
@@ -127,7 +127,7 @@ func (r *HTTPRequest) SetMethod(method string) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) GetURI(maxURLLen int) (string, error) {
+func (r *HTTPRequest) GetURI() (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 

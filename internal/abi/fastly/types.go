@@ -184,6 +184,16 @@ func IsFastlyError(err error) (FastlyStatus, bool) {
 	}
 }
 
+const (
+	ipBufLen              = 16   // known size for IP address buffers
+	dnsBufLen             = 256  // known size for "DNS" values, enough to hold the longest possible hostname or domain name
+	dictionaryValueMaxLen = 8192 // known size for maximum config store value https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
+
+	DefaultSmallBufLen  = 128  // default size for "typically-small" values with variable sizes: HTTP methods, header names, tls protocol names, cipher suites
+	DefaultMediumBufLen = 1024 // default size for values between small and large with variable sizes
+	DefaultLargeBufLen  = 8192 // default size for "typically-large" values with variable sizes; header values, URLs.
+)
+
 // HTTPVersion describes an HTTP protocol version.
 type HTTPVersion uint32
 
@@ -313,22 +323,6 @@ const (
 	cacheOverrideTagTTL                  cacheOverrideTag = 0b0000_0010 // $ttl
 	cacheOverrideTagStaleWhileRevalidate cacheOverrideTag = 0b0000_0100 // $stale_while_revalidate
 	cacheOverrideTagPCI                  cacheOverrideTag = 0b0000_1000 // $pci
-)
-
-const (
-	// DefaultMaxHeaderNameLen is the default header name length limit
-	DefaultMaxHeaderNameLen = 8192
-	// DefaultMaxHeaderValueLen is the default header value length limit
-	DefaultMaxHeaderValueLen = 8192
-	// DefaultMaxMethodLen is the default method length limit
-	DefaultMaxMethodLen = 1024
-	// DefaultMaxURLLen is the default URL length limit
-	DefaultMaxURLLen = 8192
-
-	dictionaryValueMaxLen = 8192 // https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
-	defaultBufferLen      = 16 * 1024
-
-	initialSecretLen = 1024
 )
 
 // CacheOverrideOptions collects specific, caching-related options for outbound

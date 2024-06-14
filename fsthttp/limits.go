@@ -29,21 +29,23 @@ func (limits *Limits) SetMaxHeaderValueLen(len int) {
 }
 
 // MaxMethodLen gets the request method limit
+// Deprecated: the limit is not enforced, buffer sizing is adaptive.
 func (limits *Limits) MaxMethodLen() int {
 	return limits.maxMethodLen
 }
 
 // SetMaxMethodLen sets the request method limit
-func (limits *Limits) SetMaxMethodLen(len int) {
-	limits.maxMethodLen = len
+// Deprecated: the limit is not reset, buffer sizing is adaptive.
+func (limits *Limits) SetMaxMethodLen(_ int) {
 }
 
 // MaxURLLen gets the request URL limit
+// Deprecated: the limit is not enforced, buffer sizing is adaptive.
 func (limits *Limits) MaxURLLen() int {
 	return limits.maxURLLen
 }
 
 // SetMaxURLLen sets the request URL limit
-func (limits *Limits) SetMaxURLLen(len int) {
-	limits.maxURLLen = len
+// Deprecated: the limit is not reset, buffer sizing is adaptive.
+func (limits *Limits) SetMaxURLLen(_ int) {
 }

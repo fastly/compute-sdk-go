@@ -35,7 +35,7 @@ func ToPointer[T any](ptr *T) Pointer[T] {
 
 // NullPointer makes a null pointer to a byte buffer.
 func NullChar8Pointer() Pointer[Char8] {
-        return Pointer[Char8](uintptr(unsafe.Pointer(nil)))
+	return Pointer[Char8](uintptr(unsafe.Pointer(nil)))
 }
 
 // Wstring is a header for a string.
@@ -102,18 +102,18 @@ func (b *WriteBuffer) Len() Usize {
 	return Usize(len(b.buf))
 }
 
-// NPointer returns a pointer to the number of bytes written to th buffer as a
+// NPointer returns a pointer to the number of bytes written to the buffer as a
 // Usize.
 func (b *WriteBuffer) NPointer() *Usize {
 	return &b.n
 }
 
-// NValue returns the number of bytes written to th buffer as a Usize.
+// NValue returns the number of bytes written to the buffer as a Usize.
 func (b *WriteBuffer) NValue() Usize {
 	return b.n
 }
 
-// AsBytes returns a copy of the buffer's data as a byte slice.
+// AsBytes returns a slice of the buffer's data as a byte slice.
 func (b *WriteBuffer) AsBytes() []byte {
 	return b.buf[:b.n]
 }
