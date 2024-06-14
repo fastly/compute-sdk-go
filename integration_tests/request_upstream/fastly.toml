@@ -22,4 +22,4 @@ service_id = ""
       url = "https://example.org/"
 
     [local_server.backends.httpme]
-      url = "https://http-me.glitch.me"
+      url = "https://http.edgecompute.app/anything/"
