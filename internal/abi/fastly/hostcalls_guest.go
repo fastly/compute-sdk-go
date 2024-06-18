@@ -2489,10 +2489,15 @@ func (d *Dictionary) GetBytes(key string) ([]byte, error) {
 			prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && n < dictionaryValueMaxLen {
-			// The Dictionary API cannot return the needed size with this error.
-			// Instead of perfectly adapting, we allocate the maximum length a value can have.
-			n = dictionaryValueMaxLen
+		if status == FastlyStatusBufLen {
+			switch {
+			case n <= DefaultMediumBufLen: // first step up from DefaultMediumBufLen to DefaultLargeBufLen
+				n = dictionaryValueASCIIMaxLen
+			case n < dictionaryValueMaxLen: // second step from DefaultLargeBufLen to dictionaryValueMaxLen
+				// The Dictionary API cannot return the needed size with this error.
+				// Instead of perfectly adapting, we allocate the maximum length a value can have.
+				n = dictionaryValueMaxLen
+			}
 			continue
 		}
 		if err := status.toError(); err != nil {
