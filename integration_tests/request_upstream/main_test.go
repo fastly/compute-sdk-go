@@ -142,8 +142,9 @@ func requestUpstreamBody(t *testing.T, body io.Reader, size int, chunked bool) {
 		Headers map[string]string `json:"headers"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
-		t.Fatalf("Decode: %v", err)
+	gotBody := new(bytes.Buffer)
+	if err := json.NewDecoder(io.TeeReader(resp.Body, gotBody)).Decode(&respData); err != nil {
+		t.Fatalf("Decode: %v\nBody:\n%s", err, gotBody.String())
 	}
 
 	var teWant, clWant string
