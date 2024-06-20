@@ -86,7 +86,7 @@ func (s *Store) Has(key string) (bool, error) {
 	return v, nil
 }
 
-// Get returns the item in the config store with the given key, as a byte slice.
+// GetBytes returns the item in the config store with the given key, as a byte slice.
 func (s *Store) GetBytes(key string) ([]byte, error) {
 	if s == nil {
 		return nil, ErrKeyNotFound
@@ -106,8 +106,9 @@ func (s *Store) GetBytes(key string) ([]byte, error) {
 			return nil, err
 		}
 	}
-
-	return v, nil
+	p := make([]byte, len(v))
+	copy(p, v)
+	return p, nil
 }
 
 // Get returns the item in the config store with the given key.

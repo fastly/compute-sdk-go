@@ -2436,8 +2436,13 @@ func fastlyDictionaryOpen(
 // Dictionary represents a Fastly edge dictionary, a collection of read-only
 // key/value pairs. For convenience, keys are modeled as Go strings, and values
 // as byte slices.
+//
+// NOTE: wasm, by definition, is a single-threaded execution environment. This
+// allows us to use valueBuf scratch space between the guest and host to avoid
+// allocations any larger than necessary, without locking.
 type Dictionary struct {
-	h dictionaryHandle
+	h        dictionaryHandle
+	valueBuf [dictionaryValueMaxLen]byte
 }
 
 // OpenDictionary returns a reference to the named dictionary, if it exists.
@@ -2452,7 +2457,6 @@ func OpenDictionary(name string) (*Dictionary, error) {
 	).toError(); err != nil {
 		return nil, err
 	}
-
 	return &d, nil
 }
 
@@ -2480,31 +2484,17 @@ func fastlyDictionaryGet(
 // Get the value for key, as a byte slice, if it exists.
 func (d *Dictionary) GetBytes(key string) ([]byte, error) {
 	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
-	n := DefaultMediumBufLen // Longest (8192) = Config Store limit; typical values likely less than 1024
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyDictionaryGet(
-			d.h,
-			keyBuffer.Data, keyBuffer.Len,
-			prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
-			prim.ToPointer(buf.NPointer()),
-		)
-		if status == FastlyStatusBufLen {
-			switch {
-			case n <= DefaultMediumBufLen: // first step up from DefaultMediumBufLen to DefaultLargeBufLen
-				n = dictionaryValueASCIIMaxLen
-			case n < dictionaryValueMaxLen: // second step from DefaultLargeBufLen to dictionaryValueMaxLen
-				// The Dictionary API cannot return the needed size with this error.
-				// Instead of perfectly adapting, we allocate the maximum length a value can have.
-				n = dictionaryValueMaxLen
-			}
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return nil, err
-		}
-		return buf.AsBytes(), nil
+	buf := prim.NewWriteBufferFromBytes(d.valueBuf[:])
+	status := fastlyDictionaryGet(
+		d.h,
+		keyBuffer.Data, keyBuffer.Len,
+		prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
+		prim.ToPointer(buf.NPointer()),
+	)
+	if err := status.toError(); err != nil {
+		return nil, err
 	}
+	return buf.AsBytes(), nil
 }
 
 // Get the value for key, if it exists.
