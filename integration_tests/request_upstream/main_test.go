@@ -87,7 +87,7 @@ const bodySize = 64 * 1024
 func TestRequestUpstreamBody(t *testing.T) {
 	body := make([]byte, bodySize)
 	for i := range body {
-		body[i] = byte(i)
+		body[i] = 'A'
 	}
 
 	b, err := fastly.NewHTTPBody()
@@ -124,7 +124,7 @@ func TestRequestUpstreamBody(t *testing.T) {
 }
 
 func requestUpstreamBody(t *testing.T, body io.Reader, size int, chunked bool) {
-	req, err := fsthttp.NewRequest("POST", "https://http-me.glitch.me/?anything", body)
+	req, err := fsthttp.NewRequest("POST", "https://http.edgecompute.app/anything/", body)
 	if err != nil {
 		t.Fatalf("NewRequest: %v", err)
 	}
@@ -132,7 +132,7 @@ func requestUpstreamBody(t *testing.T, body io.Reader, size int, chunked bool) {
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.CacheOptions.Pass = true
 
-	resp, err := req.Send(context.Background(), "httpme")
+	resp, err := req.Send(context.Background(), "httpedge")
 	if err != nil {
 		t.Fatalf("Send: %v", err)
 	}
