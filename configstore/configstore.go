@@ -61,8 +61,8 @@ func Open(name string) (*Store, error) {
 	return &Store{d}, nil
 }
 
-// Has checks to see if the item exists in the config store, without allocating
-// any space to read it.
+// Has returns true if the key exists in the config store, without allocating
+// space to read a value.
 func (s *Store) Has(key string) (bool, error) {
 	if s == nil {
 		return false, ErrKeyNotFound
@@ -86,7 +86,7 @@ func (s *Store) Has(key string) (bool, error) {
 	return v, nil
 }
 
-// GetBytes returns the item in the config store with the given key, as a byte slice.
+// GetBytes returns the value in the config store for the given key, if it exists, as a byte slice.
 func (s *Store) GetBytes(key string) ([]byte, error) {
 	if s == nil {
 		return nil, ErrKeyNotFound
@@ -106,17 +106,14 @@ func (s *Store) GetBytes(key string) ([]byte, error) {
 			return nil, err
 		}
 	}
-	p := make([]byte, len(v))
-	copy(p, v)
-	return p, nil
+	return v, nil
 }
 
-// Get returns the item in the config store with the given key.
+// Get returns the value in the config store with the given key, if it exists.
 func (s *Store) Get(key string) (string, error) {
 	buf, err := s.GetBytes(key)
 	if err != nil {
 		return "", err
 	}
-
 	return string(buf), nil
 }

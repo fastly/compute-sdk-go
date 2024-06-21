@@ -6,7 +6,9 @@ package main
 
 import (
 	"bytes"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/fastly/compute-sdk-go/configstore"
@@ -62,7 +64,8 @@ func TestConfigStore(t *testing.T) {
 		t.Errorf("Body = %q, want %q", got, want)
 	}
 
-	max, err := d.Get("maximum-length-asciiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii-1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000-2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+	maxKey := "maximum-length-asciiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii-1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000-2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+	max, err := d.Get(maxKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,5 +84,35 @@ func TestConfigStore(t *testing.T) {
 	got, want = maxUTF8, strings.Repeat("ゝ", 8000)
 	if got != want {
 		t.Errorf("Body = %q, want %q", got, want)
+	}
+}
+
+func TestConfigStoreConcurrently(t *testing.T) {
+	d, err := configstore.Open("configstore")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	wg.Add(5)
+	var keys [5]string
+	var values [5][]byte
+	for i := 0; i < 5; i++ {
+		go func(i int) {
+			defer wg.Done()
+			var err error
+			keys[i] = "concurrent " + strconv.Itoa(i)
+			values[i], err = d.GetBytes(keys[i])
+			if err != nil {
+				t.Errorf("%d: GetBytes() error: %v", i, err)
+			}
+		}(i)
+	}
+	wg.Wait()
+	for i := 0; i < 5; i++ {
+		got := values[i]
+		want := bytes.Repeat([]byte{'0' + byte(i)}, i+1)
+		if !bytes.Equal(got, want) {
+			t.Errorf("%d: got: %q want: %q", i, got, want)
+		}
 	}
 }

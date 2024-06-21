@@ -188,15 +188,6 @@ const (
 	ipBufLen  = 16  // known size for IP address buffers
 	dnsBufLen = 256 // known size for "DNS" values, enough to hold the longest possible hostname or domain name
 
-	// Dictionaries are subject to very specific limitations: 255 character keys and 8000 character values, utf-8 encoded.
-	// The current storage collation limits utf-8 representations to 3 bytes in length.
-	// https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
-	// https://dev.mysql.com/doc/refman/8.4/en/charset-unicode-utf8mb3.html
-	// https://en.wikipedia.org/wiki/UTF-8#Encoding
-	dictionaryMaxKeyLen        = 255 * 3  // known maximum size for config store keys: 755 bytes, for 255 3-byte utf-8 encoded characters
-	dictionaryValueASCIIMaxLen = 8000     // known for 8000 ASCII-range utf-8 encoded characters
-	dictionaryValueMaxLen      = 8000 * 3 // known maximum size for config store values: 24,000 bytes, for 8000 3-byte utf-8 encoded characters
-
 	DefaultSmallBufLen  = 128  // default size for "typically-small" values with variable sizes: HTTP methods, header names, tls protocol names, cipher suites
 	DefaultMediumBufLen = 1024 // default size for values between small and large, with variable sizes
 	DefaultLargeBufLen  = 8192 // default size for "typically-large" values with variable sizes; header values, URLs.
