@@ -115,7 +115,7 @@ func (b *WriteBuffer) NValue() Usize {
 
 // AsBytes returns a slice of the buffer's data as a byte slice.
 func (b *WriteBuffer) AsBytes() []byte {
-	return b.buf[:b.n]
+	return b.buf[:b.n:b.n]
 }
 
 // ToString returns a copy of the buffer's data as a string.

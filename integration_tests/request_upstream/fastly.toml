@@ -8,18 +8,15 @@ manifest_version = 2
 name = "request_upstream"
 service_id = ""
 
-[local_server]
 
-  [local_server.backends]
+[local_server.backends.TheOrigin]
+url = "https://compute-sdk-test-backend.edgecompute.app/"
 
-    [local_server.backends.TheOrigin]
-      url = "https://compute-sdk-test-backend.edgecompute.app/"
+[local_server.backends.TheOrigin2]
+url = "https://compute-sdk-test-backend.edgecompute.app/"
 
-    [local_server.backends.TheOrigin2]
-      url = "https://compute-sdk-test-backend.edgecompute.app/"
+[local_server.backends.example_backend]
+url = "https://example.org/"
 
-    [local_server.backends.example_backend]
-      url = "https://example.org/"
-
-    [local_server.backends.httpme]
-      url = "https://http-me.glitch.me"
+[local_server.backends.httpedge]
+url = "https://http.edgecompute.app/anything/"
