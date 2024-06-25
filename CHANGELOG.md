@@ -1,3 +1,15 @@
+## 1.3.2 (2024-06-25)
+
+### Added
+
+- configstore: add Store.Has() method
+- configstore: add Store.GetBytes() method
+- configstore: reduce memory usage with shared buffer
+
+### Changed
+
+- fsthttp: make buffer sizes adaptable
+
 ## 1.3.1 (2024-04-25)
 
 ### Added
