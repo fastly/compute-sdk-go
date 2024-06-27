@@ -12,9 +12,10 @@ import (
 // ResponseRecorder is an implementation of fsthttp.ResponseWriter that
 // records its mutations for later inspection in tests.
 type ResponseRecorder struct {
-	Code      int
-	HeaderMap fsthttp.Header
-	Body      *bytes.Buffer
+	Code        int
+	HeaderMap   fsthttp.Header
+	Body        *bytes.Buffer
+	headersDone bool
 }
 
 // NewRecorder returns an initialized ResponseRecorder.
@@ -28,12 +29,18 @@ func NewRecorder() *ResponseRecorder {
 
 // Header returns the response headers to mutate within a handler.
 func (r *ResponseRecorder) Header() fsthttp.Header {
-	return r.HeaderMap
+	if !r.headersDone {
+		return r.HeaderMap
+	}
+	return r.HeaderMap.Clone()
 }
 
 // WriteHeader records the response code.
 func (r *ResponseRecorder) WriteHeader(code int) {
-	r.Code = code
+	if !r.headersDone {
+		r.Code = code
+		r.headersDone = true
+	}
 }
 
 // Write records the response body.  The data is written to the Body
