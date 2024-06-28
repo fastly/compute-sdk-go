@@ -32,6 +32,8 @@ func (r *ResponseRecorder) Header() fsthttp.Header {
 	if !r.headersDone {
 		return r.HeaderMap
 	}
+	// Once the send the headers, return a copy so any changes
+	// are discarded.
 	return r.HeaderMap.Clone()
 }
 
