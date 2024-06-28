@@ -15,7 +15,7 @@ type ResponseRecorder struct {
 	Code        int
 	HeaderMap   fsthttp.Header
 	Body        *bytes.Buffer
-	headersDone bool
+	headersSent bool
 }
 
 // NewRecorder returns an initialized ResponseRecorder.
@@ -29,19 +29,18 @@ func NewRecorder() *ResponseRecorder {
 
 // Header returns the response headers to mutate within a handler.
 func (r *ResponseRecorder) Header() fsthttp.Header {
-	if !r.headersDone {
+	if !r.headersSent {
 		return r.HeaderMap
 	}
-	// Once the send the headers, return a copy so any changes
-	// are discarded.
+	// Once sent, return a copy so any changes are discarded.
 	return r.HeaderMap.Clone()
 }
 
 // WriteHeader records the response code.
 func (r *ResponseRecorder) WriteHeader(code int) {
-	if !r.headersDone {
+	if !r.headersSent {
 		r.Code = code
-		r.headersDone = true
+		r.headersSent = true
 	}
 }
 
