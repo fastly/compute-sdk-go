@@ -1,3 +1,9 @@
+## Unreleased
+
+### Added
+
+- kvstore: add ErrTooManyRequests
+
 ## 1.3.2 (2024-06-25)
 
 ### Added

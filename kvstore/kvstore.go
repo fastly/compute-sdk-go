@@ -27,6 +27,10 @@ var (
 	// ErrInvalidKey indicates that the given key is invalid.
 	ErrInvalidKey = errors.New("kvstore: invalid key")
 
+	// ErrTooManyRequests is returned when inserting a value exceeds the
+	// rate limit.
+	ErrTooManyRequests = errors.New("kvstore: too many requests")
+
 	// ErrUnexpected indicates than an unexpected error occurred.
 	ErrUnexpected = errors.New("kvstore: unexpected error")
 )
@@ -121,6 +125,8 @@ func (s *Store) Insert(key string, value io.Reader) error {
 		switch {
 		case ok && status == fastly.FastlyStatusInval:
 			return ErrInvalidKey
+		case ok && status == fastly.FastlyStatusLimitExceeded:
+			return ErrTooManyRequests
 		case ok:
 			return fmt.Errorf("%w (%s)", ErrUnexpected, status)
 		default:
