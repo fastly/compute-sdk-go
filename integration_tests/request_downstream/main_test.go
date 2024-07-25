@@ -33,8 +33,14 @@ func TestDownstreamRequest(t *testing.T) {
 		}
 
 		localhost := "127.0.0.1"
+
 		if r.RemoteAddr != localhost {
 			t.Errorf("RemoteAddr = %s, want %s", r.RemoteAddr, localhost)
+			return
+		}
+
+		if r.ServerAddr != localhost {
+			t.Errorf("ServerAddr = %s, want %s", r.ServerAddr, localhost)
 			return
 		}
 	})

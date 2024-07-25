@@ -70,6 +70,12 @@ type Request struct {
 	// This field is ignored for outgoing requests.
 	RemoteAddr string
 
+	// ServerAddr contains the IP address of the server that received the
+	// HTTP request.
+	//
+	// This field is ignored for outgoing requests.
+	ServerAddr string
+
 	// TLSInfo collects TLS metadata for incoming requests received over HTTPS.
 	TLSInfo TLSInfo
 
@@ -175,6 +181,11 @@ func newClientRequest() (*Request, error) {
 		return nil, fmt.Errorf("get client IP: %w", err)
 	}
 
+	serverAddr, err := fastly.DownstreamServerIPAddr()
+	if err != nil {
+		return nil, fmt.Errorf("get server IP: %w", err)
+	}
+
 	var tlsInfo TLSInfo
 	switch u.Scheme {
 	case "https":
@@ -207,6 +218,7 @@ func newClientRequest() (*Request, error) {
 		Body:       abiReqBody,
 		Host:       u.Host,
 		RemoteAddr: remoteAddr.String(),
+		ServerAddr: serverAddr.String(),
 		TLSInfo:    tlsInfo,
 	}, nil
 }

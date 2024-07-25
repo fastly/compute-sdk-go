@@ -214,6 +214,37 @@ func DownstreamClientIPAddr() (net.IP, error) {
 
 // witx:
 //
+//	(@interface func (export "downstream_server_ip_addr")
+//	   ;; must be a 16-byte array
+//	   (param $addr_octets_out (@witx pointer char8))
+//	   (result $err $fastly_status)
+//	   (result $nwritten_out (@witx usize))
+//	)
+//
+//go:wasmimport fastly_http_req downstream_server_ip_addr
+//go:noescape
+func fastlyHTTPReqDownstreamServerIPAddr(
+	addrOctetsOut prim.Pointer[prim.Char8], // ipBufLen is 16 bytes
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// DownstreamServerIPAddr returns the IP address of the downstream server that
+// received the HTTP request.
+func DownstreamServerIPAddr() (net.IP, error) {
+	buf := prim.NewWriteBuffer(ipBufLen)
+
+	if err := fastlyHTTPReqDownstreamServerIPAddr(
+		prim.ToPointer(buf.Char8Pointer()),
+		prim.ToPointer(buf.NPointer()),
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	return net.IP(buf.AsBytes()), nil
+}
+
+// witx:
+//
 //	(@interface func (export "downstream_tls_cipher_openssl_name")
 //	   (param $cipher_out (@witx pointer char8))
 //	   (param $cipher_max_len (@witx usize))
