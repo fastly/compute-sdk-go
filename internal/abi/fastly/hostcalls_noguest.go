@@ -67,6 +67,10 @@ func DownstreamClientIPAddr() (net.IP, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
+func DownstreamServerIPAddr() (net.IP, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 func DownstreamTLSCipherOpenSSLName() (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
