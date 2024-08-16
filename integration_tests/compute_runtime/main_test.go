@@ -5,7 +5,7 @@ import (
   "testing"
   "time"
 
-  "github.com/fastly/compute-sdk-go/compute_runtime"
+  "github.com/fastly/compute-sdk-go/compute"
 )
 
 func TestGetVcpuMs(t *testing.T) {

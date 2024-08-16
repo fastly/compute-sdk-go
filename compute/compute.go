@@ -1,7 +1,7 @@
 // Copyright 2024 Fastly, Inc.
 
 // Useful functions for interacting with the compute instance runtime.
-package compute_runtime
+package compute
 
 import (
   "time"
