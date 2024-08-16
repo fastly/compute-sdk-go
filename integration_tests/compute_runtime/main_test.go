@@ -9,14 +9,14 @@ import (
 )
 
 func TestGetVcpuMs(t *testing.T) {
-  start, err := compute_runtime.GetVCPUTime()
+  start, err := compute.GetVCPUTime()
   if err != nil {
     t.Errorf("Couldn't get starting vcpu time")
   }
 
   time.Sleep(5 * time.Second)
 
-  end, err := compute_runtime.GetVCPUTime()
+  end, err := compute.GetVCPUTime()
   if err != nil {
     t.Errorf("Couldn't get ending vcpu time")
   }
@@ -25,7 +25,7 @@ func TestGetVcpuMs(t *testing.T) {
     t.Errorf("Sleeping shouldn't count as vcpu time!")
   }
 
-  now, err := compute_runtime.GetVCPUTime()
+  now, err := compute.GetVCPUTime()
   if err != nil {
     t.Errorf("Couldn't get starting vcpu time")
   }
@@ -36,7 +36,7 @@ func TestGetVcpuMs(t *testing.T) {
   counter = 0
   next = now
   for now == next {
-    new_next, err := compute_runtime.GetVCPUTime()
+    new_next, err := compute.GetVCPUTime()
     if err != nil {
       t.Errorf("Couldn't get starting vcpu time")
     }
