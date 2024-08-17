@@ -3,6 +3,7 @@
 ### Added
 
 - kvstore: add ErrTooManyRequests
+- fsthttp: add ServerAddr to Request
 
 ## 1.3.2 (2024-06-25)
 
