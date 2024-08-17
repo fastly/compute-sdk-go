@@ -514,5 +514,5 @@ func PenaltyBoxHas(penaltyBox, entry string) (bool, error) {
 }
 
 func GetVCPUMilliseconds() (uint64, error) {
-	return false, fmt.Errorf("not implemented")
+	return 0, fmt.Errorf("not implemented")
 }
