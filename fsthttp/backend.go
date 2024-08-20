@@ -287,6 +287,12 @@ func (b *BackendOptions) ClientCertificate(certificate string, key secretstore.S
 	return b
 }
 
+// UseGRPC sets whether or not to connect to the backend via gRPC
+func (b *BackendOptions) UseGRPC(v bool) *BackendOptions {
+	b.abiOpts.UseGRPC(v)
+	return b
+}
+
 // Register a new dynamic backend.
 func RegisterDynamicBackend(name string, target string, options *BackendOptions) (*Backend, error) {
 	var abiOpts *fastly.BackendConfigOptions

@@ -731,6 +731,7 @@ const (
 	backendConfigOptionsMaskSNIHostname         backendConfigOptionsMask = 1 << 11 // $sni_hostame
 	backendConfigOptionsMaskDontPool            backendConfigOptionsMask = 1 << 12 // $dont_pool
 	backendConfigOptionsMaskClientCert          backendConfigOptionsMask = 1 << 13 // $client_cert
+	backendConfigOptionsMaskGRPC                backendConfigOptionsMask = 1 << 14 // $grpc
 )
 
 // witx:
@@ -889,6 +890,14 @@ func (b *BackendConfigOptions) ClientCert(certificate string, key *Secret) {
 	b.opts.clientCertPtr = prim.ToPointer(buf.Char8Pointer())
 	b.opts.clientCertLen = prim.U32(buf.Len())
 	b.opts.clientCertKey = key.Handle()
+}
+
+func (b *BackendConfigOptions) UseGRPC(v bool) {
+	if v {
+		b.mask |= backendConfigOptionsMaskGRPC
+	} else {
+		b.mask &^= backendConfigOptionsMaskGRPC
+	}
 }
 
 // witx:
