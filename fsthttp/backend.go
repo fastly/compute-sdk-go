@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
+	"github.com/fastly/compute-sdk-go/secretstore"
 )
 
 var (
@@ -276,6 +277,13 @@ func (b *BackendOptions) Ciphers(ciphers string) *BackendOptions {
 // SNIHostname sets the SNI hostname to use on connections to this backend.
 func (b *BackendOptions) SNIHostname(host string) *BackendOptions {
 	b.abiOpts.SNIHostname(host)
+	return b
+}
+
+// ClientCertificate sets the client certificate to be provided to the server as part of the SSL handshake.
+func (b *BackendOptions) ClientCertificate(certificate string, key secretstore.Secret) *BackendOptions {
+	b.abiOpts.UseSSL(true)
+	b.abiOpts.ClientCert(certificate, key.Handle())
 	return b
 }
 

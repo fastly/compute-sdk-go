@@ -730,6 +730,7 @@ const (
 	backendConfigOptionsMaskCiphers             backendConfigOptionsMask = 1 << 10 // $ciphers
 	backendConfigOptionsMaskSNIHostname         backendConfigOptionsMask = 1 << 11 // $sni_hostame
 	backendConfigOptionsMaskDontPool            backendConfigOptionsMask = 1 << 12 // $dont_pool
+	backendConfigOptionsMaskClientCert          backendConfigOptionsMask = 1 << 13 // $client_cert
 )
 
 // witx:
@@ -751,6 +752,9 @@ const (
 //  	  (field $ciphers_len u32)
 //  	  (field $sni_hostname (@witx pointer (@witx char8)))
 //  	  (field $sni_hostname_len u32)
+//        (field $client_certificate (@witx pointer (@witx char8)))
+//        (field $client_certificate_len u32)
+//        (field $client_key $secret_handle)
 //  	  ))
 
 type backendConfigOptions struct {
@@ -769,6 +773,9 @@ type backendConfigOptions struct {
 	ciphersLen          prim.U32
 	sniHostnamePtr      prim.Pointer[prim.Char8]
 	sniHostnameLen      prim.U32
+	clientCertPtr       prim.Pointer[prim.Char8]
+	clientCertLen       prim.U32
+	clientCertKey       secretHandle
 }
 
 // witx:
@@ -874,6 +881,14 @@ func (b *BackendConfigOptions) SNIHostname(sniHostname string) {
 	buf := prim.NewReadBufferFromString(sniHostname)
 	b.opts.sniHostnamePtr = prim.ToPointer(buf.Char8Pointer())
 	b.opts.sniHostnameLen = prim.U32(buf.Len())
+}
+
+func (b *BackendConfigOptions) ClientCert(certificate string, key *Secret) {
+	b.mask |= backendConfigOptionsMaskClientCert
+	buf := prim.NewReadBufferFromString(certificate)
+	b.opts.clientCertPtr = prim.ToPointer(buf.Char8Pointer())
+	b.opts.clientCertLen = prim.U32(buf.Len())
+	b.opts.clientCertKey = key.Handle()
 }
 
 // witx:

@@ -127,6 +127,10 @@ func (s *Secret) Plaintext() ([]byte, error) {
 	}
 }
 
+func (s *Secret) Handle() secretHandle {
+	return s.h
+}
+
 // witx:
 //
 // (@interface func (export "from_bytes")
