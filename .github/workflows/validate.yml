@@ -42,7 +42,7 @@ jobs:
           go-version: stable
       - uses: ./.github/actions/install-tinygo
         with:
-          tinygo-version: '0.31.2'
+          tinygo-version: '0.33.0'
 
       - name: Set up Wasmtime
         uses: bytecodealliance/actions/wasmtime/setup@v1
@@ -57,7 +57,4 @@ jobs:
         run: go test -v -race -tags="fastlyinternaldebug nofastlyhostcalls" ./...
 
       - name: Tests - TinyGo
-        env:
-          GOARCH: wasm
-          GOOS: wasip1
-        run: tinygo test -v -tags="fastlyinternaldebug nofastlyhostcalls" ./...
+        run: tinygo test -v -target=wasip1 -tags="fastlyinternaldebug nofastlyhostcalls" ./...
