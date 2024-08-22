@@ -102,6 +102,13 @@ func (s *Secret) Plaintext() ([]byte, error) {
 	return plaintext, nil
 }
 
+// Handle returns an opaque pointer for other packages which need a Secret.
+//
+// This should not be needed by user code.
+func (s *Secret) Handle() *fastly.Secret {
+	return s.s
+}
+
 // FromBytes creates an instance of the [Secret] type for use with APIs
 // that require it from the provided byte slice.
 //

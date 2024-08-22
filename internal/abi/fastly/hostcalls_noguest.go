@@ -352,6 +352,10 @@ func (s *Secret) Plaintext() ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
+func (s *Secret) Handle() secretHandle {
+	return 0
+}
+
 func SecretFromBytes(b []byte) (*Secret, error) {
 	return nil, fmt.Errorf("not implemented")
 }

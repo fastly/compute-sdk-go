@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
+	"github.com/fastly/compute-sdk-go/secretstore"
 )
 
 var (
@@ -244,38 +245,64 @@ func (b *BackendOptions) UseSSL(v bool) *BackendOptions {
 }
 
 // SSLMinVersion sets the minimum allowed TLS version on SSL connections to this backend.
+// Setting this will enable SSL for the connection as a side effect.
 func (b *BackendOptions) SSLMinVersion(min TLSVersion) *BackendOptions {
+	b.abiOpts.UseSSL(true)
 	b.abiOpts.SSLMinVersion(fastly.TLSVersion(min))
 	return b
 }
 
 // SSLMaxVersion sets the maximum allowed TLS version on SSL connections to this backend.
+// Setting this will enable SSL for the connection as a side effect.
 func (b *BackendOptions) SSLMaxVersion(max TLSVersion) *BackendOptions {
+	b.abiOpts.UseSSL(true)
 	b.abiOpts.SSLMaxVersion(fastly.TLSVersion(max))
 	return b
 }
 
 // CertHostname sets the hostname that the server certificate should declare.
+// Setting this will enable SSL for the connection as a side effect.
 func (b *BackendOptions) CertHostname(host string) *BackendOptions {
+	b.abiOpts.UseSSL(true)
 	b.abiOpts.CertHostname(host)
 	return b
 }
 
 // CACert sets the CA certificate to use when checking the validity of the backend.
+// Setting this will enable SSL for the connection as a side effect.
 func (b *BackendOptions) CACert(cert string) *BackendOptions {
+	b.abiOpts.UseSSL(true)
 	b.abiOpts.CACert(cert)
 	return b
 }
 
 // Ciphers sets the list of OpenSSL ciphers to support for connections to this origin.
+// Setting this will enable SSL for the connection as a side effect.
 func (b *BackendOptions) Ciphers(ciphers string) *BackendOptions {
+	b.abiOpts.UseSSL(true)
 	b.abiOpts.Ciphers(ciphers)
 	return b
 }
 
 // SNIHostname sets the SNI hostname to use on connections to this backend.
+// Setting this will enable SSL for the connection as a side effect.
 func (b *BackendOptions) SNIHostname(host string) *BackendOptions {
+	b.abiOpts.UseSSL(true)
 	b.abiOpts.SNIHostname(host)
+	return b
+}
+
+// ClientCertificate sets the client certificate to be provided to the server as part of the SSL handshake.
+// Setting this will enable SSL for the connection as a side effect.
+func (b *BackendOptions) ClientCertificate(certificate string, key secretstore.Secret) *BackendOptions {
+	b.abiOpts.UseSSL(true)
+	b.abiOpts.ClientCert(certificate, key.Handle())
+	return b
+}
+
+// UseGRPC sets whether or not to connect to the backend via gRPC
+func (b *BackendOptions) UseGRPC(v bool) *BackendOptions {
+	b.abiOpts.UseGRPC(v)
 	return b
 }
 
