@@ -34,13 +34,13 @@ var (
 
 // Store is a read-only representation of a config store.
 type Store struct {
-	abiDict *fastly.Dictionary
+	abiDict *fastly.ConfigStore
 }
 
 // Open returns a config store with the given name. Names are case
 // sensitive.
 func Open(name string) (*Store, error) {
-	d, err := fastly.OpenDictionary(name)
+	d, err := fastly.OpenConfigStore(name)
 	if err != nil {
 		status, ok := fastly.IsFastlyError(err)
 		switch {

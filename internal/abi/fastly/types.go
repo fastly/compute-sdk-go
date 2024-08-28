@@ -293,6 +293,11 @@ type dictionaryHandle handle
 
 // witx:
 //
+//	(typename $config_store_handle (handle))
+type configstoreHandle handle
+
+// witx:
+//
 //	(typename $multi_value_cursor u32)
 type multiValueCursor uint32
 
