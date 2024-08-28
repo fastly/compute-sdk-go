@@ -17,6 +17,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unsafe"
+
+	neturl "net/url"
 )
 
 // Error reports an error and the operation and URL that caused it.
@@ -369,16 +372,16 @@ func escape(s string, mode encoding) string {
 // URL's String method uses the EscapedPath method to obtain the path.
 type URL struct {
 	Scheme      string
-	Opaque      string    // encoded opaque data
-	User        *Userinfo // username and password information
-	Host        string    // host or host:port
-	Path        string    // path (relative paths may omit leading slash)
-	RawPath     string    // encoded path hint (see EscapedPath method)
-	OmitHost    bool      // do not emit empty host (authority)
-	ForceQuery  bool      // append a query ('?') even if RawQuery is empty
-	RawQuery    string    // encoded query values, without '?'
-	Fragment    string    // fragment for references, without '#'
-	RawFragment string    // encoded fragment hint (see EscapedFragment method)
+	Opaque      string           // encoded opaque data
+	User        *neturl.Userinfo // username and password information
+	Host        string           // host or host:port
+	Path        string           // path (relative paths may omit leading slash)
+	RawPath     string           // encoded path hint (see EscapedPath method)
+	OmitHost    bool             // do not emit empty host (authority)
+	ForceQuery  bool             // append a query ('?') even if RawQuery is empty
+	RawQuery    string           // encoded query values, without '?'
+	Fragment    string           // fragment for references, without '#'
+	RawFragment string           // encoded fragment hint (see EscapedFragment method)
 }
 
 // User returns a Userinfo containing the provided username
@@ -564,10 +567,12 @@ func parse(rawURL string, viaRequest bool) (*URL, error) {
 		if i := strings.Index(authority, "/"); i >= 0 {
 			authority, rest = authority[:i], authority[i:]
 		}
-		url.User, url.Host, err = parseAuthority(authority)
+		var urlUser *Userinfo
+		urlUser, url.Host, err = parseAuthority(authority)
 		if err != nil {
 			return nil, err
 		}
+		url.User = (*neturl.Userinfo)(unsafe.Pointer(urlUser))
 	} else if url.Scheme != "" && strings.HasPrefix(rest, "/") {
 		// OmitHost is set to true when rawURL has an empty host (authority).
 		// See golang.org/issue/46059.
@@ -875,7 +880,7 @@ func (u *URL) Redacted() string {
 
 	ru := *u
 	if _, has := ru.User.Password(); has {
-		ru.User = UserPassword(ru.User.Username(), "xxxxx")
+		ru.User = neturl.UserPassword(ru.User.Username(), "xxxxx")
 	}
 	return ru.String()
 }
