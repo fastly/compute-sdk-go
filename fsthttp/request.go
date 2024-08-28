@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
+	intneturl "github.com/fastly/compute-sdk-go/internal/net/url"
 )
 
 // RequestLimits are the limits for the components of an HTTP request.
@@ -149,10 +150,12 @@ func newClientRequest() (*Request, error) {
 		return nil, fmt.Errorf("get URI: %w", err)
 	}
 
-	u, err := url.ParseRequestURI(uri)
+	intu, err := intneturl.ParseRequestURI(uri)
 	if err != nil {
 		return nil, fmt.Errorf("parse URI: %w", err)
 	}
+	uval := url.URL(*intu)
+	u := &uval
 
 	proto, major, minor, err := abiReq.GetVersion()
 	if err != nil {
