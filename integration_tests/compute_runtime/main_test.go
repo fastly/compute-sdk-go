@@ -14,14 +14,14 @@ func TestGetVcpuMs(t *testing.T) {
     t.Errorf("Couldn't get starting vcpu time")
   }
 
-  time.Sleep(5 * time.Second)
+  time.Sleep(2 * time.Second)
 
   end, err := compute.GetVCPUTime()
   if err != nil {
     t.Errorf("Couldn't get ending vcpu time")
   }
 
-  if end - start > time.Second {
+  if end - start > (500 * time.Millisecond) {
     t.Errorf("Sleeping shouldn't count as vcpu time!")
   }
 
