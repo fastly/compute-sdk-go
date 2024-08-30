@@ -36,7 +36,7 @@ jobs:
       - name: Install Viceroy ${{ env.VICEROY_VERSION }}
         shell: 'bash'
         env:
-          VICEROY_VERSION: 0.10.2
+          VICEROY_VERSION: 0.11.0
         run: |
           echo "Install Viceroy ${{ env.VICEROY_VERSION }}..."
           wget --no-verbose https://github.com/fastly/Viceroy/releases/download/v${{ env.VICEROY_VERSION }}/viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz
