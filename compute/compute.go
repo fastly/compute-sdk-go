@@ -4,9 +4,9 @@
 package compute
 
 import (
-  "time"
+	"time"
 
-  "github.com/fastly/compute-sdk-go/internal/abi/fastly"
+	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
 
 // Get the amount of time taken on the vCPU.
@@ -24,13 +24,13 @@ import (
 // The resulting percentage should be relatively stable across different
 // platforms, and useful in doing A/B testing.
 func GetVCPUTime() (time.Duration, error) {
-  milliseconds, err := fastly.GetVCPUMilliseconds()
+	milliseconds, err := fastly.GetVCPUMilliseconds()
 
-  if err != nil {
-    return 0, err
-  }
+	if err != nil {
+		return 0, err
+	}
 
-  result := time.Duration(milliseconds) * time.Millisecond 
+	result := time.Duration(milliseconds) * time.Millisecond
 
-  return result, nil
+	return result, nil
 }
