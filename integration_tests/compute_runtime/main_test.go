@@ -31,10 +31,9 @@ func TestGetVcpuMs(t *testing.T) {
   }
 
   var counter uint64
-  var next time.Duration
 
   counter = 0
-  next = now
+  next := now
   for now == next {
     new_next, err := compute.GetVCPUTime()
     if err != nil {
