@@ -27,7 +27,7 @@ func TestGetVcpuMs(t *testing.T) {
 
   now, err := compute.GetVCPUTime()
   if err != nil {
-    t.Errorf("Couldn't get starting vcpu time")
+    t.Errorf("Couldn't get starting vcpu time (part 2)")
   }
 
   var counter uint64
@@ -37,7 +37,7 @@ func TestGetVcpuMs(t *testing.T) {
   for now == next {
     new_next, err := compute.GetVCPUTime()
     if err != nil {
-      t.Errorf("Couldn't get starting vcpu time")
+      t.Errorf("Couldn't get part 2's recheck of vcpu time")
     }
     next = new_next
     counter += 1
