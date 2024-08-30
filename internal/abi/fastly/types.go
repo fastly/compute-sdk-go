@@ -885,11 +885,11 @@ func (b *BackendConfigOptions) SNIHostname(sniHostname string) {
 }
 
 func (b *BackendConfigOptions) PoolConnections(poolingOn bool) {
-    if poolingOn {
+	if poolingOn {
 		b.mask &^= backendConfigOptionsMaskDontPool
-    } else {
+	} else {
 		b.mask |= backendConfigOptionsMaskDontPool
-    }
+	}
 }
 
 func (b *BackendConfigOptions) ClientCert(certificate string, key *Secret) {
