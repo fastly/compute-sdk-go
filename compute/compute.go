@@ -30,7 +30,7 @@ func GetVCPUTime() (time.Duration, error) {
     return 0, err
   }
 
-  var result time.Duration = time.Duration(milliseconds) * time.Millisecond 
+  result := time.Duration(milliseconds) * time.Millisecond 
 
   return result, nil
 }
