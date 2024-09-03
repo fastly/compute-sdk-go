@@ -300,6 +300,12 @@ func (b *BackendOptions) ClientCertificate(certificate string, key secretstore.S
 	return b
 }
 
+// PoolConnections allows users to turn connection pooling on or off for the
+// backend. Pooling allows the Compute platform to reuse connections across
+// multiple sessions, resulting in lower resource use at the server (because it
+// does not need to reperform the TCP handhsake and TLS authentication when the
+// connection is reused). The default is to pool connections. Set this to false
+// to create a new connection to the backend for every incoming session.
 func (b *BackendOptions) PoolConnections(poolingOn bool) *BackendOptions {
 	b.abiOpts.PoolConnections(poolingOn)
 	return b
