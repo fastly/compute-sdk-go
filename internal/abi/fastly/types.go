@@ -884,6 +884,14 @@ func (b *BackendConfigOptions) SNIHostname(sniHostname string) {
 	b.opts.sniHostnameLen = prim.U32(buf.Len())
 }
 
+func (b *BackendConfigOptions) PoolConnections(poolingOn bool) {
+	if poolingOn {
+		b.mask &^= backendConfigOptionsMaskDontPool
+	} else {
+		b.mask |= backendConfigOptionsMaskDontPool
+	}
+}
+
 func (b *BackendConfigOptions) ClientCert(certificate string, key *Secret) {
 	b.mask |= backendConfigOptionsMaskClientCert
 	buf := prim.NewReadBufferFromString(certificate)
