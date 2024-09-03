@@ -313,6 +313,24 @@ func (d *Dictionary) Has(key string) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
+type ConfigStore struct{}
+
+func OpenConfigStore(name string) (*ConfigStore, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (d *ConfigStore) GetBytes(key string) ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (d *ConfigStore) Get(key string) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+func (d *ConfigStore) Has(key string) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
 func GeoLookup(ip net.IP) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
