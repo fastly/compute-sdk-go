@@ -177,6 +177,14 @@ func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
 	return fmt.Errorf("not implemented")
 }
 
+func (r *HTTPResponse) GetAddrDestIP() (net.IP, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPResponse) GetAddrDestPort() (uint16, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
 func HandoffWebsocket(backend string) error {
 	return fmt.Errorf("not implemented")
 }

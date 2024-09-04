@@ -1871,6 +1871,70 @@ func (r *HTTPResponse) SetFramingHeadersMode(manual bool) error {
 
 // witx:
 //
+//	;;; Hostcall for getting the destination IP used for this request.
+//	;;;
+//	;;; The buffer for the IP address must be 16 bytes.
+//	;;; syntax used in URLs as specified in RFC 3986 section 3.
+//	(@interface func (export "get_addr_dest_ip")
+//		(param $h $response_handle)
+//		;; must be a 16-byte array
+//		(param $addr_octets_out (@witx pointer (@witx char8)))
+//		(result $err (expected $num_bytes (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_resp get_addr_dest_ip
+//go:noescape
+func fastlyHTTPRespGetAddrDestIP(
+	h responseHandle,
+	addr prim.Pointer[prim.Char8],
+	nWritten prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// GetAddrDestIP
+func (r *HTTPResponse) GetAddrDestIP() (net.IP, error) {
+	buf := prim.NewWriteBuffer(ipBufLen)
+
+	if err := fastlyHTTPRespGetAddrDestIP(
+		r.h,
+		prim.ToPointer(buf.Char8Pointer()),
+		prim.ToPointer(buf.NPointer()),
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	return net.IP(buf.AsBytes()), nil
+}
+
+// witx:
+//
+//	;;; Hostcall for getting the destination port used for this request.
+//	(@interface func (export "get_addr_dest_port")
+//		(param $h $response_handle)
+//		(result $err (expected $port (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_resp get_addr_dest_port
+//go:noescape
+func fastlyHTTPRespGetAddrDestPort(
+	h responseHandle,
+	port prim.Pointer[prim.U16],
+) FastlyStatus
+
+// GetAddrDestPort
+func (r *HTTPResponse) GetAddrDestPort() (uint16, error) {
+	var port prim.U16
+
+	if err := fastlyHTTPRespGetAddrDestPort(
+		r.h, prim.ToPointer(&port),
+	).toError(); err != nil {
+		return 0, err
+	}
+
+	return uint16(port), nil
+}
+
+// witx:
+//
 //	(module $fastly_uap
 //	 (@interface func (export "parse")
 //	   (param $user_agent string)

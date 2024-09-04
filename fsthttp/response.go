@@ -5,6 +5,7 @@ package fsthttp
 import (
 	"fmt"
 	"io"
+	"net"
 	"sync"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
@@ -32,6 +33,12 @@ type Response struct {
 
 	// Body of the response.
 	Body io.ReadCloser
+
+	// BackendAddrIP is the ip address of the server that sent the response.
+	BackendAddrIP net.IP
+
+	// BackendAddrPort is the port of the server that sent the response.
+	BackendAddrPort uint16
 }
 
 // Cookies parses and returns the cookies set in the Set-Cookie headers.
@@ -62,12 +69,24 @@ func newResponse(req *Request, backend string, abiResp *fastly.HTTPResponse, abi
 		return nil, fmt.Errorf("read header keys: %w", err)
 	}
 
+	addr, err := abiResp.GetAddrDestIP()
+	if err != nil {
+		return nil, fmt.Errorf("get addr dest ip: %w", err)
+	}
+
+	port, err := abiResp.GetAddrDestPort()
+	if err != nil {
+		return nil, fmt.Errorf("get addr dest port: %w", err)
+	}
+
 	return &Response{
-		Request:    req,
-		Backend:    backend,
-		StatusCode: code,
-		Header:     header,
-		Body:       abiBody,
+		Request:         req,
+		Backend:         backend,
+		StatusCode:      code,
+		Header:          header,
+		Body:            abiBody,
+		BackendAddrIP:   addr,
+		BackendAddrPort: port,
 	}, nil
 }
 
