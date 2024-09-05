@@ -717,7 +717,11 @@ type purgeOptions struct {
 //       $ca_cert
 //       $ciphers
 //       $sni_hostname
-//       $dont_pool))
+//       $dont_pool
+//       $client_cert
+//       $grpc
+//       $keepalive
+//       ))
 
 type backendConfigOptionsMask prim.U32
 
@@ -737,6 +741,7 @@ const (
 	backendConfigOptionsMaskDontPool            backendConfigOptionsMask = 1 << 12 // $dont_pool
 	backendConfigOptionsMaskClientCert          backendConfigOptionsMask = 1 << 13 // $client_cert
 	backendConfigOptionsMaskGRPC                backendConfigOptionsMask = 1 << 14 // $grpc
+	backendConfigOptionsMaskKeepalive           backendConfigOptionsMask = 1 << 15 // $keepalive
 )
 
 // witx:
@@ -761,27 +766,37 @@ const (
 //        (field $client_certificate (@witx pointer (@witx char8)))
 //        (field $client_certificate_len u32)
 //        (field $client_key $secret_handle)
+//        (field $http_keepalive_time_ms $timeout_ms)
+//        (field $tcp_keepalive_enable u32)
+//        (field $tcp_keepalive_interval_secs $timeout_secs)
+//        (field $tcp_keepalive_probes $probe_count)
+//        (field $tcp_keepalive_time_secs $timeout_secs)
 //  	  ))
 
 type backendConfigOptions struct {
-	hostOverridePtr     prim.Pointer[prim.Char8]
-	hostOverrideLen     prim.U32
-	connectTimeoutMs    prim.U32
-	firstByteTimeout    prim.U32
-	betweenBytesTimeout prim.U32
-	sslMinVersion       TLSVersion
-	sslMaxVersion       TLSVersion
-	certHostnamePtr     prim.Pointer[prim.Char8]
-	certHostnameLen     prim.U32
-	caCertPtr           prim.Pointer[prim.Char8]
-	caCertLen           prim.U32
-	ciphersPtr          prim.Pointer[prim.Char8]
-	ciphersLen          prim.U32
-	sniHostnamePtr      prim.Pointer[prim.Char8]
-	sniHostnameLen      prim.U32
-	clientCertPtr       prim.Pointer[prim.Char8]
-	clientCertLen       prim.U32
-	clientCertKey       secretHandle
+	hostOverridePtr          prim.Pointer[prim.Char8]
+	hostOverrideLen          prim.U32
+	connectTimeoutMs         prim.U32
+	firstByteTimeout         prim.U32
+	betweenBytesTimeout      prim.U32
+	sslMinVersion            TLSVersion
+	sslMaxVersion            TLSVersion
+	certHostnamePtr          prim.Pointer[prim.Char8]
+	certHostnameLen          prim.U32
+	caCertPtr                prim.Pointer[prim.Char8]
+	caCertLen                prim.U32
+	ciphersPtr               prim.Pointer[prim.Char8]
+	ciphersLen               prim.U32
+	sniHostnamePtr           prim.Pointer[prim.Char8]
+	sniHostnameLen           prim.U32
+	clientCertPtr            prim.Pointer[prim.Char8]
+	clientCertLen            prim.U32
+	clientCertKey            secretHandle
+	httpKeepaliveTimeMs      prim.U32
+	tcpKeepaliveEnable       prim.U32
+	tcpKeepaliveIntervalSecs prim.U32
+	tcpKeepaliveProbes       prim.U32
+	tcpKeepaliveTimeSecs     prim.U32
 }
 
 // witx:
@@ -911,6 +926,40 @@ func (b *BackendConfigOptions) UseGRPC(v bool) {
 	} else {
 		b.mask &^= backendConfigOptionsMaskGRPC
 	}
+}
+
+func (b *BackendConfigOptions) HttpKeepaliveTime(t time.Duration) {
+	b.mask |= backendConfigOptionsMaskKeepalive
+	b.opts.httpKeepaliveTimeMs = prim.U32(t.Milliseconds())
+}
+
+func (b *BackendConfigOptions) TcpKeepaliveEnable(v bool) {
+	b.mask |= backendConfigOptionsMaskKeepalive
+	if v {
+		b.opts.tcpKeepaliveEnable = prim.U32(1)
+	} else {
+		b.opts.tcpKeepaliveEnable = prim.U32(0)
+	}
+}
+
+func (b *BackendConfigOptions) TcpKeepaliveInterval(t time.Duration) {
+	b.mask |= backendConfigOptionsMaskKeepalive
+	b.opts.tcpKeepaliveEnable = prim.U32(1)
+	b.opts.tcpKeepaliveIntervalSecs = prim.U32(t.Seconds())
+}
+
+func (b *BackendConfigOptions) TcpKeepaliveProbes(count uint32) {
+	if count > 0 {
+		b.mask |= backendConfigOptionsMaskKeepalive
+		b.opts.tcpKeepaliveEnable = prim.U32(1)
+		b.opts.tcpKeepaliveProbes = prim.U32(count)
+	}
+}
+
+func (b *BackendConfigOptions) TcpKeepaliveTime(t time.Duration) {
+	b.mask |= backendConfigOptionsMaskKeepalive
+	b.opts.tcpKeepaliveEnable = prim.U32(1)
+	b.opts.tcpKeepaliveTimeSecs = prim.U32(t.Seconds())
 }
 
 // witx:
