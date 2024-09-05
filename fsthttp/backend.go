@@ -311,6 +311,49 @@ func (b *BackendOptions) PoolConnections(poolingOn bool) *BackendOptions {
 	return b
 }
 
+// HttpKeepaliveTime configures how long to allow HTTP connections to remain
+// idle in a connection pool before it should be considered closed.
+func (b *BackendOptions) HttpKeepaliveTime(time time.Duration) *BackendOptions {
+	b.abiOpts.HttpKeepaliveTime(time)
+	return b
+}
+
+// TcpKeepaliveEnable sets whether or not to use TCP keepalives to try to
+// maintain the connetion to the backend.
+func (b *BackendOptions) TcpKeepaliveEnable(enable bool) *BackendOptions {
+	b.abiOpts.TcpKeepaliveEnable(enable)
+	return b
+}
+
+// TcpKeepaliveInterval sets the interval to use when sending TCP keepalive
+// probes. Setting this value implicitly enables TCP keepalives. Intervals of
+// less than 1 second will be rounded up to 1 second.
+func (b *BackendOptions) TcpKeepaliveInterval(interval time.Duration) *BackendOptions {
+	if interval < time.Second {
+		interval = time.Second
+	}
+
+	b.abiOpts.TcpKeepaliveInterval(interval)
+
+	return b
+}
+
+// TcpKeepaliveProbes sets how many failed TCP probes we should send to the
+// backend before we consider the connection dead. Setting this value
+// implicitly enables TCP keepalives.
+func (b *BackendOptions) TcpKeepaliveProbes(count uint32) *BackendOptions {
+	b.abiOpts.TcpKeepaliveProbes(count)
+	return b
+}
+
+// TcpKeepaliveTime sets how long to wait after the last data was sent before
+// starting to send keepalive probes. Setting this value implicitly enables
+// TCP keepalives.
+func (b *BackendOptions) TcpKeepaliveTime(interval time.Duration) *BackendOptions {
+	b.abiOpts.TcpKeepaliveTime(interval)
+	return b
+}
+
 // UseGRPC sets whether or not to connect to the backend via gRPC
 func (b *BackendOptions) UseGRPC(v bool) *BackendOptions {
 	b.abiOpts.UseGRPC(v)
