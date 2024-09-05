@@ -326,8 +326,11 @@ func (b *BackendOptions) TcpKeepaliveEnable(enable bool) *BackendOptions {
 }
 
 // TcpKeepaliveInterval sets the interval to use when sending TCP keepalive
-// probes. Setting this value implicitly enables TCP keepalives. Intervals of
-// less than 1 second will be rounded up to 1 second.
+// probes. Intervals of less than 1 second will be rounded up to 1 second.
+//
+// Setting this value implicitly enables TCP keepalives. If you are calling both
+// this method and `TcpKeepAliveEnable` with dynamically loaded or generated
+// values, make sure to call `TcpKeepAliveEnable` last.
 func (b *BackendOptions) TcpKeepaliveInterval(interval time.Duration) *BackendOptions {
 	if interval < time.Second {
 		interval = time.Second
