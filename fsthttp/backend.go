@@ -341,7 +341,7 @@ func (b *BackendOptions) TcpKeepaliveInterval(interval time.Duration) *BackendOp
 	return b
 }
 
-// TcpKeepaliveProbes sets how many failed TCP probes we should send to the
+// TcpKeepaliveProbes sets how many unanswered TCP probes we should send to the
 // backend before we consider the connection dead. Setting this value
 // implicitly enables TCP keepalives.
 func (b *BackendOptions) TcpKeepaliveProbes(count uint32) *BackendOptions {
