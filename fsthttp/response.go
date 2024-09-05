@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"sync"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
@@ -34,16 +35,48 @@ type Response struct {
 	// Body of the response.
 	Body io.ReadCloser
 
-	// BackendAddrIP is the ip address of the server that sent the response.
-	BackendAddrIP net.IP
-
-	// BackendAddrPort is the port of the server that sent the response.
-	BackendAddrPort uint16
+	abi struct {
+		resp *fastly.HTTPResponse
+	}
 }
 
 // Cookies parses and returns the cookies set in the Set-Cookie headers.
 func (resp *Response) Cookies() []*Cookie {
 	return readSetCookies(resp.Header)
+}
+
+// RemoteAddr returns the address of the server that provided the response.
+func (resp *Response) RemoteAddr() (net.Addr, error) {
+
+	var addr netaddr
+	var err error
+
+	addr.ip, err = resp.abi.resp.GetAddrDestIP()
+	if err != nil {
+		return nil, fmt.Errorf("get addr dest ip: %w", err)
+	}
+
+	addr.port, err = resp.abi.resp.GetAddrDestPort()
+	if err != nil {
+		return nil, fmt.Errorf("get addr dest port: %w", err)
+	}
+
+	return &addr, nil
+}
+
+type netaddr struct {
+	ip   net.IP
+	port uint16
+}
+
+var _ net.Addr = (*netaddr)(nil)
+
+func (n *netaddr) Network() string {
+	return "tcp"
+}
+
+func (n *netaddr) String() string {
+	return net.JoinHostPort(n.ip.String(), strconv.Itoa(int(n.port)))
 }
 
 func newResponse(req *Request, backend string, abiResp *fastly.HTTPResponse, abiBody *fastly.HTTPBody) (*Response, error) {
@@ -69,24 +102,12 @@ func newResponse(req *Request, backend string, abiResp *fastly.HTTPResponse, abi
 		return nil, fmt.Errorf("read header keys: %w", err)
 	}
 
-	addr, err := abiResp.GetAddrDestIP()
-	if err != nil {
-		return nil, fmt.Errorf("get addr dest ip: %w", err)
-	}
-
-	port, err := abiResp.GetAddrDestPort()
-	if err != nil {
-		return nil, fmt.Errorf("get addr dest port: %w", err)
-	}
-
 	return &Response{
-		Request:         req,
-		Backend:         backend,
-		StatusCode:      code,
-		Header:          header,
-		Body:            abiBody,
-		BackendAddrIP:   addr,
-		BackendAddrPort: port,
+		Request:    req,
+		Backend:    backend,
+		StatusCode: code,
+		Header:     header,
+		Body:       abiBody,
 	}, nil
 }
 
