@@ -928,12 +928,12 @@ func (b *BackendConfigOptions) UseGRPC(v bool) {
 	}
 }
 
-func (b *BackendConfigOptions) HttpKeepaliveTime(t time.Duration) {
+func (b *BackendConfigOptions) HTTPKeepaliveTime(t time.Duration) {
 	b.mask |= backendConfigOptionsMaskKeepalive
 	b.opts.httpKeepaliveTimeMs = prim.U32(t.Milliseconds())
 }
 
-func (b *BackendConfigOptions) TcpKeepaliveEnable(v bool) {
+func (b *BackendConfigOptions) TCPKeepaliveEnable(v bool) {
 	b.mask |= backendConfigOptionsMaskKeepalive
 	if v {
 		b.opts.tcpKeepaliveEnable = prim.U32(1)
@@ -942,13 +942,13 @@ func (b *BackendConfigOptions) TcpKeepaliveEnable(v bool) {
 	}
 }
 
-func (b *BackendConfigOptions) TcpKeepaliveInterval(t time.Duration) {
+func (b *BackendConfigOptions) TCPKeepaliveInterval(t time.Duration) {
 	b.mask |= backendConfigOptionsMaskKeepalive
 	b.opts.tcpKeepaliveEnable = prim.U32(1)
 	b.opts.tcpKeepaliveIntervalSecs = prim.U32(t.Seconds())
 }
 
-func (b *BackendConfigOptions) TcpKeepaliveProbes(count uint32) {
+func (b *BackendConfigOptions) TCPKeepaliveProbes(count uint32) {
 	if count > 0 {
 		b.mask |= backendConfigOptionsMaskKeepalive
 		b.opts.tcpKeepaliveEnable = prim.U32(1)
@@ -956,7 +956,7 @@ func (b *BackendConfigOptions) TcpKeepaliveProbes(count uint32) {
 	}
 }
 
-func (b *BackendConfigOptions) TcpKeepaliveTime(t time.Duration) {
+func (b *BackendConfigOptions) TCPKeepaliveTime(t time.Duration) {
 	b.mask |= backendConfigOptionsMaskKeepalive
 	b.opts.tcpKeepaliveEnable = prim.U32(1)
 	b.opts.tcpKeepaliveTimeSecs = prim.U32(t.Seconds())
