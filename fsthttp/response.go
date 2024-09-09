@@ -5,6 +5,8 @@ package fsthttp
 import (
 	"fmt"
 	"io"
+	"net"
+	"strconv"
 	"sync"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
@@ -32,11 +34,49 @@ type Response struct {
 
 	// Body of the response.
 	Body io.ReadCloser
+
+	abi struct {
+		resp *fastly.HTTPResponse
+	}
 }
 
 // Cookies parses and returns the cookies set in the Set-Cookie headers.
 func (resp *Response) Cookies() []*Cookie {
 	return readSetCookies(resp.Header)
+}
+
+// RemoteAddr returns the address of the server that provided the response.
+func (resp *Response) RemoteAddr() (net.Addr, error) {
+
+	var addr netaddr
+	var err error
+
+	addr.ip, err = resp.abi.resp.GetAddrDestIP()
+	if err != nil {
+		return nil, fmt.Errorf("get addr dest ip: %w", err)
+	}
+
+	addr.port, err = resp.abi.resp.GetAddrDestPort()
+	if err != nil {
+		return nil, fmt.Errorf("get addr dest port: %w", err)
+	}
+
+	return &addr, nil
+}
+
+type netaddr struct {
+	ip   net.IP
+	port uint16
+}
+
+var _ net.Addr = (*netaddr)(nil)
+
+func (n *netaddr) Network() string {
+	return "tcp"
+}
+
+func (n *netaddr) String() string {
+	return net.JoinHostPort(n.ip.String(), strconv.Itoa(int(n.port)))
 }
 
 func newResponse(req *Request, backend string, abiResp *fastly.HTTPResponse, abiBody *fastly.HTTPBody) (*Response, error) {
