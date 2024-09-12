@@ -1,9 +1,21 @@
-## Unreleased
+
+## 1.3.3 (2024-09-12)
 
 ### Added
 
 - kvstore: add ErrTooManyRequests
 - fsthttp: add ServerAddr to Request
+- fsthttp: add pluggable URL parser
+- fsthttp: add TCP and HTTP keepalives configuration for backends
+- fsthttp: add RemoteAddr to Response
+- fsthttp: add pooling connection configuration for backends
+- compute: add GetVCPUMilliseconds
+- fsthttp: add client certificate configuration for backends
+- fsthttp: add grpc flag for backends
+
+### Changed
+
+- configstore: switch to new configstore hostcalls
 
 ## 1.3.2 (2024-06-25)
 
