@@ -9,17 +9,7 @@ import (
 )
 
 func TestSecretStore(t *testing.T) {
-	st, err := secretstore.Open("phrases")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s, err := st.Get("my_phrase")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	v, err := s.Plaintext()
+	v, err := secretstore.Plaintext("phrases", "my_phrase")
 	if err != nil {
 		t.Fatal(err)
 	}
