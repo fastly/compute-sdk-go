@@ -11,28 +11,12 @@ import (
 
 func main() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		st, err := secretstore.Open("example_secretstore")
+		v, err := secretstore.Plaintext("example_secretstore", "my_secret")
 		switch {
-		case errors.Is(err, secretstore.ErrSecretStoreNotFound):
+		case errors.Is(err, secretstore.ErrSecretStoreNotFound) || errors.Is(err, secretstore.ErrSecretNotFound):
 			fsthttp.Error(w, err.Error(), fsthttp.StatusNotFound)
 			return
 		case err != nil:
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
-			return
-		}
-
-		s, err := st.Get("my_secret")
-		switch {
-		case errors.Is(err, secretstore.ErrSecretNotFound):
-			fsthttp.Error(w, err.Error(), fsthttp.StatusNotFound)
-			return
-		case err != nil:
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
-			return
-		}
-
-		v, err := s.Plaintext()
-		if err != nil {
 			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
 			return
 		}

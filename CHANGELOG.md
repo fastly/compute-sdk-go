@@ -1,3 +1,8 @@
+## Unreleased
+
+### Added
+
+- secretstore: add Plaintext toplevel convenience function
 
 ## 1.3.3 (2024-09-12)
 

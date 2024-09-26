@@ -129,3 +129,22 @@ func SecretFromBytes(b []byte) (*Secret, error) {
 
 	return &Secret{s: s}, nil
 }
+
+// Plaintext decrypts and returns the secret value as a byte slice for
+// the given secret store and secret name.
+//
+// This is a convenience function that combines the functionality of
+// [Open], [Store.Get], and [Secret.Plaintext].
+func Plaintext(storeName, secretName string) ([]byte, error) {
+	st, err := Open(storeName)
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := st.Get(secretName)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.Plaintext()
+}
