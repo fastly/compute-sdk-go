@@ -326,7 +326,8 @@ type WriteOptions struct {
 	// RequestHeaders are a set of HTTP headers that influence cache
 	// lookups when Vary rules are set.
 	//
-	// This field is only valid for Insert.  If provided for Update,
+	// This field is only valid for Insert outside of a transaction.  If
+	// provided to Insert or Update inside a transaction,
 	// ErrInvalidArgument will be returned.
 	RequestHeaders fsthttp.Header
 
@@ -601,6 +602,9 @@ func (t *Transaction) MustInsertOrUpdate() bool {
 // Inserting an object into the cache will unblock other transactions
 // waiting on this object, streaming the contents to clients as the data
 // is written.
+//
+// The provided write options must not include request headers, and this
+// will return [ErrInvalidArgument] if they do.
 func (t *Transaction) Insert(opts WriteOptions) (WriteCloseAbandoner, error) {
 	wopts, err := abiWriteOptions(opts)
 	if err != nil {
@@ -628,6 +632,9 @@ func (t *Transaction) Insert(opts WriteOptions) (WriteCloseAbandoner, error) {
 // buffer contents for copying to multiple destinations.  This pattern
 // is commonly required when caching an item that also must be provided
 // to, for example, the client response.
+//
+// The provided write options must not include request headers, and this
+// will return [ErrInvalidArgument] if they do.
 func (t *Transaction) InsertAndStreamBack(opts WriteOptions) (WriteCloseAbandoner, *Found, error) {
 	wopts, err := abiWriteOptions(opts)
 	if err != nil {
