@@ -349,15 +349,27 @@ func OpenKVStore(name string) (*KVStore, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (o *KVStore) Lookup(key string) (io.Reader, error) {
-	return nil, fmt.Errorf("not implemented")
+func (o *KVStore) Lookup(key string) (kvstoreLookupHandle, error) {
+	return 0, fmt.Errorf("not implemented")
 }
 
-func (o *KVStore) Insert(key string, value io.Reader) error {
+func (o *KVStore) LookupWait(h kvstoreLookupHandle) (KVLookupResult, error) {
+	return KVLookupResult{}, fmt.Errorf("not implemented")
+}
+
+func (o *KVStore) Insert(key string, value io.Reader) (kvstoreInsertHandle, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func (o *KVStore) InsertWait(h kvstoreInsertHandle) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (o *KVStore) Delete(key string) error {
+func (o *KVStore) Delete(key string) (kvstoreDeleteHandle, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func (o *KVStore) DeleteWait(h kvstoreDeleteHandle) error {
 	return fmt.Errorf("not implemented")
 }
 

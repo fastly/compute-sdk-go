@@ -31,6 +31,18 @@ var (
 	// rate limit.
 	ErrTooManyRequests = errors.New("kvstore: too many requests")
 
+	// ErrInvalidOptions indicates the options provided for this operation were invalid.
+	ErrInvalidOptions = errors.New("kvstore: invalid options")
+
+	// ErrBadRequest indicates the KV Store request was bad.
+	ErrBadRequest = errors.New("kvstore: bad request")
+
+	// ErrPreconditionFailed indicates a precondition for the kvstore operation failed.
+	ErrPreconditionFailed = errors.New("kvstore: precondition failed")
+
+	// ErrPayloadTooLarge indicates the item exceeded the payload limit.
+	ErrPayloadTooLarge = errors.New("kvstore: payload too large")
+
 	// ErrUnexpected indicates than an unexpected error occurred.
 	ErrUnexpected = errors.New("kvstore: unexpected error")
 )
@@ -50,6 +62,9 @@ type Entry struct {
 
 	validString bool
 	s           string
+
+	meta       []byte
+	generation uint32
 }
 
 // String consumes the entire contents of the Entry and returns it as a
@@ -73,6 +88,14 @@ func (e *Entry) String() string {
 	return e.s
 }
 
+func (e *Entry) Meta() []byte {
+	return e.meta
+}
+
+func (e *Entry) Generation() uint32 {
+	return e.generation
+}
+
 // Store represents a Fastly KV store
 type Store struct {
 	kvstore *fastly.KVStore
@@ -80,7 +103,7 @@ type Store struct {
 
 // Open returns a handle to the named kv store
 func Open(name string) (*Store, error) {
-	o, err := fastly.OpenKVStore(name)
+	kv, err := fastly.OpenKVStore(name)
 	if err != nil {
 		status, ok := fastly.IsFastlyError(err)
 		switch {
@@ -93,64 +116,89 @@ func Open(name string) (*Store, error) {
 		}
 	}
 
-	return &Store{kvstore: o}, nil
+	return &Store{kvstore: kv}, nil
 }
 
 // Lookup fetches a key from the associated KV store.  If the key does not
 // exist, Lookup returns the sentinel error [ErrKeyNotFound].
 func (s *Store) Lookup(key string) (*Entry, error) {
-	val, err := s.kvstore.Lookup(key)
+	h, err := s.kvstore.Lookup(key)
 	if err != nil {
-		status, ok := fastly.IsFastlyError(err)
-		switch {
-		case ok && status == fastly.FastlyStatusNone:
-			return nil, ErrKeyNotFound
-		case ok && status == fastly.FastlyStatusInval:
-			return nil, ErrInvalidKey
-		case ok:
-			return nil, fmt.Errorf("%w (%s)", ErrUnexpected, status)
-		default:
-			return nil, err
-		}
+		return nil, mapFastlyErr(err)
 	}
 
-	return &Entry{Reader: val}, err
+	result, err := s.kvstore.LookupWait(h)
+	if err != nil {
+		return nil, mapFastlyErr(err)
+	}
+
+	return &Entry{Reader: result.Body, meta: result.Meta, generation: result.Generation}, nil
 }
 
 // Insert adds a key to the associated KV store.
 func (s *Store) Insert(key string, value io.Reader) error {
-	err := s.kvstore.Insert(key, value)
+	h, err := s.kvstore.Insert(key, value)
 	if err != nil {
-		status, ok := fastly.IsFastlyError(err)
-		switch {
-		case ok && status == fastly.FastlyStatusInval:
-			return ErrInvalidKey
-		case ok && status == fastly.FastlyStatusLimitExceeded:
-			return ErrTooManyRequests
-		case ok:
-			return fmt.Errorf("%w (%s)", ErrUnexpected, status)
-		default:
-			return err
-		}
+		return mapFastlyErr(err)
+	}
+
+	err = s.kvstore.InsertWait(h)
+	if err != nil {
+		return mapFastlyErr(err)
 	}
 	return nil
 }
 
 // Delete removes a key from the associated KV store.
 func (s *Store) Delete(key string) error {
-	err := s.kvstore.Delete(key)
+	h, err := s.kvstore.Delete(key)
 	if err != nil {
-		status, ok := fastly.IsFastlyError(err)
-		switch {
-		case ok && status == fastly.FastlyStatusNone:
-			return ErrKeyNotFound
-		case ok && status == fastly.FastlyStatusInval:
-			return ErrInvalidKey
-		case ok:
-			return fmt.Errorf("%w (%s)", ErrUnexpected, status)
-		default:
-			return err
-		}
+		return mapFastlyErr(err)
+	}
+
+	err = s.kvstore.DeleteWait(h)
+	if err != nil {
+		return mapFastlyErr(err)
 	}
 	return nil
+}
+
+var kvErrToErr = [...]error{
+	// We really shouldn't be returning these
+	fastly.KVErrorUninitialized: ErrUnexpected,
+	fastly.KVErrorOK:            ErrUnexpected,
+
+	// Mapping internal KVErrors to kvstore package-level errors.
+	fastly.KVErrorBadRequest:         ErrBadRequest,
+	fastly.KVErrorNotFound:           ErrKeyNotFound,
+	fastly.KVErrorPreconditionFailed: ErrPreconditionFailed,
+	fastly.KVErrorPayloadTooLarge:    ErrPayloadTooLarge,
+	fastly.KVErrorInternalError:      ErrUnexpected,
+	fastly.KVErrorTooManyRequests:    ErrTooManyRequests,
+}
+
+func mapFastlyErr(err error) error {
+
+	// Is it a kvstore-specific error?
+	if kvErr, ok := err.(fastly.KVError); ok {
+		if kvErr <= fastly.KVErrorTooManyRequests {
+			return kvErrToErr[kvErr]
+		}
+		return fmt.Errorf("%w (%s)", ErrUnexpected, err)
+	}
+
+	// Maybe it was a fastly error?
+	status, ok := fastly.IsFastlyError(err)
+	switch {
+	case ok && status == fastly.FastlyStatusBadf:
+		return ErrStoreNotFound
+	case ok && status == fastly.FastlyStatusInval:
+		return ErrInvalidKey
+	case ok:
+		return fmt.Errorf("%w (%s)", ErrUnexpected, status)
+	}
+
+	// No idea; just return what we have.
+
+	return err
 }

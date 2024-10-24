@@ -8,6 +8,7 @@ package fastly
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"math"
 	"strconv"
 	"time"
@@ -500,8 +501,177 @@ const (
 
 // witx:
 //
-//	(typename $object_store_handle (handle))
-type objectStoreHandle handle
+//	(typename $kv_store_handle (handle))
+//	(typename $kv_store_lookup_handle (handle))
+//	(typename $kv_store_insert_handle (handle))
+//	(typename $kv_store_delete_handle (handle))
+//	(typename $kv_store_list_handle (handle))
+type (
+	kvstoreHandle       handle
+	kvstoreLookupHandle handle
+	kvstoreInsertHandle handle
+	kvstoreDeleteHandle handle
+	kvstoreListHandle   handle
+)
+
+const (
+	invalidKVStoreHandle  = kvstoreHandle(math.MaxUint32 - 1)
+	invalidKVLookupHandle = kvstoreLookupHandle(math.MaxUint32 - 1)
+	invalidKVInsertHandle = kvstoreInsertHandle(math.MaxUint32 - 1)
+	invalidKVDeleteHandle = kvstoreDeleteHandle(math.MaxUint32 - 1)
+	invalidKVListHandle   = kvstoreListHandle(math.MaxUint32 - 1)
+)
+
+type kvLookupConfigMask prim.U32
+
+const (
+	kvLookupConfigFlagReserved kvLookupConfigMask = 1 << 0
+)
+
+type kvLookupConfig struct {
+	reserved prim.U32
+}
+
+type kvDeleteConfigMask prim.U32
+
+const (
+	kvDeleteConfigFlagReserved = 1 << 0
+)
+
+type kvDeleteConfig struct {
+	reserved prim.U32
+}
+
+type kvInsertConfigMask prim.U32
+
+// witx:
+//
+//	    (typename $kv_insert_config_options
+//	    (flags (@witx repr u32)
+//	       $reserved
+//	       $background_fetch
+//	       $if_generation_match
+//	       $metadata
+//	       $time_to_live_sec
+//	       ))
+
+const (
+	kvInsertConfigFlagReserved          kvInsertConfigMask = 1 << 0
+	kvInsertConfigFlagBackgroundFetch   kvInsertConfigMask = 1 << 1
+	kvInsertConfigFlagIfGenerationMatch kvInsertConfigMask = 1 << 2
+	kvInsertConfigFlagMetadata          kvInsertConfigMask = 1 << 3
+	kvInsertConfigFlagTTLSec            kvInsertConfigMask = 1 << 4
+)
+
+// witx:
+//
+//	(typename $kv_insert_mode
+//	    (enum (@witx tag u32)
+//	       $overwrite
+//	       $add
+//	       $append
+//	       $prepend))
+
+type kvInsertMode prim.U32
+
+const (
+	kvInsertModeOverwrite kvInsertMode = 0
+	kvInsertModeAdd       kvInsertMode = 1
+	kvInsertModeAppend    kvInsertMode = 2
+	kvInsertModePrepend   kvInsertMode = 3
+)
+
+// witx:
+//	(typename $kv_insert_config
+//	  (record
+//	    (field $mode $kv_insert_mode)
+//	    (field $if_generation_match u32)
+//	    (field $metadata (@witx pointer (@witx char8)))
+//	    (field $metadata_len u32)
+//	    (field $time_to_live_sec u32)
+//	    ))
+
+type kvInsertConfig struct {
+	Mode              kvInsertMode
+	IfGenerationMatch prim.U32
+	Metadata          prim.Pointer[prim.Char8]
+	MetadataLen       prim.U32
+	TTLSec            prim.U32
+}
+
+const kvstoreMetadataMaxBufLen = 2000
+
+// witx:
+//
+//	(typename $kv_error
+//	    (enum (@witx tag u32)
+//	        ;;; The $kv_error has not been set.
+//	        $uninitialized
+//	        ;;; There was no error.
+//	        $ok
+//	        ;;; KV store cannot or will not process the request due to something that is perceived to be a client error
+//	        ;;; This will map to the api's 400 codes
+//	        $bad_request
+//	        ;;; KV store cannot find the requested resource
+//	        ;;; This will map to the api's 404 codes
+//	        $not_found
+//	        ;;; KV store cannot fulfill the request, as definied by the client's prerequisites (ie. if-generation-match)
+//	        ;;; This will map to the api's 412 codes
+//	        $precondition_failed
+//	        ;;; The size limit for a KV store key was exceeded.
+//	        ;;; This will map to the api's 413 codes
+//	        $payload_too_large
+//	        ;;; The system encountered an unexpected internal error.
+//	        ;;; This will map to all remaining http error codes
+//	        $internal_error
+//	        ;;; Too many requests have been made to the KV store.
+//	        ;;; This will map to the api's 429 codes
+//	        $too_many_requests
+//	        ))
+
+type KVError prim.U32
+
+const (
+	KVErrorUninitialized      KVError = 0
+	KVErrorOK                 KVError = 1
+	KVErrorBadRequest         KVError = 2
+	KVErrorNotFound           KVError = 3
+	KVErrorPreconditionFailed KVError = 4
+	KVErrorPayloadTooLarge    KVError = 5
+	KVErrorInternalError      KVError = 6
+	KVErrorTooManyRequests    KVError = 7
+)
+
+func (e KVError) Error() string {
+
+	switch e {
+
+	case KVErrorUninitialized:
+		return "uninitialized"
+	case KVErrorOK:
+		return "OK"
+	case KVErrorBadRequest:
+		return "bad request"
+	case KVErrorNotFound:
+		return "not found"
+	case KVErrorPreconditionFailed:
+		return "precondition failed"
+	case KVErrorPayloadTooLarge:
+		return "payload too large"
+	case KVErrorInternalError:
+		return "internal error"
+	case KVErrorTooManyRequests:
+		return "too many requests"
+	}
+
+	return "unknown"
+}
+
+type KVLookupResult struct {
+	Body       io.Reader
+	Meta       []byte
+	Generation uint32
+}
 
 // witx:
 //
