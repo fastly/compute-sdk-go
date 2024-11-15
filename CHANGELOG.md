@@ -3,6 +3,7 @@
 ### Added
 
 - secretstore: add Plaintext toplevel convenience function
+- acl: add ACL hostcalls
 
 ## 1.3.3 (2024-09-12)
 
