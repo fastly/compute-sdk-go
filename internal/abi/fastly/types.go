@@ -1464,3 +1464,47 @@ var (
 	CounterDuration50s = CounterDuration{value: 50}
 	CounterDuration60s = CounterDuration{value: 60}
 )
+
+// witx:
+//
+//	;;; A handle to an ACL.
+//	(typename $acl_handle (handle))
+type aclHandle handle
+
+type ACLError prim.U32
+
+// witx:
+//
+//	(enum (@witx tag u32)
+//	    ;;; The $acl_error has not been initialized.
+//	    $uninitialized
+//	    ;;; There was no error.
+//	    $ok
+//	    ;;; This will map to the api's 204 code.
+//	    ;;; It indicates that the request succeeded, yet returned nothing.
+//	    $no_content
+//	    ;;; This will map to the api's 429 code.
+//	    ;;; Too many requests have been made.
+//	    $too_many_requests
+//	   ))
+const (
+	ACLErrorUninitialized   ACLError = 0
+	ACLErrorOK              ACLError = 1
+	ACLErrorNoContent       ACLError = 2
+	ACLErrorTooManyRequests ACLError = 3
+)
+
+func (e ACLError) Error() string {
+	switch e {
+	case ACLErrorUninitialized:
+		return "uninitialized"
+	case ACLErrorOK:
+		return "ok"
+	case ACLErrorNoContent:
+		return "no content"
+	case ACLErrorTooManyRequests:
+		return "too many requests"
+	}
+
+	return "unknown"
+}
