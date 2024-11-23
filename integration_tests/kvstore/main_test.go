@@ -26,6 +26,11 @@ func TestKVStore(t *testing.T) {
 		t.Errorf("Lookup: got %q, want %q", got, want)
 	}
 
+	_, err = store.Lookup("animal")
+	if err == nil {
+		t.Error("expected Lookup failure before insert")
+	}
+
 	err = store.Insert("animal", strings.NewReader("cat"))
 	if err != nil {
 		t.Fatal(err)
@@ -46,7 +51,7 @@ func TestKVStore(t *testing.T) {
 
 	_, err = store.Lookup("animal")
 	if err == nil {
-		t.Error("expected Lookup failure")
+		t.Error("expected Lookup failure after delete")
 	}
 
 	/*
