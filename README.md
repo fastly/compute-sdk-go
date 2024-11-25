@@ -64,11 +64,11 @@ The `fastly-compute.json` file provides a TinyGo target to run Viceroy.  (In the
 
 To run your tests:
 
-    tinygo test -target=fastly-compute.json ./...
+    tinygo test -target=targets/fastly-compute-wasip1.json ./...
 
 You can try it out and make sure your local Viceroy environment is set up correctly by running the integration tests in this repository:
 
-    tinygo test -target=fastly-compute.json ./integration_tests/...
+    tinygo test -target=targets/fastly-compute-wasip1.json ./integration_tests/...
 
 ###  Go
 
