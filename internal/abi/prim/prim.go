@@ -33,6 +33,10 @@ func ToPointer[T any](ptr *T) Pointer[T] {
 	return Pointer[T](uintptr(unsafe.Pointer(ptr)))
 }
 
+func (p Pointer[T]) Ptr() unsafe.Pointer {
+	return unsafe.Pointer(uintptr(p))
+}
+
 // NullPointer makes a null pointer to a byte buffer.
 func NullChar8Pointer() Pointer[Char8] {
 	return Pointer[Char8](uintptr(unsafe.Pointer(nil)))

@@ -568,3 +568,24 @@ func OpenACL(name string) (*ACLHandle, error) {
 func (acl *ACLHandle) Lookup(ip net.IP) (*HTTPBody, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
+type HTTPCacheLookupOptions struct{}
+
+func (HTTPCacheLookupOptions) SetOverrideKey(key []byte) {
+}
+
+func HTTPCacheIsRequestCacheable(req *HTTPRequest) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetSuggestedCacheKey(req *HTTPRequest) ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (httpCacheHandle, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheTransactionLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (httpCacheHandle, error) {
+	return 0, fmt.Errorf("not implemented")
+}
