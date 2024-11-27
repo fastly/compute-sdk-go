@@ -1489,7 +1489,7 @@ const (
 
 type httpCacheLookupOptions struct {
 	overrideKeyPtr prim.Pointer[prim.Char8]
-	overrideKeyLen prim.U32
+	overrideKeyLen prim.Usize
 }
 
 type httpCacheLookupOptionsMask prim.U32
