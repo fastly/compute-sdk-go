@@ -1526,7 +1526,7 @@ type httpCacheWriteOptions struct {
 	// while being revalidated, in nanoseconds.
 	//
 	// If this field is not set, the default value is zero.
-	staleWhilelRevalidateNs httpCacheDurationNs
+	staleWhileRevalidateNs httpCacheDurationNs
 
 	// A list of surrogate keys that may be used to purge this response.
 	//
@@ -1552,11 +1552,11 @@ type httpCacheWriteOptions struct {
 type httpCacheWriteOptionsMask prim.U32
 
 const (
-	httpCacheWriteOptionsFlagReserved             httpCacheLookupOptionsMask = 1 << 0
-	httpCacheWriteOptionsFlagVaryRule             httpCacheLookupOptionsMask = 1 << 1
-	httpCacheWriteOptionsFlagInitialAge           httpCacheLookupOptionsMask = 1 << 2
-	httpCacheWriteOptionsFlagStaleWhileRevalidate httpCacheLookupOptionsMask = 1 << 3
-	httpCacheWriteOptionsFlagSurrogateKeys        httpCacheLookupOptionsMask = 1 << 4
-	httpCacheWriteOptionsFlagLength               httpCacheLookupOptionsMask = 1 << 5
-	httpCacheWriteOptionsFlagSensitiveData        httpCacheLookupOptionsMask = 1 << 6
+	httpCacheWriteOptionsFlagReserved             httpCacheWriteOptionsMask = 1 << 0
+	httpCacheWriteOptionsFlagVaryRule             httpCacheWriteOptionsMask = 1 << 1
+	httpCacheWriteOptionsFlagInitialAge           httpCacheWriteOptionsMask = 1 << 2
+	httpCacheWriteOptionsFlagStaleWhileRevalidate httpCacheWriteOptionsMask = 1 << 3
+	httpCacheWriteOptionsFlagSurrogateKeys        httpCacheWriteOptionsMask = 1 << 4
+	httpCacheWriteOptionsFlagLength               httpCacheWriteOptionsMask = 1 << 5
+	httpCacheWriteOptionsFlagSensitiveData        httpCacheWriteOptionsMask = 1 << 6
 )

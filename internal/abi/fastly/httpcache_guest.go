@@ -16,6 +16,44 @@ func (o *HTTPCacheLookupOptions) SetOverrideKey(key []byte) {
 	o.opts.overrideKeyLen = buf.Len()
 }
 
+type HTTPCacheWriteOptions struct {
+	mask httpCacheWriteOptionsMask
+	opts httpCacheWriteOptions
+}
+
+func (o *HTTPCacheWriteOptions) SetMaxAgeNs(maxAge httpCacheDurationNs) {
+	o.opts.maxAgeNs = maxAge
+	// This field is required; there is no mask bit set.
+}
+
+func (o *HTTPCacheWriteOptions) SetVaryRule(rule string) {
+	buf := prim.NewReadBufferFromString(rule)
+	o.opts.varyRulePtr = prim.ToPointer(buf.Char8Pointer())
+	o.opts.varyRuleLen = buf.Len()
+	o.mask |= httpCacheWriteOptionsFlagVaryRule
+}
+
+func (o *HTTPCacheWriteOptions) SetInitialAgeNs(initialAge httpCacheDurationNs) {
+	o.opts.initialAgeNs = initialAge
+	o.mask |= httpCacheWriteOptionsFlagInitialAge
+}
+
+func (o *HTTPCacheWriteOptions) SetStaleWhileRevalidateNs(staleWhileRevalidateNs httpCacheDurationNs) {
+	o.opts.staleWhileRevalidateNs = staleWhileRevalidateNs
+	o.mask |= httpCacheWriteOptionsFlagStaleWhileRevalidate
+}
+
+func (o *HTTPCacheWriteOptions) SetSurrogateKeys(keys string) {
+	buf := prim.NewReadBufferFromString(keys)
+	o.opts.surrogateKeysPtr = prim.ToPointer(buf.Char8Pointer())
+	o.opts.surrogateKeysLen = buf.Len()
+	o.mask |= httpCacheWriteOptionsFlagSurrogateKeys
+}
+func (o *HTTPCacheWriteOptions) SetLength(length httpCacheObjectLength) {
+	o.opts.length = length
+	o.mask |= httpCacheWriteOptionsFlagLength
+}
+
 // (module $fastly_http_cache
 
 // witx;
