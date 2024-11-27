@@ -219,3 +219,314 @@ func HTTPCacheTransactionLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) 
 
 	return h, nil
 }
+
+// witx:
+//
+//	;;; Insert a response into the cache with the given options, returning a streaming body handle
+//	;;; that is ready for writing or appending.
+//	;;;
+//	;;; Can only be used if the cache handle state includes the `$must_insert_or_update` flag.
+//	;;;
+//	;;; The response is consumed.
+//	(@interface func (export "transaction_insert")
+//	    (param $handle $http_cache_handle)
+//	    (param $resp_handle $response_handle)
+//	    (param $options_mask $http_cache_write_options_mask)
+//	    (param $options (@witx pointer $http_cache_write_options))
+//	    (result $err (expected $body_handle (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_cache transaction_insert
+//go:noescape
+func fastlyHTTPCacheTransactionInsert(
+	h httpCacheHandle,
+	r responseHandle,
+	mask httpCacheWriteOptionsMask,
+	opts prim.Pointer[httpCacheWriteOptions],
+	bodyHandle prim.Pointer[bodyHandle],
+) FastlyStatus
+
+func HTTPCacheTransactionInsert(h httpCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPBody, error) {
+	var body bodyHandle = invalidBodyHandle
+
+	if err := fastlyHTTPCacheTransactionInsert(
+		h,
+		resp.h,
+		opts.mask,
+		prim.ToPointer(&opts.opts),
+		prim.ToPointer(&body),
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	// TODO(dgryski): check for body == invalidBodyHandle
+
+	return &HTTPBody{h: body}, nil
+}
+
+// witx:
+//
+//	;;; Insert a response into the cache with the given options, and return a fresh cache handle
+//	;;; that can be used to retrieve and stream the response while it's being inserted.
+//	;;;
+//	;;; This helps avoid the "slow reader" problem on a teed stream, for example when a program wishes
+//	;;; to store a backend request in the cache while simultaneously streaming to a client in an HTTP
+//	;;; response.
+//	;;;
+//	;;; The response is consumed.
+//	(@interface func (export "transaction_insert_and_stream_back")
+//	    (param $handle $http_cache_handle)
+//	    (param $resp_handle $response_handle)
+//	    (param $options_mask $http_cache_write_options_mask)
+//	    (param $options (@witx pointer $http_cache_write_options))
+//	    (result $err (expected (tuple $body_handle $http_cache_handle) (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_cache transaction_insert_and_stream_back
+//go:noescape
+func fastlyHTTPCacheTransactionInsertAndStreamBack(
+	h httpCacheHandle,
+	r responseHandle,
+	mask httpCacheWriteOptionsMask,
+	opts prim.Pointer[httpCacheWriteOptions],
+	bodyHandle prim.Pointer[bodyHandle],
+	newh prim.Pointer[httpCacheHandle],
+) FastlyStatus
+
+func HTTPCacheTransactionInsertAndStreamback(h httpCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPBody, httpCacheHandle, error) {
+	var body bodyHandle = invalidBodyHandle
+	var newh httpCacheHandle = invalidHTTPCacheHandle
+
+	if err := fastlyHTTPCacheTransactionInsertAndStreamBack(
+		h,
+		resp.h,
+		opts.mask,
+		prim.ToPointer(&opts.opts),
+		prim.ToPointer(&body),
+		prim.ToPointer(&newh),
+	).toError(); err != nil {
+		return nil, 0, err
+	}
+
+	// TODO(dgryski): check for body == invalidBodyHandle
+	// TODO(dgryski): check for newh == invalidHTTPCacheHandle
+
+	return &HTTPBody{h: body}, newh, nil
+}
+
+// witx:
+//
+//	;;; Update freshness lifetime, response headers, and caching settings without updating the
+//	;;; response body.
+//	;;;
+//	;;; Can only be used in if the cache handle state includes both of the flags:
+//	;;; - `$found`
+//	;;; - `$must_insert_or_update`
+//	;;;
+//	;;; The response is consumed.
+//	(@interface func (export "transaction_update")
+//	    (param $handle $http_cache_handle)
+//	    (param $resp_handle $response_handle)
+//	    (param $options_mask $http_cache_write_options_mask)
+//	    (param $options (@witx pointer $http_cache_write_options))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_cache transaction_update
+//go:noescape
+func fastlyHTTPCacheTransactionUpdate(
+	h httpCacheHandle,
+	r responseHandle,
+	mask httpCacheWriteOptionsMask,
+	opts prim.Pointer[httpCacheWriteOptions],
+) FastlyStatus
+
+func HTTPCacheTransactionUpdate(h httpCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) error {
+	if err := fastlyHTTPCacheTransactionUpdate(
+		h,
+		resp.h,
+		opts.mask,
+		prim.ToPointer(&opts.opts),
+	).toError(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// witx:
+//
+//	;;; Update freshness lifetime, response headers, and caching settings without updating the
+//	;;; response body, and return a fresh cache handle that can be used to retrieve and stream the
+//	;;; stored response.
+//	;;;
+//	;;; Can only be used in if the cache handle state includes both of the flags:
+//	;;; - `$found`
+//	;;; - `$must_insert_or_update`
+//	;;;
+//	;;; The response is consumed.
+//	(@interface func (export "transaction_update_and_return_fresh")
+//	    (param $handle $http_cache_handle)
+//	    (param $resp_handle $response_handle)
+//	    (param $options_mask $http_cache_write_options_mask)
+//	    (param $options (@witx pointer $http_cache_write_options))
+//	    (result $err (expected $http_cache_handle (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_cache transaction_update_and_return_fresh
+//go:noescape
+func fastlyHTTPCacheTransactionUpdateAndReturnFresh(
+	h httpCacheHandle,
+	r responseHandle,
+	mask httpCacheWriteOptionsMask,
+	opts prim.Pointer[httpCacheWriteOptions],
+	newh prim.Pointer[httpCacheHandle],
+) FastlyStatus
+
+func HTTPCacheTransactionUpdateAndReturnFresh(h httpCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (httpCacheHandle, error) {
+	var newh = invalidHTTPCacheHandle
+
+	if err := fastlyHTTPCacheTransactionUpdateAndReturnFresh(
+		h,
+		resp.h,
+		opts.mask,
+		prim.ToPointer(&opts.opts),
+		prim.ToPointer(&newh),
+	).toError(); err != nil {
+		return 0, err
+	}
+
+	// TODO(dgryski): check newh == invalidHTTPCacheHandle
+
+	return newh, nil
+}
+
+// witx:
+//
+//	;;; Disable request collapsing and response caching for this cache entry.
+//	;;;
+//	;;; In Varnish terms, this function stores a hit-for-pass object.
+//	;;;
+//	;;; Only the max age and, optionally, the vary rule are read from the options mask and struct
+//	;;; for this function.
+//	(@interface func (export "transaction_record_not_cacheable")
+//	    (param $handle $http_cache_handle)
+//	    (param $options_mask $http_cache_write_options_mask)
+//	    (param $options (@witx pointer $http_cache_write_options))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_cache transaction_record_not_cacheable
+//go:noescape
+func fastlyHTTPCacheTransactionRecordNotCacheable(
+	h httpCacheHandle,
+	mask httpCacheWriteOptionsMask,
+	opts prim.Pointer[httpCacheWriteOptions],
+) FastlyStatus
+
+func HTTPCacheTransactionRecordNotCacheable(h httpCacheHandle, opts *HTTPCacheWriteOptions) error {
+	if err := fastlyHTTPCacheTransactionRecordNotCacheable(
+		h,
+		opts.mask,
+		prim.ToPointer(&opts.opts),
+	).toError(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// witx:
+//
+//	;;; Abandon an obligation to provide a response to the cache.
+//	;;;
+//	;;; Useful if there is an error before streaming is possible, e.g. if a backend is unreachable.
+//	;;;
+//	;;; If there are other requests collapsed on this transaction, one of those other requests will
+//	;;; be awoken and given the obligation to provide a response. Note that if subsequent requests
+//	;;; are unlikely to yield cacheable responses, this may lead to undesired serialization of
+//	;;; requests. Consider using `transaction_record_not_cacheable` to make lookups for this request
+//	;;; bypass the cache.
+//	(@interface func (export "transaction_abandon")
+//	    (param $handle $http_cache_handle)
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_cache transaction_abandon
+//go:noescape
+func fastlyHTTPCacheTransactionAbandon(
+	h httpCacheHandle,
+) FastlyStatus
+
+func HTTPCacheTransactionAbandon(h httpCacheHandle) error {
+	if err := fastlyHTTPCacheTransactionAbandon(
+		h,
+	).toError(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// witx:
+//
+//	;;; Close an ongoing interaction with the cache.
+//	;;;
+//	;;; If the cache handle state includes `$must_insert_or_update` (and hence no insert or update
+//	;;; has been performed), closing the handle cancels any request collapsing, potentially choosing
+//	;;; a new waiter to perform the insertion/update.
+//	(@interface func (export "close")
+//	    (param $handle $http_cache_handle)
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_cache close
+//go:noescape
+func fastlyHTTPCacheTransactionClose(
+	h httpCacheHandle,
+) FastlyStatus
+
+func HTTPCacheTransactionClose(h httpCacheHandle) error {
+	if err := fastlyHTTPCacheTransactionClose(
+		h,
+	).toError(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// witx:
+//
+//    ;;; Prepare a suggested request to make to a backend to satisfy the looked-up request.
+//    ;;;
+//    ;;; If there is a stored, stale response, this suggested request may be for revalidation. If the
+//    ;;; looked-up request is ranged, the suggested request will be unranged in order to try caching
+//    ;;; the entire response.
+//    (@interface func (export "get_suggested_backend_request")
+//        (param $handle $http_cache_handle)
+//        (result $err (expected $request_handle (error $fastly_status)))
+//    )
+//
+//
+
+//go:wasmimport fastly_http_cache get_suggested_backend_request
+//go:noescape
+func fastlyHTTPCacheGetSuggestedBackendRequest(
+	h httpCacheHandle,
+	req prim.Pointer[requestHandle],
+) FastlyStatus
+
+func HTTPCacheGetSuggestedBackendRequest(h httpCacheHandle) (*HTTPRequest, error) {
+	var req requestHandle = invalidRequestHandle
+	if err := fastlyHTTPCacheGetSuggestedBackendRequest(
+		h,
+		prim.ToPointer(&req),
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	// TODO(dgryski): check req == invalidRequestHandle
+
+	return &HTTPRequest{h: req}, nil
+}

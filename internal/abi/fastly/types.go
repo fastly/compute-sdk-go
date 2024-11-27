@@ -272,6 +272,10 @@ const (
 //	(typename $request_handle (handle))
 type requestHandle handle
 
+const (
+	invalidRequestHandle = requestHandle(math.MaxUint32 - 1)
+)
+
 // witx:
 //
 //	(typename $response_handle (handle))
@@ -1465,6 +1469,8 @@ var (
 // http-cache.witx
 
 type httpCacheHandle handle
+
+const invalidHTTPCacheHandle = httpCacheHandle(math.MaxUint32 - 1)
 
 type httpIsCacheable prim.U32
 
