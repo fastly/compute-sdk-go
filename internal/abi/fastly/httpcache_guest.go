@@ -2,7 +2,11 @@
 
 package fastly
 
-import "github.com/fastly/compute-sdk-go/internal/abi/prim"
+import (
+	"unsafe"
+
+	"github.com/fastly/compute-sdk-go/internal/abi/prim"
+)
 
 type HTTPCacheLookupOptions struct {
 	mask httpCacheLookupOptionsMask
@@ -26,6 +30,10 @@ func (o *HTTPCacheWriteOptions) SetMaxAgeNs(maxAge httpCacheDurationNs) {
 	// This field is required; there is no mask bit set.
 }
 
+func (o *HTTPCacheWriteOptions) MaxAgeNs() httpCacheDurationNs {
+	return o.opts.maxAgeNs
+}
+
 func (o *HTTPCacheWriteOptions) SetVaryRule(rule string) {
 	buf := prim.NewReadBufferFromString(rule)
 	o.opts.varyRulePtr = prim.ToPointer(buf.Char8Pointer())
@@ -33,14 +41,30 @@ func (o *HTTPCacheWriteOptions) SetVaryRule(rule string) {
 	o.mask |= httpCacheWriteOptionsFlagVaryRule
 }
 
+func (o *HTTPCacheWriteOptions) VaryRule() (string, bool) {
+	if o.mask&httpCacheWriteOptionsFlagVaryRule == 0 {
+		return "", false
+	}
+
+	return unsafe.String((*byte)(o.opts.varyRulePtr.Ptr()), o.opts.varyRuleLen), true
+}
+
 func (o *HTTPCacheWriteOptions) SetInitialAgeNs(initialAge httpCacheDurationNs) {
 	o.opts.initialAgeNs = initialAge
 	o.mask |= httpCacheWriteOptionsFlagInitialAge
 }
 
+func (o *HTTPCacheWriteOptions) InitialAgeNs(initialAge httpCacheDurationNs) (httpCacheDurationNs, bool) {
+	return o.opts.initialAgeNs, o.mask&httpCacheWriteOptionsFlagInitialAge == httpCacheWriteOptionsFlagInitialAge
+}
+
 func (o *HTTPCacheWriteOptions) SetStaleWhileRevalidateNs(staleWhileRevalidateNs httpCacheDurationNs) {
 	o.opts.staleWhileRevalidateNs = staleWhileRevalidateNs
 	o.mask |= httpCacheWriteOptionsFlagStaleWhileRevalidate
+}
+
+func (o *HTTPCacheWriteOptions) StaleWhileRevalidate(staleWhileRevalidateNs httpCacheDurationNs) (httpCacheDurationNs, bool) {
+	return o.opts.staleWhileRevalidateNs, o.mask&httpCacheWriteOptionsFlagStaleWhileRevalidate == httpCacheWriteOptionsFlagStaleWhileRevalidate
 }
 
 func (o *HTTPCacheWriteOptions) SetSurrogateKeys(keys string) {
@@ -52,6 +76,10 @@ func (o *HTTPCacheWriteOptions) SetSurrogateKeys(keys string) {
 func (o *HTTPCacheWriteOptions) SetLength(length httpCacheObjectLength) {
 	o.opts.length = length
 	o.mask |= httpCacheWriteOptionsFlagLength
+}
+
+func (o *HTTPCacheWriteOptions) Length(length httpCacheObjectLength) (httpCacheObjectLength, bool) {
+	return o.opts.length, o.mask&httpCacheWriteOptionsFlagLength == httpCacheWriteOptionsFlagLength
 }
 
 // (module $fastly_http_cache
@@ -529,4 +557,134 @@ func HTTPCacheGetSuggestedBackendRequest(h httpCacheHandle) (*HTTPRequest, error
 	// TODO(dgryski): check req == invalidRequestHandle
 
 	return &HTTPRequest{h: req}, nil
+}
+
+// witx:
+//
+//    ;;; Prepare a suggested set of cache write options for a given request and response pair.
+//    ;;;
+//    ;;; The ABI of this function includes several unusual types of input and output parameters.
+//    ;;;
+//    ;;; The bits set in the `options_mask` input parameter describe which cache options the guest is
+//    ;;; requesting that the host provide.
+//    ;;;
+//    ;;; The `options` input parameter allows the guest to provide output parameters for
+//    ;;; pointer/length options. When the corresponding bit is set in `options_mask`, the pointer and
+//    ;;; length should be set in this record to be used by the host to provide the output.
+//    ;;;
+//    ;;; The `options_mask_out` output parameter is only used by the host to indicate the status of
+//    ;;; pointer/length data in the `options_out` record. The flag for a given pointer/length
+//    ;;; parameter is set by the host if the corresponding flag was set in `options_mask`, and the
+//    ;;; value is present in the suggested options. If the host returns a status of `$buflen`, the
+//    ;;; same set of flags will be set, but the length value of the corresponding fields in
+//    ;;; `options_out` are set to the lengths that would be required to read the full value from the
+//    ;;; host on a subsequent call.
+//    ;;;
+//    ;;; The `options_out` output parameter is where the host writes the suggested options that were
+//    ;;; requested by the guest in `options_mask`. For pointer/length data, if there was enough room
+//    ;;; to write the suggested option, the length field will contain the length of the data actually
+//    ;;; written, while the pointer field will match the input pointer.
+//    ;;;
+//    ;;; The response is not consumed.
+//    (@interface func (export "get_suggested_cache_options")
+//        (param $handle $http_cache_handle)
+//        (param $response $response_handle)
+//        (param $options_mask $http_cache_write_options_mask)
+//        (param $options (@witx pointer $http_cache_write_options))
+//        (param $options_mask_out (@witx pointer $http_cache_write_options_mask))
+//        (param $options_out (@witx pointer $http_cache_write_options))
+//        (result $err (expected (error $fastly_status)))
+//    )
+
+//go:wasmimport fastly_http_cache get_suggested_cache_options
+//go:noescape
+func fastlyHTTPCacheGetSuggestedCacheOptions(
+	h httpCacheHandle,
+	r responseHandle,
+	inMask httpCacheWriteOptionsMask,
+	inOpts prim.Pointer[httpCacheWriteOptions],
+	outMask prim.Pointer[httpCacheWriteOptionsMask],
+	outOpts prim.Pointer[httpCacheWriteOptions],
+) FastlyStatus
+
+func HTTPCacheGetSuggestedCacheOptions(h httpCacheHandle, r *HTTPResponse, opts *HTTPCacheWriteOptions) error {
+	var out HTTPCacheWriteOptions
+
+	for {
+		status := fastlyHTTPCacheGetSuggestedCacheOptions(
+			h,
+			r.h,
+			opts.mask,
+			prim.ToPointer(&opts.opts),
+			prim.ToPointer(&out.mask),
+			prim.ToPointer(&out.opts),
+		)
+
+		if status == FastlyStatusBufLen {
+			// reallocate buffers in the output struct with their requested lengths
+
+			if out.mask&httpCacheWriteOptionsFlagVaryRule == httpCacheWriteOptionsFlagVaryRule {
+				n := int(out.opts.varyRuleLen)
+				buf := prim.NewWriteBuffer(n)
+				opts.opts.varyRulePtr = prim.ToPointer(buf.Char8Pointer())
+				opts.opts.varyRuleLen = buf.NValue()
+			}
+
+			if out.mask&httpCacheWriteOptionsFlagSurrogateKeys == httpCacheWriteOptionsFlagSurrogateKeys {
+				n := int(out.opts.surrogateKeysLen)
+				buf := prim.NewWriteBuffer(n)
+				opts.opts.surrogateKeysPtr = prim.ToPointer(buf.Char8Pointer())
+				opts.opts.surrogateKeysLen = buf.NValue()
+			}
+
+			continue
+		}
+
+		if err := status.toError(); err != nil {
+			return err
+		}
+
+		break
+	}
+
+	return nil
+}
+
+// witx:
+//
+//	;;; Adjust a response into the appropriate form for storage and provides a storage action recommendation.
+//	;;;
+//	;;; For example, if the looked-up request contains conditional headers, this function will
+//	;;; interpret a `304 Not Modified` response for revalidation by updating headers.
+//	;;;
+//	;;; In addition to the updated response, this function returns the recommended storage action.
+//	(@interface func (export "prepare_response_for_storage")
+//	    (param $handle $http_cache_handle)
+//	    (param $response $response_handle)
+//	    (result $err (expected (tuple $http_storage_action $response_handle) (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_cache prepare_response_for_storage
+//go:noescape
+func fastlyHTTPCachePrepareResponseForStorage(
+	h httpCacheHandle,
+	r responseHandle,
+	action prim.Pointer[httpStorageAction],
+	newr prim.Pointer[responseHandle],
+) FastlyStatus
+
+func HTTPCachePrepareResponseForStorage(h httpCacheHandle, r *HTTPResponse) (httpStorageAction, *HTTPResponse, error) {
+	var action httpStorageAction
+	var newr responseHandle
+
+	if err := fastlyHTTPCachePrepareResponseForStorage(
+		h,
+		r.h,
+		prim.ToPointer(&action),
+		prim.ToPointer(&newr),
+	).toError(); err != nil {
+		return 0, nil, err
+	}
+
+	return action, &HTTPResponse{h: newr}, nil
 }
