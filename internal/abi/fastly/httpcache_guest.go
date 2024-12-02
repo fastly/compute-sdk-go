@@ -688,3 +688,364 @@ func HTTPCachePrepareResponseForStorage(h httpCacheHandle, r *HTTPResponse) (htt
 
 	return action, &HTTPResponse{h: newr}, nil
 }
+
+// witx:
+//
+//    ;;; Retrieve a stored response from the cache, returning the `$none` error if there was no found
+//    ;;; response.
+//    ;;;
+//    ;;; If `transform_for_client` is set, the response will be adjusted according to the looked-up
+//    ;;; request. For example, a response retrieved for a range request may be transformed into a
+//    ;;; `206 Partial Content` response with an appropriate `content-range` header.
+//    (@interface func (export "get_found_response")
+//        (param $handle $http_cache_handle)
+//        (param $transform_for_client u32)
+//        (result $err (expected (tuple $response_handle $body_handle) (error $fastly_status)))
+//    )
+
+//go:wasmimport fastly_http_cache get_found_response
+//go:noescape
+func fastlyHTTPCacheGetFoundResponse(
+	h httpCacheHandle,
+	transform prim.U32, // bool
+	r prim.Pointer[responseHandle],
+	b prim.Pointer[bodyHandle],
+) FastlyStatus
+
+func HTTPCacheGetFoundResponse(h httpCacheHandle, transform bool) (*HTTPResponse, *HTTPBody, error) {
+	var r responseHandle
+	var b bodyHandle
+
+	var t prim.U32
+	if transform {
+		t = 1
+	}
+
+	if err := fastlyHTTPCacheGetFoundResponse(
+		h,
+		t,
+		prim.ToPointer(&r),
+		prim.ToPointer(&b),
+	).toError(); err != nil {
+		return nil, nil, err
+	}
+
+	return &HTTPResponse{h: r}, &HTTPBody{h: b}, nil
+}
+
+// witx:
+//
+//    ;;; Get the state of a cache transaction.
+//    ;;;
+//    ;;; Primarily useful after performing the lookup to determine what subsequent operations are
+//    ;;; possible and whether any insertion or update obligations exist.
+//    (@interface func (export "get_state")
+//        (param $handle $http_cache_handle)
+//        (result $err (expected $cache_lookup_state (error $fastly_status)))
+//    )
+//
+//
+
+//go:wasmimport fastly_http_cache get_state
+//go:noescape
+func fastlyHTTPCacheGetState(
+	h httpCacheHandle,
+	s prim.Pointer[CacheLookupState],
+) FastlyStatus
+
+func HTTPCacheGetState(h httpCacheHandle) (CacheLookupState, error) {
+	var s CacheLookupState
+
+	if err := fastlyHTTPCacheGetState(
+		h,
+		prim.ToPointer(&s),
+	).toError(); err != nil {
+		return 0, err
+	}
+
+	return s, nil
+}
+
+// witx:
+//
+//    ;;; Get the length of the found response, returning the `$none` error if there was no found
+//    ;;; response or no length was provided.
+//    (@interface func (export "get_length")
+//        (param $handle $http_cache_handle)
+//        (result $err (expected $cache_object_length (error $fastly_status)))
+//    )
+
+//go:wasmimport fastly_http_cache get_length
+//go:noescape
+func fastlyHTTPCacheGetLength(
+	h httpCacheHandle,
+	l prim.Pointer[httpCacheObjectLength],
+) FastlyStatus
+
+func HTTPCacheGetLength(h httpCacheHandle) (httpCacheObjectLength, error) {
+	var l httpCacheObjectLength
+
+	if err := fastlyHTTPCacheGetLength(
+		h,
+		prim.ToPointer(&l),
+	).toError(); err != nil {
+		return 0, err
+	}
+
+	return l, nil
+}
+
+// witx:
+//
+//    ;;; Get the configured max age of the found response in nanoseconds, returning the `$none` error
+//    ;;; if there was no found response.
+//    (@interface func (export "get_max_age_ns")
+//        (param $handle $http_cache_handle)
+//        (result $err (expected $cache_duration_ns (error $fastly_status)))
+//    )
+
+//go:wasmimport fastly_http_cache get_max_age_ns
+//go:noescape
+func fastlyHTTPCacheGetMaxAgeNs(
+	h httpCacheHandle,
+	d prim.Pointer[httpCacheDurationNs],
+) FastlyStatus
+
+func HTTPCacheGetMaxAgeNs(h httpCacheHandle) (httpCacheDurationNs, error) {
+	var d httpCacheDurationNs
+
+	if err := fastlyHTTPCacheGetMaxAgeNs(
+		h,
+		prim.ToPointer(&d),
+	).toError(); err != nil {
+		return 0, err
+	}
+
+	return d, nil
+}
+
+// witx:
+//
+//    ;;; Get the configured stale-while-revalidate period of the found response in nanoseconds,
+//    ;;; returning the `$none` error if there was no found response.
+//    (@interface func (export "get_stale_while_revalidate_ns")
+//        (param $handle $http_cache_handle)
+//        (result $err (expected $cache_duration_ns (error $fastly_status)))
+//    )
+//
+//
+
+//go:wasmimport fastly_http_cache get_stale_while_revalidate_ns
+//go:noescape
+func fastlyHTTPCacheGetStaleWhileRevalidateNs(
+	h httpCacheHandle,
+	d prim.Pointer[httpCacheDurationNs],
+) FastlyStatus
+
+func HTTPCacheGetStaleWhileRevalidateNs(h httpCacheHandle) (httpCacheDurationNs, error) {
+	var d httpCacheDurationNs
+
+	if err := fastlyHTTPCacheGetStaleWhileRevalidateNs(
+		h,
+		prim.ToPointer(&d),
+	).toError(); err != nil {
+		return 0, err
+	}
+
+	return d, nil
+}
+
+// witx:
+//
+//    ;;; Get the age of the found response in nanoseconds, returning the `$none` error if there was
+//    ;;; no found response.
+//    (@interface func (export "get_age_ns")
+//        (param $handle $http_cache_handle)
+//        (result $err (expected $cache_duration_ns (error $fastly_status)))
+//    )
+//
+//
+
+//go:wasmimport fastly_http_cache get_age_ns
+//go:noescape
+func fastlyHTTPCacheGetAgeNs(
+	h httpCacheHandle,
+	d prim.Pointer[httpCacheDurationNs],
+) FastlyStatus
+
+func HTTPCacheGetAgeNs(h httpCacheHandle) (httpCacheDurationNs, error) {
+	var d httpCacheDurationNs
+
+	if err := fastlyHTTPCacheGetAgeNs(
+		h,
+		prim.ToPointer(&d),
+	).toError(); err != nil {
+		return 0, err
+	}
+
+	return d, nil
+}
+
+// witx:
+//
+//    ;;; Get the number of cache hits for the found response, returning the `$none` error if there
+//    ;;; was no found response.
+//    ;;;
+//    ;;; Note that this figure only reflects hits for a stored response in a particular cache server
+//    ;;; or cluster, not the entire Fastly network.
+//    (@interface func (export "get_hits")
+//        (param $handle $http_cache_handle)
+//        (result $err (expected $cache_hit_count (error $fastly_status)))
+//    )
+//
+
+//go:wasmimport fastly_http_cache get_hits
+//go:noescape
+func fastlyHTTPCacheGetHits(
+	h httpCacheHandle,
+	c prim.Pointer[httpCacheHitCount],
+) FastlyStatus
+
+func HTTPCacheGetHits(h httpCacheHandle) (httpCacheHitCount, error) {
+	var c httpCacheHitCount
+
+	if err := fastlyHTTPCacheGetHits(
+		h,
+		prim.ToPointer(&c),
+	).toError(); err != nil {
+		return 0, err
+	}
+
+	return c, nil
+}
+
+// witx:
+//
+//    ;;; Get whether a found response is marked as containing sensitive data, returning the `$none`
+//    ;;; error if there was no found response.
+//    (@interface func (export "get_sensitive_data")
+//        (param $handle $http_cache_handle)
+//        (result $err (expected $is_sensitive (error $fastly_status)))
+//    )
+//
+//
+
+//go:wasmimport fastly_http_cache get_sensitive_data
+//go:noescape
+func fastlyHTTPCacheGetSensitiveData(
+	h httpCacheHandle,
+	b prim.Pointer[httpIsSensitive],
+) FastlyStatus
+
+func HTTPCacheGetSensitiveData(h httpCacheHandle) (bool, error) {
+	var b httpIsSensitive
+
+	if err := fastlyHTTPCacheGetSensitiveData(
+		h,
+		prim.ToPointer(&b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return b != 0, nil
+}
+
+// witx:
+//
+//    ;;; Get the surrogate keys of the found response, returning the `$none` error if there was no
+//    ;;; found response.
+//    ;;;
+//    ;;; The output is a list of surrogate keys separated by spaces.
+//    ;;;
+//    ;;; If the guest-provided output parameter is not long enough to contain the full list of
+//    ;;; surrogate keys, the required size is written by the host to `nwritten_out` and the `$buflen`
+//    ;;; error is returned.
+//    (@interface func (export "get_surrogate_keys")
+//        (param $handle $http_cache_handle)
+//        (param $surrogate_keys_out_ptr (@witx pointer u8))
+//        (param $surrogate_keys_out_len (@witx usize))
+//        (param $nwritten_out (@witx pointer (@witx usize)))
+//        (result $err (expected (error $fastly_status)))
+//    )
+//
+
+//go:wasmimport fastly_http_cache get_surrogate_keys
+//go:noescape
+func fastlyHTTPCacheGetSurrogateKeys(
+	h httpCacheHandle,
+	buf prim.Pointer[prim.U8],
+	bufLen prim.Usize,
+	nwritten prim.Pointer[prim.Usize],
+) FastlyStatus
+
+func HTTPCacheGetSurrogateKeys(h httpCacheHandle) (string, error) {
+	n := DefaultMediumBufLen
+
+	for {
+		buf := prim.NewWriteBuffer(n) // Longest (unknown)
+		status := fastlyHTTPCacheGetSurrogateKeys(
+			h,
+			prim.ToPointer(buf.U8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+		if status == FastlyStatusBufLen && buf.NValue() > 0 {
+			n = int(buf.NValue())
+			continue
+		}
+		if err := status.toError(); err != nil {
+			return "", err
+		}
+		return string(buf.AsBytes()), nil
+	}
+}
+
+// witx:
+//
+//    ;;; Get the vary rule of the found response, returning the `$none` error if there was no found
+//    ;;; response.
+//    ;;;
+//    ;;; The output is a list of header names separated by spaces.
+//    ;;;
+//    ;;; If the guest-provided output parameter is not long enough to contain the full list of
+//    ;;; surrogate keys, the required size is written by the host to `nwritten_out` and the `$buflen`
+//    ;;; error is returned.
+//    (@interface func (export "get_vary_rule")
+//        (param $handle $http_cache_handle)
+//        (param $vary_rule_out_ptr (@witx pointer u8))
+//        (param $vary_rule_out_len (@witx usize))
+//        (param $nwritten_out (@witx pointer (@witx usize)))
+//        (result $err (expected (error $fastly_status)))
+//    )
+//
+
+//go:wasmimport fastly_http_cache get_vary_rule
+//go:noescape
+func fastlyHTTPCacheGetVaryRule(
+	h httpCacheHandle,
+	buf prim.Pointer[prim.U8],
+	bufLen prim.Usize,
+	nwritten prim.Pointer[prim.Usize],
+) FastlyStatus
+
+func HTTPCacheGetVaryRule(h httpCacheHandle) (string, error) {
+	n := DefaultMediumBufLen
+
+	for {
+		buf := prim.NewWriteBuffer(n) // Longest (unknown)
+		status := fastlyHTTPCacheGetVaryRule(
+			h,
+			prim.ToPointer(buf.U8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+		if status == FastlyStatusBufLen && buf.NValue() > 0 {
+			n = int(buf.NValue())
+			continue
+		}
+		if err := status.toError(); err != nil {
+			return "", err
+		}
+		return string(buf.AsBytes()), nil
+	}
+}

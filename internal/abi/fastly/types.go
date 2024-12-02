@@ -1478,6 +1478,8 @@ type httpIsSensitive prim.U32
 
 type httpStorageAction prim.U32
 
+type httpCacheHitCount prim.U64
+
 const (
 	// Insert the response into cache (`transaction_insert*`).
 	httpStorageActionInsert httpStorageAction = 0
