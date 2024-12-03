@@ -64,7 +64,7 @@ type Entry struct {
 	s           string
 
 	meta       []byte
-	generation uint32
+	generation uint64
 }
 
 // String consumes the entire contents of the Entry and returns it as a
@@ -92,7 +92,7 @@ func (e *Entry) Meta() []byte {
 	return e.meta
 }
 
-func (e *Entry) Generation() uint32 {
+func (e *Entry) Generation() uint64 {
 	return e.generation
 }
 
