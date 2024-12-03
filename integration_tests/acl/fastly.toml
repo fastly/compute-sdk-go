@@ -1,0 +1,17 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["oss@fastly.com"]
+description = ""
+language = "go"
+manifest_version = 2
+name = "gacls"
+
+
+
+[scripts]
+build = "tinygo build -target=wasip1 -o bin/main.wasm ./"
+
+
+[local_server]
+acls.example = "./acls.json"

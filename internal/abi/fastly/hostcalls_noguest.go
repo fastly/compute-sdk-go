@@ -558,3 +558,13 @@ func PenaltyBoxHas(penaltyBox, entry string) (bool, error) {
 func GetVCPUMilliseconds() (uint64, error) {
 	return 0, fmt.Errorf("not implemented")
 }
+
+type ACLHandle struct{}
+
+func OpenACL(name string) (*ACLHandle, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (acl *ACLHandle) Lookup(ip net.IP) (*HTTPBody, error) {
+	return nil, fmt.Errorf("not implemented")
+}
