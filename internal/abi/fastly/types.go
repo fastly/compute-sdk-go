@@ -558,9 +558,10 @@ type kvInsertConfigMask prim.U32
 const (
 	kvInsertConfigFlagReserved          kvInsertConfigMask = 1 << 0
 	kvInsertConfigFlagBackgroundFetch   kvInsertConfigMask = 1 << 1
-	kvInsertConfigFlagIfGenerationMatch kvInsertConfigMask = 1 << 2
+	kvInsertConfigFlagReserved2         kvInsertConfigMask = 1 << 2
 	kvInsertConfigFlagMetadata          kvInsertConfigMask = 1 << 3
 	kvInsertConfigFlagTTLSec            kvInsertConfigMask = 1 << 4
+	kvInsertConfigFlagIfGenerationMatch kvInsertConfigMask = 1 << 5
 )
 
 // witx:
@@ -585,18 +586,20 @@ const (
 //	(typename $kv_insert_config
 //	  (record
 //	    (field $mode $kv_insert_mode)
-//	    (field $if_generation_match u32)
+//	    (field $unused u32)
 //	    (field $metadata (@witx pointer (@witx char8)))
 //	    (field $metadata_len u32)
 //	    (field $time_to_live_sec u32)
+//	    (field $if_generation_match u32)
 //	    ))
 
 type kvInsertConfig struct {
 	Mode              kvInsertMode
-	IfGenerationMatch prim.U32
+	_                 prim.U32
 	Metadata          prim.Pointer[prim.Char8]
 	MetadataLen       prim.U32
 	TTLSec            prim.U32
+	IfGenerationMatch prim.U64
 }
 
 const kvstoreMetadataMaxBufLen = 2000
@@ -670,7 +673,7 @@ func (e KVError) Error() string {
 type KVLookupResult struct {
 	Body       io.Reader
 	Meta       []byte
-	Generation uint32
+	Generation uint64
 }
 
 // witx:
