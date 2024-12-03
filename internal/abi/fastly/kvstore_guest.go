@@ -122,25 +122,27 @@ func (kv *KVStore) Lookup(key string) (kvstoreLookupHandle, error) {
 
 // witx:
 //
-//          (@interface func (export "lookup_wait")
-//              (param $handle $kv_store_lookup_handle)
-//              (param $body_handle_out (@witx pointer $body_handle))
-//              (param $metadata_buf (@witx pointer (@witx char8)))
-//              (param $metadata_buf_len (@witx usize))
-//              (param $nwritten_out (@witx pointer (@witx usize)))
-//              (param $generation_out (@witx pointer u32))
-//              (param $kv_error_out (@witx pointer $kv_error))
-//              (result $err (expected (error $fastly_status)))
-//          )
+//    (@interface func (export "lookup_wait_v2")
+//        (param $handle $kv_store_lookup_handle)
+//        (param $body_handle_out (@witx pointer $body_handle))
+//        (param $metadata_buf (@witx pointer (@witx char8)))
+//        (param $metadata_buf_len (@witx usize))
+//        (param $nwritten_out (@witx pointer (@witx usize)))
+//        (param $generation_out (@witx pointer u64))
+//        (param $kv_error_out (@witx pointer $kv_error))
+//        (result $err (expected (error $fastly_status)))
+//    )
+//
+//
 
-//go:wasmimport fastly_kv_store lookup_wait
+//go:wasmimport fastly_kv_store lookup_wait_v2
 //go:noescape
 func fastlyKVStoreLookupWait(
 	h kvstoreLookupHandle,
 	b prim.Pointer[bodyHandle],
 	metaData prim.Pointer[prim.U8], metaLen prim.Usize,
 	nwritten prim.Pointer[prim.Usize],
-	generation prim.Pointer[prim.U32],
+	generation prim.Pointer[prim.U64],
 	kvErr prim.Pointer[KVError],
 ) FastlyStatus
 
@@ -149,7 +151,7 @@ func (kv *KVStore) LookupWait(lookupH kvstoreLookupHandle) (KVLookupResult, erro
 	body := HTTPBody{h: invalidBodyHandle}
 
 	meta := prim.NewWriteBuffer(kvstoreMetadataMaxBufLen)
-	var generation prim.U32
+	var generation prim.U64
 
 	var kvErr KVError = KVErrorUninitialized
 
@@ -171,7 +173,7 @@ func (kv *KVStore) LookupWait(lookupH kvstoreLookupHandle) (KVLookupResult, erro
 	result := KVLookupResult{
 		Body:       &body,
 		Meta:       meta.AsBytes(),
-		Generation: uint32(generation),
+		Generation: uint64(generation),
 	}
 
 	return result, nil
