@@ -13,7 +13,7 @@ type HTTPCacheLookupOptions struct {
 	opts httpCacheLookupOptions
 }
 
-func (o *HTTPCacheLookupOptions) SetOverrideKey(key []byte) {
+func (o *HTTPCacheLookupOptions) OverrideKey(key []byte) {
 	o.mask |= httpCacheLookupOptionsFlagOverrideKey
 	buf := prim.NewReadBufferFromBytes(key)
 	o.opts.overrideKeyPtr = prim.ToPointer(buf.Char8Pointer())
@@ -170,6 +170,10 @@ func HTTPCacheGetSuggestedCacheKey(req *HTTPRequest) ([]byte, error) {
 	}
 }
 
+type HTTPCacheHandle struct {
+	h httpCacheHandle
+}
+
 // witx:
 //
 //	;;; Perform a cache lookup based on the given request without participating in request
@@ -192,7 +196,7 @@ func fastlyHTTPCacheLookup(
 	cacheHandle prim.Pointer[httpCacheHandle],
 ) FastlyStatus
 
-func HTTPCacheLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (httpCacheHandle, error) {
+func HTTPCacheLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (*HTTPCacheHandle, error) {
 	var h httpCacheHandle
 
 	if err := fastlyHTTPCacheLookup(
@@ -201,10 +205,10 @@ func HTTPCacheLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (httpCacheH
 		prim.ToPointer(&opts.opts),
 		prim.ToPointer(&h),
 	).toError(); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return h, nil
+	return &HTTPCacheHandle{h: h}, nil
 }
 
 // witx:
@@ -233,7 +237,7 @@ func fastlyHTTPCacheTransactionLookup(
 	cacheHandle prim.Pointer[httpCacheHandle],
 ) FastlyStatus
 
-func HTTPCacheTransactionLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (httpCacheHandle, error) {
+func HTTPCacheTransactionLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (*HTTPCacheHandle, error) {
 	var h httpCacheHandle
 
 	if err := fastlyHTTPCacheLookup(
@@ -242,10 +246,10 @@ func HTTPCacheTransactionLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) 
 		prim.ToPointer(&opts.opts),
 		prim.ToPointer(&h),
 	).toError(); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return h, nil
+	return &HTTPCacheHandle{h: h}, nil
 }
 
 // witx:
@@ -274,11 +278,11 @@ func fastlyHTTPCacheTransactionInsert(
 	bodyHandle prim.Pointer[bodyHandle],
 ) FastlyStatus
 
-func HTTPCacheTransactionInsert(h httpCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPBody, error) {
+func HTTPCacheTransactionInsert(h *HTTPCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPBody, error) {
 	var body bodyHandle = invalidBodyHandle
 
 	if err := fastlyHTTPCacheTransactionInsert(
-		h,
+		h.h,
 		resp.h,
 		opts.mask,
 		prim.ToPointer(&opts.opts),
@@ -321,25 +325,25 @@ func fastlyHTTPCacheTransactionInsertAndStreamBack(
 	newh prim.Pointer[httpCacheHandle],
 ) FastlyStatus
 
-func HTTPCacheTransactionInsertAndStreamback(h httpCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPBody, httpCacheHandle, error) {
+func HTTPCacheTransactionInsertAndStreamback(h *HTTPCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPBody, *HTTPCacheHandle, error) {
 	var body bodyHandle = invalidBodyHandle
 	var newh httpCacheHandle = invalidHTTPCacheHandle
 
 	if err := fastlyHTTPCacheTransactionInsertAndStreamBack(
-		h,
+		h.h,
 		resp.h,
 		opts.mask,
 		prim.ToPointer(&opts.opts),
 		prim.ToPointer(&body),
 		prim.ToPointer(&newh),
 	).toError(); err != nil {
-		return nil, 0, err
+		return nil, nil, err
 	}
 
 	// TODO(dgryski): check for body == invalidBodyHandle
 	// TODO(dgryski): check for newh == invalidHTTPCacheHandle
 
-	return &HTTPBody{h: body}, newh, nil
+	return &HTTPBody{h: body}, &HTTPCacheHandle{h: newh}, nil
 }
 
 // witx:
@@ -369,9 +373,9 @@ func fastlyHTTPCacheTransactionUpdate(
 	opts prim.Pointer[httpCacheWriteOptions],
 ) FastlyStatus
 
-func HTTPCacheTransactionUpdate(h httpCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) error {
+func HTTPCacheTransactionUpdate(h *HTTPCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) error {
 	if err := fastlyHTTPCacheTransactionUpdate(
-		h,
+		h.h,
 		resp.h,
 		opts.mask,
 		prim.ToPointer(&opts.opts),
@@ -411,11 +415,11 @@ func fastlyHTTPCacheTransactionUpdateAndReturnFresh(
 	newh prim.Pointer[httpCacheHandle],
 ) FastlyStatus
 
-func HTTPCacheTransactionUpdateAndReturnFresh(h httpCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (httpCacheHandle, error) {
+func HTTPCacheTransactionUpdateAndReturnFresh(h *HTTPCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (httpCacheHandle, error) {
 	var newh = invalidHTTPCacheHandle
 
 	if err := fastlyHTTPCacheTransactionUpdateAndReturnFresh(
-		h,
+		h.h,
 		resp.h,
 		opts.mask,
 		prim.ToPointer(&opts.opts),
@@ -452,9 +456,9 @@ func fastlyHTTPCacheTransactionRecordNotCacheable(
 	opts prim.Pointer[httpCacheWriteOptions],
 ) FastlyStatus
 
-func HTTPCacheTransactionRecordNotCacheable(h httpCacheHandle, opts *HTTPCacheWriteOptions) error {
+func HTTPCacheTransactionRecordNotCacheable(h *HTTPCacheHandle, opts *HTTPCacheWriteOptions) error {
 	if err := fastlyHTTPCacheTransactionRecordNotCacheable(
-		h,
+		h.h,
 		opts.mask,
 		prim.ToPointer(&opts.opts),
 	).toError(); err != nil {
@@ -486,7 +490,7 @@ func fastlyHTTPCacheTransactionAbandon(
 	h httpCacheHandle,
 ) FastlyStatus
 
-func HTTPCacheTransactionAbandon(h httpCacheHandle) error {
+func HTTPCacheTransactionAbandon(h *HTTPCacheHandle) error {
 	if err := fastlyHTTPCacheTransactionAbandon(
 		h,
 	).toError(); err != nil {
@@ -514,9 +518,9 @@ func fastlyHTTPCacheTransactionClose(
 	h httpCacheHandle,
 ) FastlyStatus
 
-func HTTPCacheTransactionClose(h httpCacheHandle) error {
+func HTTPCacheTransactionClose(h *HTTPCacheHandle) error {
 	if err := fastlyHTTPCacheTransactionClose(
-		h,
+		h.h,
 	).toError(); err != nil {
 		return err
 	}
@@ -545,10 +549,10 @@ func fastlyHTTPCacheGetSuggestedBackendRequest(
 	req prim.Pointer[requestHandle],
 ) FastlyStatus
 
-func HTTPCacheGetSuggestedBackendRequest(h httpCacheHandle) (*HTTPRequest, error) {
+func HTTPCacheGetSuggestedBackendRequest(h *HTTPCacheHandle) (*HTTPRequest, error) {
 	var req requestHandle = invalidRequestHandle
 	if err := fastlyHTTPCacheGetSuggestedBackendRequest(
-		h,
+		h.h,
 		prim.ToPointer(&req),
 	).toError(); err != nil {
 		return nil, err
@@ -607,12 +611,12 @@ func fastlyHTTPCacheGetSuggestedCacheOptions(
 	outOpts prim.Pointer[httpCacheWriteOptions],
 ) FastlyStatus
 
-func HTTPCacheGetSuggestedCacheOptions(h httpCacheHandle, r *HTTPResponse, opts *HTTPCacheWriteOptions) error {
+func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts *HTTPCacheWriteOptions) error {
 	var out HTTPCacheWriteOptions
 
 	for {
 		status := fastlyHTTPCacheGetSuggestedCacheOptions(
-			h,
+			h.h,
 			r.h,
 			opts.mask,
 			prim.ToPointer(&opts.opts),
@@ -673,12 +677,12 @@ func fastlyHTTPCachePrepareResponseForStorage(
 	newr prim.Pointer[responseHandle],
 ) FastlyStatus
 
-func HTTPCachePrepareResponseForStorage(h httpCacheHandle, r *HTTPResponse) (httpStorageAction, *HTTPResponse, error) {
+func HTTPCachePrepareResponseForStorage(h *HTTPCacheHandle, r *HTTPResponse) (httpStorageAction, *HTTPResponse, error) {
 	var action httpStorageAction
 	var newr responseHandle
 
 	if err := fastlyHTTPCachePrepareResponseForStorage(
-		h,
+		h.h,
 		r.h,
 		prim.ToPointer(&action),
 		prim.ToPointer(&newr),
@@ -712,7 +716,7 @@ func fastlyHTTPCacheGetFoundResponse(
 	b prim.Pointer[bodyHandle],
 ) FastlyStatus
 
-func HTTPCacheGetFoundResponse(h httpCacheHandle, transform bool) (*HTTPResponse, *HTTPBody, error) {
+func HTTPCacheGetFoundResponse(h *HTTPCacheHandle, transform bool) (*HTTPResponse, *HTTPBody, error) {
 	var r responseHandle
 	var b bodyHandle
 
@@ -722,7 +726,7 @@ func HTTPCacheGetFoundResponse(h httpCacheHandle, transform bool) (*HTTPResponse
 	}
 
 	if err := fastlyHTTPCacheGetFoundResponse(
-		h,
+		h.h,
 		t,
 		prim.ToPointer(&r),
 		prim.ToPointer(&b),
@@ -753,11 +757,11 @@ func fastlyHTTPCacheGetState(
 	s prim.Pointer[CacheLookupState],
 ) FastlyStatus
 
-func HTTPCacheGetState(h httpCacheHandle) (CacheLookupState, error) {
+func HTTPCacheGetState(h *HTTPCacheHandle) (CacheLookupState, error) {
 	var s CacheLookupState
 
 	if err := fastlyHTTPCacheGetState(
-		h,
+		h.h,
 		prim.ToPointer(&s),
 	).toError(); err != nil {
 		return 0, err
@@ -782,11 +786,11 @@ func fastlyHTTPCacheGetLength(
 	l prim.Pointer[httpCacheObjectLength],
 ) FastlyStatus
 
-func HTTPCacheGetLength(h httpCacheHandle) (httpCacheObjectLength, error) {
+func HTTPCacheGetLength(h *HTTPCacheHandle) (httpCacheObjectLength, error) {
 	var l httpCacheObjectLength
 
 	if err := fastlyHTTPCacheGetLength(
-		h,
+		h.h,
 		prim.ToPointer(&l),
 	).toError(); err != nil {
 		return 0, err
@@ -811,11 +815,11 @@ func fastlyHTTPCacheGetMaxAgeNs(
 	d prim.Pointer[httpCacheDurationNs],
 ) FastlyStatus
 
-func HTTPCacheGetMaxAgeNs(h httpCacheHandle) (httpCacheDurationNs, error) {
+func HTTPCacheGetMaxAgeNs(h *HTTPCacheHandle) (httpCacheDurationNs, error) {
 	var d httpCacheDurationNs
 
 	if err := fastlyHTTPCacheGetMaxAgeNs(
-		h,
+		h.h,
 		prim.ToPointer(&d),
 	).toError(); err != nil {
 		return 0, err
@@ -842,11 +846,11 @@ func fastlyHTTPCacheGetStaleWhileRevalidateNs(
 	d prim.Pointer[httpCacheDurationNs],
 ) FastlyStatus
 
-func HTTPCacheGetStaleWhileRevalidateNs(h httpCacheHandle) (httpCacheDurationNs, error) {
+func HTTPCacheGetStaleWhileRevalidateNs(h *HTTPCacheHandle) (httpCacheDurationNs, error) {
 	var d httpCacheDurationNs
 
 	if err := fastlyHTTPCacheGetStaleWhileRevalidateNs(
-		h,
+		h.h,
 		prim.ToPointer(&d),
 	).toError(); err != nil {
 		return 0, err
@@ -873,11 +877,11 @@ func fastlyHTTPCacheGetAgeNs(
 	d prim.Pointer[httpCacheDurationNs],
 ) FastlyStatus
 
-func HTTPCacheGetAgeNs(h httpCacheHandle) (httpCacheDurationNs, error) {
+func HTTPCacheGetAgeNs(h *HTTPCacheHandle) (httpCacheDurationNs, error) {
 	var d httpCacheDurationNs
 
 	if err := fastlyHTTPCacheGetAgeNs(
-		h,
+		h.h,
 		prim.ToPointer(&d),
 	).toError(); err != nil {
 		return 0, err
@@ -906,11 +910,11 @@ func fastlyHTTPCacheGetHits(
 	c prim.Pointer[httpCacheHitCount],
 ) FastlyStatus
 
-func HTTPCacheGetHits(h httpCacheHandle) (httpCacheHitCount, error) {
+func HTTPCacheGetHits(h *HTTPCacheHandle) (httpCacheHitCount, error) {
 	var c httpCacheHitCount
 
 	if err := fastlyHTTPCacheGetHits(
-		h,
+		h.h,
 		prim.ToPointer(&c),
 	).toError(); err != nil {
 		return 0, err
@@ -937,11 +941,11 @@ func fastlyHTTPCacheGetSensitiveData(
 	b prim.Pointer[httpIsSensitive],
 ) FastlyStatus
 
-func HTTPCacheGetSensitiveData(h httpCacheHandle) (bool, error) {
+func HTTPCacheGetSensitiveData(h *HTTPCacheHandle) (bool, error) {
 	var b httpIsSensitive
 
 	if err := fastlyHTTPCacheGetSensitiveData(
-		h,
+		h.h,
 		prim.ToPointer(&b),
 	).toError(); err != nil {
 		return false, err
@@ -978,13 +982,13 @@ func fastlyHTTPCacheGetSurrogateKeys(
 	nwritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
-func HTTPCacheGetSurrogateKeys(h httpCacheHandle) (string, error) {
+func HTTPCacheGetSurrogateKeys(h *HTTPCacheHandle) (string, error) {
 	n := DefaultMediumBufLen
 
 	for {
 		buf := prim.NewWriteBuffer(n) // Longest (unknown)
 		status := fastlyHTTPCacheGetSurrogateKeys(
-			h,
+			h.h,
 			prim.ToPointer(buf.U8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
@@ -1028,13 +1032,13 @@ func fastlyHTTPCacheGetVaryRule(
 	nwritten prim.Pointer[prim.Usize],
 ) FastlyStatus
 
-func HTTPCacheGetVaryRule(h httpCacheHandle) (string, error) {
+func HTTPCacheGetVaryRule(h *HTTPCacheHandle) (string, error) {
 	n := DefaultMediumBufLen
 
 	for {
 		buf := prim.NewWriteBuffer(n) // Longest (unknown)
 		status := fastlyHTTPCacheGetVaryRule(
-			h,
+			h.h,
 			prim.ToPointer(buf.U8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
