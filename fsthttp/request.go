@@ -134,7 +134,7 @@ func NewRequest(method string, uri string, body io.Reader) (*Request, error) {
 }
 
 // _parseRequestURI can be set by SetParseRequestURI
-var _parseRequestURI func(string)(*url.URL, error) = url.ParseRequestURI
+var _parseRequestURI func(string) (*url.URL, error) = url.ParseRequestURI
 
 func newClientRequest() (*Request, error) {
 	abiReq, abiReqBody, err := fastly.BodyDownstreamGet()
@@ -205,6 +205,11 @@ func newClientRequest() (*Request, error) {
 		tlsInfo.CipherOpenSSLName, err = fastly.DownstreamTLSCipherOpenSSLName()
 		if err != nil {
 			return nil, fmt.Errorf("get TLS cipher name: %w", err)
+		}
+
+		tlsInfo.JA3MD5, err = fastly.DownstreamTLSJA3MD5()
+		if err != nil {
+			return nil, fmt.Errorf("get TLS JA3 MD5: %w", err)
 		}
 	}
 
@@ -559,6 +564,10 @@ type TLSInfo struct {
 	// connection. The value returned will be consistent with the OpenSSL name
 	// for the cipher suite.
 	CipherOpenSSLName string
+
+	// JA3MD5 contains the bytes of the JA3 signature of the client TLS request.
+	// See https://www.fastly.com/blog/the-state-of-tls-fingerprinting-whats-working-what-isnt-and-whats-next
+	JA3MD5 []byte
 }
 
 // DecompressResponseOptions control the auto decompress response behaviour.

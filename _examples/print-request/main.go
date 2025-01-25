@@ -18,7 +18,11 @@ func main() {
 		fmt.Fprintf(w, "ProtoMajor: %d\n", r.ProtoMajor)
 		fmt.Fprintf(w, "ProtoMinor: %d\n", r.ProtoMinor)
 		fmt.Fprintf(w, "RemoteAddr: %q\n", r.RemoteAddr)
-		fmt.Fprintf(w, "TLSInfo:    %#v\n", r.TLSInfo)
+		fmt.Fprintf(w, "TLSInfo:\n")
+		fmt.Fprintf(w, "    Protocol:          %s\n", r.TLSInfo.Protocol)
+		fmt.Fprintf(w, "    CipherOpenSSLName: %s\n", r.TLSInfo.CipherOpenSSLName)
+		fmt.Fprintf(w, "    JA3MD5:            %#x\n", r.TLSInfo.JA3MD5)
+		fmt.Fprintf(w, "    ClientHello:       %#x\n", r.TLSInfo.ClientHello)
 
 		fmt.Fprintf(w, "\n")
 

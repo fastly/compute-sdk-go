@@ -352,6 +352,35 @@ func DownstreamTLSClientHello() ([]byte, error) {
 
 // witx:
 //
+//	(@interface func (export "downstream_tls_ja3_md5")
+//	    ;; must be a 16-byte array
+//	    (param $cja3_md5_out (@witx pointer (@witx char8)))
+//	    (result $err (expected $num_bytes (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_req downstream_tls_ja3_md5
+//go:noescape
+func fastlyHTTPReqDownstreamTLSJA3MD5(
+	cJA3MD5Out prim.Pointer[prim.Char8],
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// DownstreamTLSJA3MD5 returns the MD5 []byte representing the JA3 signature of the singleton downstream request, if any.
+func DownstreamTLSJA3MD5() ([]byte, error) {
+	var p [16]byte
+	buf := prim.NewWriteBufferFromBytes(p[:])
+	err := fastlyHTTPReqDownstreamTLSJA3MD5(
+		prim.ToPointer(buf.Char8Pointer()),
+		prim.ToPointer(buf.NPointer()),
+	).toError()
+	if err != nil {
+		return nil, err
+	}
+	return buf.AsBytes(), nil
+}
+
+// witx:
+//
 //	(@interface func (export "new")
 //	  (result $err $fastly_status)
 //	  (result $h $request_handle)
