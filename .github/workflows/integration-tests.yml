@@ -12,19 +12,18 @@ jobs:
       matrix:
         include:
           # Newest supported configuration
-          - go-version: '1.22' # pairs with TinyGo 0.31.2
-            tinygo-version: '0.31.2'
-            wasmtime-version: 'latest'
-            tinygo-wasi-target: 'wasi'
+          - go-version: "1.23" # pairs with TinyGo 0.33.0+
+            tinygo-version: "0.35.0"
+            tinygo-wasi-target: "wasip1"
+          - go-version: "1.22" # pairs with TinyGo 0.31.2
+            tinygo-version: "0.31.2"
+            wasmtime-version: "latest"
+            tinygo-wasi-target: "wasi"
           # Oldest supported configuration
-          - go-version: '1.21' # pairs with TinyGo 0.29.0
-            tinygo-version: '0.29.0'
-            wasmtime-version: '21.0.1' # pairs with TinyGo 0.29.0
-            tinygo-wasi-target: 'wasi'
-          - go-version: '1.23' # pairs with TinyGo 0.33.0
-            tinygo-version: '0.33.0'
-            wasmtime-version: '21.0.1' # pairs with TinyGo 0.33.0
-            tinygo-wasi-target: 'wasip1'
+          - go-version: "1.21" # pairs with TinyGo 0.29.0
+            tinygo-version: "0.29.0"
+            wasmtime-version: "21.0.1" # pairs with TinyGo 0.29.0
+            tinygo-wasi-target: "wasi"
 
     steps:
       - uses: actions/checkout@v4
@@ -40,43 +39,33 @@ jobs:
         uses: fastly/compute-actions/setup@v7
 
       - name: Install Viceroy ${{ env.VICEROY_VERSION }}
-        shell: 'bash'
-        env:
-          VICEROY_VERSION: 0.12.2
-        run: |
-          echo "Install Viceroy ${{ env.VICEROY_VERSION }}..."
-          wget --no-verbose https://github.com/fastly/Viceroy/releases/download/v${{ env.VICEROY_VERSION }}/viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz
-          mkdir -p $HOME/bin
-          tar -xzf viceroy_v${{ env.VICEROY_VERSION }}_linux-amd64.tar.gz --directory $HOME/bin
-          echo "$HOME/bin" >> $GITHUB_PATH
+        run: make tools/viceroy
 
-      - name: Set up Wasmtime
-        uses: bytecodealliance/actions/wasmtime/setup@v1
-        with:
-          version: ${{ matrix.wasmtime-version }}
-
-      - name: Check our dependencies
+      - name: Print dependency versions
         run: |
           go version
           tinygo version
           fastly version
           viceroy --version
-          wasmtime --version
 
       - name: Tests - Go
-        run: go test -race -tags="fastlyinternaldebug nofastlyhostcalls" ./...
+        run: make test-go
 
       - name: Tests - TinyGo
-        run: tinygo test -target=${{ matrix.tinygo-wasi-target }} -tags="fastlyinternaldebug nofastlyhostcalls" ./...
+        run: make test-tinygo
 
       - name: Integration Tests - Go
-        env:
-          RUST_LOG: viceroy=info,viceroy-lib=info
-          GOARCH: wasm
-          GOOS: wasip1
-        run: go test -tags="fastlyinternaldebug" -exec "viceroy run -C fastly.toml" ./integration_tests/...
+        run: make test-integration-go
 
       - name: Integration Tests - TinyGo
-        env:
-          RUST_LOG: viceroy=info,viceroy-lib=info
-        run: tinygo test -tags="fastlyinternaldebug" -target=targets/fastly-compute-${{ matrix.tinygo-wasi-target }}.json ./integration_tests/...
+        run: make test-integration-tinygo
+
+      - name: Set up Wasmtime
+        if: ${{ matrix.wasmtime-version != '' }}
+        uses: bytecodealliance/actions/wasmtime/setup@v1
+        with:
+          version: ${{ matrix.wasmtime-version }}
+
+      - name: Test in Wasmtime
+        if: ${{ matrix.wasmtime-version != '' }}
+        run: tinygo test -target=${{ matrix.tinygo-wasi-target }} -tags="fastlyinternaldebug nofastlyhostcalls" ./...
