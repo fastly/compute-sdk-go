@@ -38,7 +38,7 @@ jobs:
       - name: Setup Fastly CLI
         uses: fastly/compute-actions/setup@v7
 
-      - name: Install Viceroy ${{ env.VICEROY_VERSION }}
+      - name: Install Viceroy
         run: make tools/viceroy
 
       - name: Print dependency versions
@@ -51,21 +51,15 @@ jobs:
       - name: Tests - Go
         run: make test-go
 
-      - name: Tests - TinyGo
-        run: make test-tinygo
-
       - name: Integration Tests - Go
         run: make test-integration-go
 
+      - name: Tests - TinyGo
+        # The slightly different TINYGO_TARGET and GO_BUILD_FLAGS for older
+        # versions of TinyGo can be removed once all versions are consistent.
+        run: make test-tinygo TINYGO_TARGET=./targets/fastly-compute-${{ matrix.tinygo-wasi-target }}.json GO_BUILD_FLAGS="-tags='fastlyinternaldebug nofastlyhostcalls'"
+
       - name: Integration Tests - TinyGo
-        run: make test-integration-tinygo
-
-      - name: Set up Wasmtime
-        if: ${{ matrix.wasmtime-version != '' }}
-        uses: bytecodealliance/actions/wasmtime/setup@v1
-        with:
-          version: ${{ matrix.wasmtime-version }}
-
-      - name: Test in Wasmtime
-        if: ${{ matrix.wasmtime-version != '' }}
-        run: tinygo test -target=${{ matrix.tinygo-wasi-target }} -tags="fastlyinternaldebug nofastlyhostcalls" ./...
+        # The slightly different TINYGO_TARGET for older versions of TinyGo can
+        # be removed once all versions are consistent.
+        run: make test-integration-tinygo TINYGO_TARGET=./targets/fastly-compute-${{ matrix.tinygo-wasi-target }}.json
