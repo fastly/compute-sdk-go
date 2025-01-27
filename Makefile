@@ -3,6 +3,9 @@
 test: test-go test-tinygo test-integration
 .PHONY: test
 
+# Makes tools/viceroy available as an executable within Makefile recipes.
+PATH := $(PWD)/tools:$(PATH)
+
 # Override these with environment variables or directly on the make command line.
 GO_FLAGS := -tags=fastlyinternaldebug,nofastlyhostcalls
 GO_PACKAGES := ./...
@@ -12,22 +15,27 @@ test-go:
 	go test $(GO_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
 .PHONY: test-go
 
-test-tinygo: TINYGO_TARGET := wasip1
+# Using this target lets viceroy provide the wasm runtime, eliminating a dependency on wasmtime.
+TINYGO_TARGET := targets/fastly-compute-wasip1.json
+
 test-tinygo:
 	tinygo test -target=$(TINYGO_TARGET) $(GO_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
 .PHONY: test-tinygo
 
-# Integration uses viceroy and overrides the default values for a number of variables.
-test-integration: GO_FLAGS := -tags=fastlyinternaldebug
-test-integration: GO_PACKAGES := ./integration_tests/...
-test-integration: TINYGO_TARGET := targets/fastly-compute-wasip1.json
-test-integration: tools/viceroy
-	GOARCH=wasm GOOS=wasip1 go test $(GO_FLAGS) -exec "viceroy run -C fastly.toml" $(GO_TEST_FLAGS) $(GO_PACKAGES)
-	tinygo test $(GO_FLAGS) -target=$(TINYGO_TARGET) $(GO_TEST_FLAGS) $(GO_PACKAGES)
+# Integration tests use viceroy and override the default values for these variables.
+test-integration-%: GO_FLAGS := -tags=fastlyinternaldebug
+test-integration-%: GO_PACKAGES := ./integration_tests/...
+
+test-integration: test-integration-go test-integration-tinygo
 .PHONY: test-integration
 
-tools:
-	@mkdir -p tools
+test-integration-go: tools/viceroy
+	GOARCH=wasm GOOS=wasip1 go test $(GO_FLAGS) -exec "viceroy run -C fastly.toml" $(GO_TEST_FLAGS) $(GO_PACKAGES)
+.PHONY: test-integration-go
+
+test-integration-tinygo: tools/viceroy
+	tinygo test $(GO_FLAGS) -target=$(TINYGO_TARGET) $(GO_TEST_FLAGS) $(GO_PACKAGES)
+.PHONY: test-integration-tinygo
 
 tools/viceroy: tools # Download latest version of Viceroy ./tools/viceroy; delete it if you'd like to upgrade
 	@arch=$$(uname -m | sed 's/x86_64/amd64/'); \
@@ -40,8 +48,8 @@ tools/viceroy: tools # Download latest version of Viceroy ./tools/viceroy; delet
 		./tools/viceroy --version && \
 		touch ./tools/viceroy
 
-# Makes tools/viceroy available as an executable within thie Makefile's recipes.
-PATH := $(PWD)/tools:$(PATH)
+tools:
+	@mkdir -p tools
 
 viceroy-update:
 	@rm -f tools/viceroy
