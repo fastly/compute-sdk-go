@@ -83,6 +83,10 @@ func DownstreamTLSClientHello() ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
+func DownstreamTLSJA3MD5() ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 func NewHTTPRequest() (*HTTPRequest, error) {
 	return nil, fmt.Errorf("not implemented")
 }
