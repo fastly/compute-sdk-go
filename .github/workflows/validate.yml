@@ -6,16 +6,24 @@ on:
   pull_request:
 
 jobs:
-  lint:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: oldstable
+          go-version-file: go.mod
 
-      - name: go vet
-        run: go vet ./...
+      - uses: ./.github/actions/install-tinygo
+        with:
+          tinygo-version: "0.35.0"
+
+      - name: Print dependency versions
+        run: |
+          go version
+          tinygo version
+
+      - run: go vet ./...
 
       - name: staticcheck
         run: |
@@ -32,29 +40,5 @@ jobs:
           go install github.com/gordonklaus/ineffassign@latest
           ineffassign ./...
 
-  test:
-    needs: [lint]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: stable
-      - uses: ./.github/actions/install-tinygo
-        with:
-          tinygo-version: '0.33.0'
-
-      - name: Set up Wasmtime
-        uses: bytecodealliance/actions/wasmtime/setup@v1
-
-      - name: Check our dependencies
-        run: |
-          go version
-          tinygo version
-          wasmtime --version
-
-      - name: Tests - Go
-        run: go test -race -tags="fastlyinternaldebug nofastlyhostcalls" ./...
-
-      - name: Tests - TinyGo
-        run: tinygo test -target=wasip1 -tags="fastlyinternaldebug nofastlyhostcalls" ./...
+      - name: Run Tests
+        run: make test
