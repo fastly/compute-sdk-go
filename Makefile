@@ -47,6 +47,9 @@ tools/viceroy: | tools # Download latest version of Viceroy ./tools/viceroy; del
 		rm $$filename && \
 		./tools/viceroy --version && \
 		touch ./tools/viceroy
+ifneq ($(strip $(GITHUB_PATH)),)
+	@echo "$(PWD)/tools" >> "$(GITHUB_PATH)"
+endif
 
 tools:
 	@mkdir -p tools

@@ -40,5 +40,8 @@ jobs:
           go install github.com/gordonklaus/ineffassign@latest
           ineffassign ./...
 
+      - name: Install viceroy
+        run: make tools/viceroy
+
       - name: Run Tests
         run: make test
