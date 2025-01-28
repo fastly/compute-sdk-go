@@ -3,7 +3,6 @@
 package prim
 
 import (
-	"reflect"
 	"unsafe"
 )
 
@@ -65,7 +64,6 @@ type ArrayChar8 Wstring
 // TinyGo in the future.
 type WriteBuffer struct {
 	buf []byte
-	hdr *reflect.SliceHeader
 	n   Usize
 }
 
@@ -77,19 +75,17 @@ func NewWriteBuffer(cap int) *WriteBuffer {
 // NewWriteBufferFromBytes creates a new WriteBuffer with the provided byte
 // slice used as its buffer.
 func NewWriteBufferFromBytes(buf []byte) *WriteBuffer {
-	b := &WriteBuffer{buf: buf}                            // copy the slice header into our struct
-	b.hdr = (*reflect.SliceHeader)(unsafe.Pointer(&b.buf)) // point to our copy of the slice header
-	return b
+	return &WriteBuffer{buf: buf}
 }
 
 // Char8Pointer returns a pointer to the buffer's data as a Char8.
 func (b *WriteBuffer) Char8Pointer() *Char8 {
-	return (*Char8)(unsafe.Pointer(b.hdr.Data))
+	return (*Char8)(unsafe.SliceData(b.buf))
 }
 
 // U8Pointer returns a pointer to the buffer's data as a U8.
 func (b *WriteBuffer) U8Pointer() *U8 {
-	return (*U8)(unsafe.Pointer(b.hdr.Data))
+	return (*U8)(unsafe.SliceData(b.buf))
 }
 
 // Cap returns the capacity of the buffer as a Usize.
@@ -127,7 +123,6 @@ func (b *WriteBuffer) ToString() string {
 // underlying memory via a smaller, more restricted API.
 type ReadBuffer struct {
 	buf []byte
-	hdr *reflect.SliceHeader
 }
 
 // NewReadBufferFromString creates a ReadBuffer with its buffer based on the
@@ -139,43 +134,41 @@ func NewReadBufferFromString(s string) *ReadBuffer {
 // NewReadBufferFromBytes creates a new ReadBuffer with the provided byte slice
 // used as its buffer.
 func NewReadBufferFromBytes(buf []byte) *ReadBuffer {
-	b := &ReadBuffer{buf: buf}
-	b.hdr = (*reflect.SliceHeader)(unsafe.Pointer(&b.buf))
-	return b
+	return &ReadBuffer{buf: buf}
 }
 
 // Wstring returns the buffers data as a Wstring.
 func (b *ReadBuffer) Wstring() Wstring {
 	return Wstring{
-		Data: Pointer[U8](b.hdr.Data),
-		Len:  Usize(b.hdr.Len),
+		Data: Pointer[U8](uintptr(unsafe.Pointer(unsafe.SliceData(b.buf)))),
+		Len:  Usize(len(b.buf)),
 	}
 }
 
 // ArrayU8 returns the buffers data as a ArrayU8.
 func (b *ReadBuffer) ArrayU8() ArrayU8 {
 	return ArrayU8{
-		Data: Pointer[U8](b.hdr.Data),
-		Len:  Usize(b.hdr.Len),
+		Data: Pointer[U8](uintptr(unsafe.Pointer(unsafe.SliceData(b.buf)))),
+		Len:  Usize(len(b.buf)),
 	}
 }
 
 // ArrayChar8 returns the buffers data as a ArrayChar8.
 func (b *ReadBuffer) ArrayChar8() ArrayChar8 {
 	return ArrayChar8{
-		Data: Pointer[U8](b.hdr.Data),
-		Len:  Usize(b.hdr.Len),
+		Data: Pointer[U8](uintptr(unsafe.Pointer(unsafe.SliceData(b.buf)))),
+		Len:  Usize(len(b.buf)),
 	}
 }
 
 // Char8Pointer returns a pointer to the buffer's data as a Char8.
 func (b *ReadBuffer) Char8Pointer() *Char8 {
-	return (*Char8)(unsafe.Pointer(b.hdr.Data))
+	return (*Char8)(unsafe.Pointer(unsafe.SliceData(b.buf)))
 }
 
 // U8Pointer returns a pointer to the buffer's data as a U8.
 func (b *ReadBuffer) U8Pointer() *U8 {
-	return (*U8)(unsafe.Pointer(b.hdr.Data))
+	return (*U8)(unsafe.Pointer(unsafe.SliceData(b.buf)))
 }
 
 // Len returns the length of data in the buffer as a Usize.
