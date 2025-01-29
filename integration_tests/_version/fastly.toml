@@ -1,0 +1,12 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://www.fastly.com/documentation/reference/compute/fastly-toml
+
+authors = ["oss@fastly.com"]
+description = ""
+language = "go"
+manifest_version = 2
+name = "print-request"
+
+[scripts]
+# build = "GOARCH=wasm GOOS=wasip1 go build -o bin/main.wasm ."
+# build = "tinygo build -target=wasip1 -gc=conservative -o ./bin/main.wasm ./"

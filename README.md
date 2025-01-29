@@ -52,33 +52,19 @@ The API reference documentation can be found on [pkg.go.dev/github.com/fastly/co
 
 ## Testing
 
-Tests that rely on a Compute runtime can utilize [Viceroy](https://github.com/fastly/Viceroy), our local development tool.
+Tests that rely on a Compute runtime use [Viceroy](https://github.com/fastly/Viceroy), our local development tool.
 
-Install Viceroy and ensure the `viceroy` command is available in your path.
+The `Makefile` installs viceroy in ./tools/ and uses this version to run tests.
 
 Write your tests as ordinary Go tests.  Viceroy provides the Compute APIs locally, although be aware that not all platform functionality is available.  You can look at the `integration_tests` directory for examples.
 
-### TinyGo
-
-The `fastly-compute.json` file provides a TinyGo target to run Viceroy.  (In the future, we will include this in the Go starter kits.)
-
 To run your tests:
 
-    tinygo test -target=targets/fastly-compute-wasip1.json ./...
+    make test
 
-You can try it out and make sure your local Viceroy environment is set up correctly by running the integration tests in this repository:
+This target runs tests in both Go and TinyGo, and `integration_tests` in both Go and TinyGo in Viceroy.  See additional targets in `Makefile` for running subsets of these tests.
 
-    tinygo test -target=targets/fastly-compute-wasip1.json ./integration_tests/...
-
-###  Go
-
-To run tests with Viceroy and Go
-
-    GOARCH=wasm GOOS=wasip1 go test -exec "viceroy run -C fastly.toml" -v ./...
-
-You can try it out and make sure your local Viceroy environment is set up correctly by running the integration tests in this repository:
-
-    GOARCH=wasm GOOS=wasip1 go test -exec "viceroy run -C fastly.toml" -v ./integration_tests/...
+The `targets/fastly-compute-wasi{,p1}.json` files provide TinyGo targets to run Viceroy.
 
 ## Logging
 
