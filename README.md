@@ -64,7 +64,7 @@ To run your tests:
 
 This target runs tests in both Go and TinyGo, and `integration_tests` in both Go and TinyGo in Viceroy.  See additional targets in `Makefile` for running subsets of these tests.
 
-The `targets/fastly-compute-wasi{p1}.json` files provide TinyGo targets to run Viceroy.
+The `targets/fastly-compute-wasi{,p1}.json` files provide TinyGo targets to run Viceroy.
 
 ## Logging
 
