@@ -43,6 +43,10 @@ func (b *HTTPBody) Abandon() error {
 	return fmt.Errorf("not implemented")
 }
 
+func (b *HTTPBody) Length() (uint64, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
 type LogEndpoint struct{}
 
 func GetLogEndpoint(name string) (*LogEndpoint, error) {
@@ -155,9 +159,17 @@ func (r *HTTPRequest) Send(requestBody *HTTPBody, backend string) (response *HTT
 	return nil, nil, fmt.Errorf("not implemented")
 }
 
+func (r *HTTPRequest) SendV3(requestBody *HTTPBody, backend string) (response *HTTPResponse, responseBody *HTTPBody, err error) {
+	return nil, nil, fmt.Errorf("not implemented")
+}
+
 type PendingRequest struct{}
 
 func (r *HTTPRequest) SendAsync(requestBody *HTTPBody, backend string) (*PendingRequest, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) SendAsyncV2(requestBody *HTTPBody, backend string, streaming bool) (*PendingRequest, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -571,4 +583,147 @@ func OpenACL(name string) (*ACLHandle, error) {
 
 func (acl *ACLHandle) Lookup(ip net.IP) (*HTTPBody, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+type HTTPCacheLookupOptions struct{}
+
+func (HTTPCacheLookupOptions) OverrideKey(key string) {
+}
+
+func HTTPCacheIsRequestCacheable(req *HTTPRequest) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetSuggestedCacheKey(req *HTTPRequest) ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+type HTTPCacheHandle struct{}
+
+func HTTPCacheLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (*HTTPCacheHandle, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheTransactionLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (*HTTPCacheHandle, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+type HTTPCacheWriteOptions struct{}
+
+func (o *HTTPCacheWriteOptions) FillConfigMask() {}
+
+func (o *HTTPCacheWriteOptions) SetMaxAgeNs(maxAge uint64) {}
+
+func (o *HTTPCacheWriteOptions) MaxAgeNs() uint64 { return 0 }
+
+func (o *HTTPCacheWriteOptions) SetVaryRule(rule string) {}
+
+func (o *HTTPCacheWriteOptions) VaryRule() (string, bool) { return "", false }
+
+func (o *HTTPCacheWriteOptions) SetInitialAgeNs(initialAge uint64) {}
+
+func (o *HTTPCacheWriteOptions) InitialAgeNs() (uint64, bool) {
+	return 0, false
+}
+
+func (o *HTTPCacheWriteOptions) SetStaleWhileRevalidateNs(staleWhileRevalidateNs uint64) {
+}
+
+func (o *HTTPCacheWriteOptions) StaleWhileRevalidateNs() (uint64, bool) {
+	return 0, false
+}
+
+func (o *HTTPCacheWriteOptions) SetSurrogateKeys(keys string) {}
+
+func (o *HTTPCacheWriteOptions) SurrogateKeys() (string, bool) {
+	return "", false
+}
+
+func (o *HTTPCacheWriteOptions) SetLength(length uint64) {}
+
+func (o *HTTPCacheWriteOptions) Length() (uint64, bool) { return 0, false }
+
+func (o *HTTPCacheWriteOptions) SetSensitiveData(sensitive bool) {}
+
+func (o *HTTPCacheWriteOptions) SensitiveData() bool { return false }
+
+func HTTPCacheTransactionInsert(h *HTTPCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPBody, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheTransactionInsertAndStreamback(h *HTTPCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPBody, *HTTPCacheHandle, error) {
+	return nil, nil, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheTransactionUpdate(h *HTTPCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) error {
+	return fmt.Errorf("not implemented")
+}
+
+func HTTPCacheTransactionUpdateAndReturnFresh(h *HTTPCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPCacheHandle, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheTransactionRecordNotCacheable(h *HTTPCacheHandle, opts *HTTPCacheWriteOptions) error {
+	return fmt.Errorf("not implemented")
+}
+
+func HTTPCacheTransactionAbandon(h *HTTPCacheHandle) error {
+	return fmt.Errorf("not implemented")
+}
+
+func HTTPCacheTransactionClose(h *HTTPCacheHandle) error {
+	return fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetSuggestedBackendRequest(h *HTTPCacheHandle) (*HTTPRequest, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPCacheWriteOptions, error) {
+	return nil, fmt.Errorf("not implemented")
+
+}
+
+func HTTPCachePrepareResponseForStorage(h *HTTPCacheHandle, r *HTTPResponse) (HTTPCacheStorageAction, *HTTPResponse, error) {
+	return 0, nil, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetFoundResponse(h *HTTPCacheHandle, transform bool) (*HTTPResponse, *HTTPBody, error) {
+	return nil, nil, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetState(h *HTTPCacheHandle) (CacheLookupState, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetLength(h *HTTPCacheHandle) (httpCacheObjectLength, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetMaxAgeNs(h *HTTPCacheHandle) (httpCacheDurationNs, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetStaleWhileRevalidateNs(h *HTTPCacheHandle) (httpCacheDurationNs, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetAgeNs(h *HTTPCacheHandle) (httpCacheDurationNs, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetHits(h *HTTPCacheHandle) (httpCacheHitCount, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetSensitiveData(h *HTTPCacheHandle) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetSurrogateKeys(h *HTTPCacheHandle) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetVaryRule(h *HTTPCacheHandle) (string, error) {
+	return "", fmt.Errorf("not implemented")
 }

@@ -2,6 +2,7 @@
 
 ### Added
 
+- fsthttp: add http cache API support
 - secretstore: add Plaintext toplevel convenience function
 - acl: add ACL hostcalls
 

@@ -272,15 +272,27 @@ const (
 //	(typename $request_handle (handle))
 type requestHandle handle
 
+const (
+	invalidRequestHandle = requestHandle(math.MaxUint32 - 1)
+)
+
 // witx:
 //
 //	(typename $response_handle (handle))
 type responseHandle handle
 
+const (
+	invalidResponseHandle = responseHandle(math.MaxUint32 - 1)
+)
+
 // witx:
 //
 //	(typename $pending_request_handle (handle))
 type pendingRequestHandle handle
+
+const (
+	invalidPendingRequestHandle = pendingRequestHandle(math.MaxUint32 - 1)
+)
 
 // witx:
 //
@@ -1508,3 +1520,106 @@ func (e ACLError) Error() string {
 
 	return "unknown"
 }
+
+// http-cache.witx
+
+type httpCacheHandle handle
+
+const invalidHTTPCacheHandle = httpCacheHandle(math.MaxUint32 - 1)
+
+type httpIsCacheable prim.U32
+
+type httpIsSensitive prim.U32
+
+type HTTPCacheStorageAction prim.U32
+
+type httpCacheHitCount prim.U64
+
+const (
+	// Insert the response into cache (`transaction_insert*`).
+	HTTPCacheStorageActionInsert HTTPCacheStorageAction = 0
+
+	// Update the stale response in cache (`transaction_update*`).
+	HTTPCacheStorageActionUpdate HTTPCacheStorageAction = 1
+
+	// Do not store this response.
+	HTTPCacheStorageActionDoNotStore HTTPCacheStorageAction = 2
+
+	// Do not store this response, and furthermore record its non-cacheability for other pending
+	// requests (`transaction_record_not_cacheable`).
+	HTTPCacheStorageActionRecordUncacheable HTTPCacheStorageAction = 3
+)
+
+type httpCacheLookupOptions struct {
+	overrideKeyPtr prim.Pointer[prim.Char8]
+	overrideKeyLen prim.Usize
+}
+
+type httpCacheLookupOptionsMask prim.U32
+
+const (
+	httpCacheLookupOptionsFlagReserved    httpCacheLookupOptionsMask = 1 << 0
+	httpCacheLookupOptionsFlagOverrideKey httpCacheLookupOptionsMask = 1 << 1
+)
+
+type httpCacheDurationNs prim.U64
+type httpCacheObjectLength prim.U64
+
+type httpCacheWriteOptions struct {
+	// The maximum age of the response before it is considered stale, in nanoseconds.
+	//
+	// This field is required; there is no flag for it in `http_cache_write_options_mask`.
+	maxAgeNs httpCacheDurationNs
+
+	// A list of header names to use when calculating variants for this response.
+	//
+	// The format is a string containing header names separated by spaces.
+	varyRulePtr prim.Pointer[prim.Char8]
+	varyRuleLen prim.Usize
+
+	// The initial age of the response in nanoseconds.
+	//
+	// If this field is not set, the default value is zero.
+	//
+	// This age is used to determine the freshness lifetime of the response as well as to
+	// prioritize which variant to return if a subsequent lookup matches more than one vary rule
+	initialAgeNs httpCacheDurationNs
+
+	// The maximum duration after `max_age` during which the response may be delivered stale
+	// while being revalidated, in nanoseconds.
+	//
+	// If this field is not set, the default value is zero.
+	staleWhileRevalidateNs httpCacheDurationNs
+
+	// A list of surrogate keys that may be used to purge this response.
+	//
+	// The format is a string containing [valid surrogate
+	// keys](https://www.fastly.com/documentation/reference/http/http-headers/Surrogate-Key/)
+	// separated by spaces.
+	//
+	// If this field is not set, no surrogate keys will be associated with the response. This
+	// means that the response cannot be purged except via a purge-all operation.
+	surrogateKeysPtr prim.Pointer[prim.Char8]
+	surrogateKeysLen prim.Usize
+
+	// The length of the response body.
+	//
+	// If this field is not set, the length of the body is treated as unknown.
+	//
+	// When possible, this field should be set so that other clients waiting to retrieve the
+	// body have enough information to synthesize a `content-length` even before the complete
+	// body is inserted to the cache.
+	length httpCacheObjectLength
+}
+
+type httpCacheWriteOptionsMask prim.U32
+
+const (
+	httpCacheWriteOptionsFlagReserved             httpCacheWriteOptionsMask = 1 << 0
+	httpCacheWriteOptionsFlagVaryRule             httpCacheWriteOptionsMask = 1 << 1
+	httpCacheWriteOptionsFlagInitialAge           httpCacheWriteOptionsMask = 1 << 2
+	httpCacheWriteOptionsFlagStaleWhileRevalidate httpCacheWriteOptionsMask = 1 << 3
+	httpCacheWriteOptionsFlagSurrogateKeys        httpCacheWriteOptionsMask = 1 << 4
+	httpCacheWriteOptionsFlagLength               httpCacheWriteOptionsMask = 1 << 5
+	httpCacheWriteOptionsFlagSensitiveData        httpCacheWriteOptionsMask = 1 << 6
+)
