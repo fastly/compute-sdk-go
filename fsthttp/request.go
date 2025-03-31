@@ -90,6 +90,12 @@ type Request struct {
 	// value is 1ms, and the maximum value is 1s.
 	SendPollInterval time.Duration
 
+	// SendPollIntervalFn allows more fine-grained control of the send poll interval.
+	//
+	// SendPollIntervalFn must be a function which takes an iteration number i and returns
+	// the delay for the i'th polling interval.
+	SendPollIntervalFn func(i int) time.Duration
+
 	// DecompressResponseOptions control the auto decompress response behaviour.
 	DecompressResponseOptions DecompressResponseOptions
 
@@ -269,6 +275,7 @@ func (req *Request) Clone() *Request {
 		RemoteAddr:                req.RemoteAddr,
 		TLSInfo:                   req.TLSInfo,
 		SendPollInterval:          req.SendPollInterval,
+		SendPollIntervalFn:        req.SendPollIntervalFn,
 		DecompressResponseOptions: req.DecompressResponseOptions,
 		ManualFramingMode:         req.ManualFramingMode,
 	}
@@ -399,7 +406,15 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 		return nil, fmt.Errorf("begin send: %w", err)
 	}
 
-	pollInterval := safePollInterval(req.SendPollInterval)
+	pollIntervalFn := req.SendPollIntervalFn
+	if pollIntervalFn == nil {
+		safe := safePollInterval(req.SendPollInterval)
+		pollIntervalFn = func(n int) time.Duration { return safe }
+	}
+
+	var iter int
+	var pollInterval time.Duration
+
 	abiResp, abiRespBody, err := func() (*fastly.HTTPResponse, *fastly.HTTPBody, error) {
 		for {
 			select {
@@ -419,6 +434,8 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 				if done {
 					return abiResp, abiRespBody, nil
 				}
+				pollInterval = pollIntervalFn(iter)
+				iter++
 				time.Sleep(pollInterval)
 			}
 		}
