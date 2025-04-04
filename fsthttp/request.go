@@ -90,6 +90,12 @@ type Request struct {
 	// value is 1ms, and the maximum value is 1s.
 	SendPollInterval time.Duration
 
+	// SendPollIntervalFn allows more fine-grained control of the send poll interval.
+	//
+	// SendPollIntervalFn must be a function which takes an iteration number i and returns
+	// the delay for the i'th polling interval.
+	SendPollIntervalFn func(i int) time.Duration
+
 	// DecompressResponseOptions control the auto decompress response behaviour.
 	DecompressResponseOptions DecompressResponseOptions
 
@@ -276,6 +282,7 @@ func (req *Request) Clone() *Request {
 		RemoteAddr:                req.RemoteAddr,
 		TLSInfo:                   req.TLSInfo,
 		SendPollInterval:          req.SendPollInterval,
+		SendPollIntervalFn:        req.SendPollIntervalFn,
 		DecompressResponseOptions: req.DecompressResponseOptions,
 		ManualFramingMode:         req.ManualFramingMode,
 	}
@@ -432,8 +439,13 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 }
 
 func newResponseFromABIPending(ctx context.Context, req *Request, backend string, abiPending *fastly.PendingRequest, errc chan error) (*Response, error) {
-	pollInterval := safePollInterval(req.SendPollInterval)
-	abiResp, abiRespBody, err := pendingToABIResponse(ctx, errc, abiPending, pollInterval)
+	pollIntervalFn := req.SendPollIntervalFn
+	if pollIntervalFn == nil {
+		pollIntervalFn = func(n int) time.Duration { return req.SendPollInterval }
+	}
+
+	abiResp, abiRespBody, err := pendingToABIResponse(ctx, errc, abiPending, pollIntervalFn)
+
 	if err != nil {
 		return nil, fmt.Errorf("poll: %w", err)
 	}
@@ -446,7 +458,10 @@ func newResponseFromABIPending(ctx context.Context, req *Request, backend string
 	return resp, nil
 }
 
-func pendingToABIResponse(ctx context.Context, errc chan error, abiPending *fastly.PendingRequest, pollInterval time.Duration) (*fastly.HTTPResponse, *fastly.HTTPBody, error) {
+func pendingToABIResponse(ctx context.Context, errc chan error, abiPending *fastly.PendingRequest, pollIntervalFn func(int) time.Duration) (*fastly.HTTPResponse, *fastly.HTTPBody, error) {
+	var iter int
+	var pollInterval time.Duration
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -465,6 +480,8 @@ func pendingToABIResponse(ctx context.Context, errc chan error, abiPending *fast
 			if done {
 				return abiResp, abiRespBody, nil
 			}
+			pollInterval = safePollInterval(pollIntervalFn(iter))
+			iter++
 			time.Sleep(pollInterval)
 		}
 	}
