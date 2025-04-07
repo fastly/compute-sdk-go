@@ -1,7 +1,11 @@
 ## Unreleased
 
+
+## 1.4.0 (2025-04-07)
+
 ### Added
 
+- fsthttp: make response polling frequency configurable
 - fsthttp: add http cache API support
 - secretstore: add Plaintext toplevel convenience function
 - acl: add ACL hostcalls
