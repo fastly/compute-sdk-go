@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"net"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
@@ -94,8 +95,8 @@ func fastlyHTTPReqBodyDownstreamGet(
 // request for the current execution.
 func BodyDownstreamGet() (*HTTPRequest, *HTTPBody, error) {
 	var (
-		rh requestHandle = invalidRequestHandle
-		bh bodyHandle    = invalidBodyHandle
+		rh requestHandle = requestHandle(math.MaxUint32 - 1)
+		bh bodyHandle    = bodyHandle(math.MaxUint32 - 1)
 	)
 
 	if err := fastlyHTTPReqBodyDownstreamGet(
@@ -393,15 +394,15 @@ func fastlyHTTPReqNew(
 
 // NewHTTPRequest returns a new, empty HTTP request.
 func NewHTTPRequest() (*HTTPRequest, error) {
-	var h requestHandle = invalidRequestHandle
+	var r HTTPRequest
 
 	if err := fastlyHTTPReqNew(
-		prim.ToPointer(&h),
+		prim.ToPointer(&r.h),
 	).toError(); err != nil {
 		return nil, err
 	}
 
-	return &HTTPRequest{h: h}, nil
+	return &r, nil
 }
 
 // witx:
@@ -955,8 +956,8 @@ func fastlyHTTPReqSendV2(
 // returns the response and response body, or an error.
 func (r *HTTPRequest) Send(requestBody *HTTPBody, backend string) (response *HTTPResponse, responseBody *HTTPBody, err error) {
 	var (
-		respHandle = invalidResponseHandle
-		bodyHandle = invalidBodyHandle
+		resp     HTTPResponse
+		respBody HTTPBody
 	)
 
 	errDetail := newSendErrorDetail()
@@ -967,72 +968,13 @@ func (r *HTTPRequest) Send(requestBody *HTTPBody, backend string) (response *HTT
 		requestBody.h,
 		backendBuffer.Data, backendBuffer.Len,
 		prim.ToPointer(&errDetail),
-		prim.ToPointer(&respHandle),
-		prim.ToPointer(&bodyHandle),
+		prim.ToPointer(&resp.h),
+		prim.ToPointer(&respBody.h),
 	).toSendError(errDetail); err != nil {
 		return nil, nil, err
 	}
 
-	return &HTTPResponse{h: respHandle}, &HTTPBody{h: bodyHandle}, nil
-}
-
-// witx:
-//
-//	;; Like `send_v2`, but does NOT provide caching of any form, and does not set `X-Cache` or
-//	;; similar.
-//	;;
-//	;; This hostcall is intended to ultimately replace `send_v2` as HTTP caching becomes managed
-//	;; explicitly at the SDK level.
-//	;;
-//	;; Any cache override setting on the request is ignored.
-//	;;
-//	;; Making this a distinct hostcall, rather than a cache override variant, may make it easier
-//	;; to tell when support for old styles of send can be safely dropped.
-//	(@interface func (export "send_v3")
-//	    (param $h $request_handle)
-//	    (param $b $body_handle)
-//	    (param $backend string)
-//	    (param $error_detail (@witx pointer $send_error_detail))
-//	    (result $err (expected
-//	            (tuple $response_handle $body_handle)
-//	            (error $fastly_status)))
-//	)
-//
-//go:wasmimport fastly_http_req send_v3
-//go:noescape
-func fastlyHTTPReqSendV3(
-	h requestHandle,
-	b bodyHandle,
-	backendData prim.Pointer[prim.U8], backendLen prim.Usize,
-	errDetail prim.Pointer[sendErrorDetail],
-	resp prim.Pointer[responseHandle],
-	respBody prim.Pointer[bodyHandle],
-) FastlyStatus
-
-// Send the request, with the provided body, to the named backend. The body is
-// buffered and sent all at once. Blocks until the request is complete, and
-// returns the response and response body, or an error. Does not set `X-Cache` or similar.
-func (r *HTTPRequest) SendV3(requestBody *HTTPBody, backend string) (response *HTTPResponse, responseBody *HTTPBody, err error) {
-	var (
-		respHandle = invalidResponseHandle
-		bodyHandle = invalidBodyHandle
-	)
-
-	errDetail := newSendErrorDetail()
-	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
-
-	if err := fastlyHTTPReqSendV3(
-		r.h,
-		requestBody.h,
-		backendBuffer.Data, backendBuffer.Len,
-		prim.ToPointer(&errDetail),
-		prim.ToPointer(&respHandle),
-		prim.ToPointer(&bodyHandle),
-	).toSendError(errDetail); err != nil {
-		return nil, nil, err
-	}
-
-	return &HTTPResponse{h: respHandle}, &HTTPBody{h: bodyHandle}, nil
+	return &resp, &respBody, nil
 }
 
 // witx:
@@ -1064,7 +1006,7 @@ type PendingRequest struct {
 // The body is buffered and sent all at once. Returns immediately with a
 // reference to the newly created request.
 func (r *HTTPRequest) SendAsync(requestBody *HTTPBody, backend string) (*PendingRequest, error) {
-	var pendingHandle = invalidPendingRequestHandle
+	var pendingReq PendingRequest
 
 	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
 
@@ -1072,71 +1014,12 @@ func (r *HTTPRequest) SendAsync(requestBody *HTTPBody, backend string) (*Pending
 		r.h,
 		requestBody.h,
 		backendBuffer.Data, backendBuffer.Len,
-		prim.ToPointer(&pendingHandle),
+		prim.ToPointer(&pendingReq.h),
 	).toError(); err != nil {
 		return nil, err
 	}
 
-	return &PendingRequest{h: pendingHandle}, nil
-}
-
-// witx:
-//
-//	;; Like `send_async`, but does NOT provide caching of any form, and does not set `X-Cache` or
-//	;; similar.
-//	;;
-//	;; Also encompasses `send_async_streaming` by including a streaming flag.
-//	;;
-//	;; This hostcall is intended to ultimately replace `send_async{_streaming}` as HTTP
-//	;; caching becomes managed explicitly at the SDK level.
-//	;;
-//	;; Any cache override setting on the request is ignored.
-//	;;
-//	;; Making this a distinct hostcall, rather than a cache override variant, may make it easier
-//	;; to tell when support for old styles of send can be safely dropped.
-//	(@interface func (export "send_async_v2")
-//	    (param $h $request_handle)
-//	    (param $b $body_handle)
-//	    (param $backend string)
-//	    (param $streaming u32)
-//	    (result $err (expected $pending_request_handle
-//	            (error $fastly_status)))
-//	)
-//
-//go:wasmimport fastly_http_req send_async_v2
-//go:noescape
-func fastlyHTTPReqSendAsyncV2(
-	h requestHandle,
-	b bodyHandle,
-	backendData prim.Pointer[prim.U8], backendLen prim.Usize,
-	streaming prim.U32,
-	pendingReq prim.Pointer[pendingRequestHandle],
-) FastlyStatus
-
-// SendAsyncV2 sends the request, with the provided body, to the named backend.
-// The body is buffered and sent all at once. Returns immediately with a
-// reference to the newly created request.  Does not set `X-Cache` or similar.
-func (r *HTTPRequest) SendAsyncV2(requestBody *HTTPBody, backend string, streaming bool) (*PendingRequest, error) {
-	var pendingHandle = invalidPendingRequestHandle
-
-	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
-
-	var streamingU32 prim.U32
-	if streaming {
-		streamingU32 = 1
-	}
-
-	if err := fastlyHTTPReqSendAsyncV2(
-		r.h,
-		requestBody.h,
-		backendBuffer.Data, backendBuffer.Len,
-		streamingU32,
-		prim.ToPointer(&pendingHandle),
-	).toError(); err != nil {
-		return nil, err
-	}
-
-	return &PendingRequest{h: pendingHandle}, nil
+	return &pendingReq, nil
 }
 
 // witx:
@@ -1163,7 +1046,7 @@ func fastlyHTTPReqSendAsyncStreaming(
 // buffered and sent all at once. Returns immediately with a reference to the
 // newly created request.
 func (r *HTTPRequest) SendAsyncStreaming(requestBody *HTTPBody, backend string) (*PendingRequest, error) {
-	var pendingHandle = invalidPendingRequestHandle
+	var pendingReq PendingRequest
 
 	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
 
@@ -1171,14 +1054,14 @@ func (r *HTTPRequest) SendAsyncStreaming(requestBody *HTTPBody, backend string) 
 		r.h,
 		requestBody.h,
 		backendBuffer.Data, backendBuffer.Len,
-		prim.ToPointer(&pendingHandle),
+		prim.ToPointer(&pendingReq.h),
 	).toError(); err != nil {
 		return nil, err
 	}
 
 	requestBody.closable = true
 
-	return &PendingRequest{h: pendingHandle}, nil
+	return &pendingReq, nil
 }
 
 // witx:
@@ -1208,23 +1091,23 @@ func fastlyHTTPReqPendingReqPollV2(
 // err is nil.
 func (r *PendingRequest) Poll() (done bool, response *HTTPResponse, responseBody *HTTPBody, err error) {
 	var (
-		respHandle = invalidResponseHandle
-		bodyHandle = invalidBodyHandle
-		isDone     prim.U32
-		errDetail  = newSendErrorDetail()
+		resp      HTTPResponse
+		respBody  HTTPBody
+		isDone    prim.U32
+		errDetail = newSendErrorDetail()
 	)
 
 	if err := fastlyHTTPReqPendingReqPollV2(
 		r.h,
 		prim.ToPointer(&errDetail),
 		prim.ToPointer(&isDone),
-		prim.ToPointer(&respHandle),
-		prim.ToPointer(&bodyHandle),
+		prim.ToPointer(&resp.h),
+		prim.ToPointer(&respBody.h),
 	).toSendError(errDetail); err != nil {
 		return false, nil, nil, err
 	}
 
-	return isDone > 0, &HTTPResponse{h: respHandle}, &HTTPBody{h: bodyHandle}, nil
+	return isDone > 0, &resp, &respBody, nil
 }
 
 // witx:
@@ -1391,15 +1274,15 @@ func fastlyHTTPBodyNew(
 
 // NewHTTPBody returns a new, empty HTTP body.
 func NewHTTPBody() (*HTTPBody, error) {
-	var b = invalidBodyHandle
+	var b HTTPBody
 
 	if err := fastlyHTTPBodyNew(
-		prim.ToPointer(&b),
+		prim.ToPointer(&b.h),
 	).toError(); err != nil {
 		return nil, err
 	}
 
-	return &HTTPBody{h: b}, nil
+	return &b, nil
 }
 
 // witx:
@@ -1435,12 +1318,12 @@ func (b *HTTPBody) Read(p []byte) (int, error) {
 		return 0, err
 	}
 
-	n := buf.NValue()
+	n := int(buf.NValue())
 	if n == 0 {
 		return 0, io.EOF
 	}
 
-	return int(n), nil
+	return n, nil
 }
 
 // witx:
@@ -1542,50 +1425,6 @@ func (b *HTTPBody) Abandon() error {
 
 // witx:
 //
-//	;;; Returns a u64 body length if the length of a body is known, or `FastlyStatus::None`
-//	;;; otherwise.
-//	;;;
-//	;;; If the length is unknown, it is likely due to the body arising from an HTTP/1.1 message with
-//	;;; chunked encoding, an HTTP/2 or later message with no `content-length`, or being a streaming
-//	;;; body.
-//	;;;
-//	;;; Note that receiving a length from this function does not guarantee that the full number of
-//	;;; bytes can actually be read from the body. For example, when proxying a response from a
-//	;;; backend, this length may reflect the `content-length` promised in the response, but if the
-//	;;; backend connection is closed prematurely, fewer bytes may be delivered before this body
-//	;;; handle can no longer be read.
-//	(@interface func (export "known_length")
-//	    (param $h $body_handle)
-//	    (result $err (expected $body_length (error $fastly_status)))
-//	)
-//
-//go:wasmimport fastly_http_body known_length
-//go:noescape
-func fastlyHTTPBodyKnownLength(
-	h bodyHandle,
-	l prim.Pointer[prim.U64],
-) FastlyStatus
-
-// Length returns the size in bytes of the http body, if known.
-//
-// The length of the cached item may be unknown if the item is currently being streamed into
-// the cache without a fixed length.
-func (b *HTTPBody) Length() (uint64, error) {
-
-	var l prim.U64
-
-	if err := fastlyHTTPBodyKnownLength(
-		b.h,
-		prim.ToPointer(&l),
-	).toError(); err != nil {
-		return 0, err
-	}
-
-	return uint64(l), nil
-}
-
-// witx:
-//
 //	(module $fastly_http_resp
 //	   (@interface func (export "new")
 //	     (result $err $fastly_status)
@@ -1606,15 +1445,15 @@ type HTTPResponse struct {
 
 // NewHTTPREsponse returns a valid, empty HTTP response.
 func NewHTTPResponse() (*HTTPResponse, error) {
-	var respHandle = invalidResponseHandle
+	var resp HTTPResponse
 
 	if err := fastlyHTTPRespNew(
-		prim.ToPointer(&respHandle),
+		prim.ToPointer(&resp.h),
 	).toError(); err != nil {
 		return nil, err
 	}
 
-	return &HTTPResponse{h: respHandle}, nil
+	return &resp, nil
 }
 
 // witx:

@@ -74,15 +74,6 @@ Logging can be done using a Fastly Compute Log Endpoint ([example](./_examples/l
 fmt.Printf("request received: %s\n", r.URL.String())
 ```
 
-## Readthrough HTTP Cache Support
-
-Customizing cache behaviour with the readthrough cache is an opt-in feature; enable it by adding `-tags=fsthttp_guest_cache` to the build line of your `fastly.toml`.
-
-```
-[scripts]
-build = "tinygo build -target=wasip1 -tags=fsthttp_guest_cache -o bin/main.wasm ."
-```
-
 ## TinyGo Recommended Packages
 
 TinyGo is still a new project, which has yet to get a version `1.0.0`. Therefore, the project is incomplete, but in its current state can still handle a lot of tasks on Compute. However, [some languages features of Go are still missing](https://tinygo.org/docs/reference/lang-support/).

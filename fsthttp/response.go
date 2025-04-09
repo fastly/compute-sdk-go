@@ -35,8 +35,6 @@ type Response struct {
 	// Body of the response.
 	Body io.ReadCloser
 
-	cacheResponse cacheResponse
-
 	abi struct {
 		resp *fastly.HTTPResponse
 	}
@@ -104,102 +102,13 @@ func newResponse(req *Request, backend string, abiResp *fastly.HTTPResponse, abi
 		return nil, fmt.Errorf("read header keys: %w", err)
 	}
 
-	r := &Response{
+	return &Response{
 		Request:    req,
 		Backend:    backend,
 		StatusCode: code,
 		Header:     header,
 		Body:       abiBody,
-	}
-
-	r.abi.resp = abiResp
-	return r, nil
-}
-
-const (
-	fastlyDebug      = "fastly-debug"
-	fastlyFF         = "fastly-ff"
-	surrogateControl = "surrogate-control"
-	surrogateKey     = "surrogate-key"
-	xCache           = "x-cache"
-	xCacheHits       = "x-cache-hits"
-
-	val0    = "0"
-	valHIT  = "HIT"
-	valMISS = "MISS"
-)
-
-func (resp *Response) updateFastlyCacheHeaders(req *Request) {
-	// TODO(dgryski): Set the abi headers too or just the map slice?
-
-	if hits := resp.cacheResponse.hits; hits != 0 {
-		resp.Header.Add(xCache, valHIT)
-		resp.Header.Add(xCacheHits, strconv.Itoa(int(hits)))
-	} else {
-		resp.Header.Add(xCache, valMISS)
-		resp.Header.Add(xCacheHits, val0)
-	}
-
-	shouldRemoveSurrogateHeaders := req.Header.Get(fastlyFF) == "" && req.Header.Get(fastlyDebug) == ""
-	if shouldRemoveSurrogateHeaders {
-		resp.Header.Del(surrogateKey)
-		resp.Header.Del(surrogateControl)
-	}
-}
-
-func (resp *Response) wasWrittenToCache() bool {
-	return false ||
-		(resp.cacheResponse.storageAction == fastly.HTTPCacheStorageActionInsert) ||
-		(resp.cacheResponse.storageAction == fastly.HTTPCacheStorageActionUpdate)
-}
-
-// FromCache returns whether the response was returned from the cache (true) or fresh from the backend (false).
-func (resp *Response) FromCache() bool {
-	// If we had to write it to the cache, then we must have fetched it from the backend, ergo it was not cached.
-	// but check the storage action didn't prevent it from being written
-	return !resp.wasWrittenToCache() &&
-		(resp.cacheResponse.storageAction != fastly.HTTPCacheStorageActionDoNotStore) &&
-		(resp.cacheResponse.storageAction != fastly.HTTPCacheStorageActionRecordUncacheable)
-}
-
-// TTL returns the Time to Live (TTL) in seconds in the cache for this response.
-//
-// The TTL determines the duration of "freshness" for the cached response
-// after it is inserted into the cache.
-func (resp *Response) TTL() (uint32, bool) {
-	if resp.wasWrittenToCache() {
-		return 0, false
-	}
-
-	return resp.cacheResponse.cacheWriteOptions.maxAge - resp.cacheResponse.cacheWriteOptions.age, true
-}
-
-// Age returns current age in seconds of the cached item, relative to the originating backend.
-func (resp *Response) Age() (uint32, bool) {
-	if resp.wasWrittenToCache() {
-		return 0, false
-	}
-
-	return resp.cacheResponse.cacheWriteOptions.age, true
-}
-
-// StaleWhileRevalidate returns the time in seconds for which a cached item can safely be used despite being considered stale.
-func (resp *Response) StaleWhileRevalidate() (uint32, bool) {
-	if resp.wasWrittenToCache() {
-		return 0, false
-	}
-
-	return resp.cacheResponse.cacheWriteOptions.stale, true
-}
-
-// Vary returns the set of request headers for which the response may vary.
-func (resp *Response) Vary() string {
-	return resp.cacheResponse.cacheWriteOptions.vary
-}
-
-// SurrogateKeys returns the surrogate keys for the cached response.
-func (resp *Response) SurrogateKeys() string {
-	return resp.cacheResponse.cacheWriteOptions.surrogate
+	}, nil
 }
 
 // ResponseWriter is used to respond to client requests.

@@ -257,13 +257,6 @@ func (req *Request) SetBody(body io.Reader) {
 	}
 
 	req.Body = rc
-
-	// reset abiBody if we need to
-	if req.abi.body != nil {
-		// TODO(dgryski): sadly ignoring error here :(
-		req.abi.body, _ = abiBodyFrom(req.Body)
-	}
-
 }
 
 // Clone returns a copy of the request. The returned copy will have a nil Body
@@ -367,19 +360,6 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 		if err := req.constructABIRequest(); err != nil {
 			return nil, err
 		}
-		req.setABIRequestOptions()
-	}
-
-	if ok, err := req.shouldUseGuestCaching(); err != nil {
-		// can't determine if we should use guest cache or host cache
-		return nil, err
-	} else if ok {
-		response, err := req.sendWithGuestCache(ctx, backend)
-		if err != nil {
-			return nil, fmt.Errorf("send with guest cache: %w", err)
-		}
-
-		return response, nil
 	}
 
 	// When the request's ManualFramingMode is false, SendAsyncStreaming
@@ -409,9 +389,6 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 		streaming = false
 	}
 
-	// use regular fastly host caching
-	// handle normal request flow here
-
 	req.sent = true
 
 	if streaming {
@@ -421,7 +398,6 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 		req.copyBody(errc)
 		abiPending, err = req.abi.req.SendAsync(req.abi.body, backend)
 	}
-
 	if err != nil {
 		if status, ok := fastly.IsFastlyError(err); ok && status == fastly.FastlyStatusInval {
 			return nil, ErrBackendNotFound
@@ -445,7 +421,6 @@ func newResponseFromABIPending(ctx context.Context, req *Request, backend string
 	}
 
 	abiResp, abiRespBody, err := pendingToABIResponse(ctx, errc, abiPending, pollIntervalFn)
-
 	if err != nil {
 		return nil, fmt.Errorf("poll: %w", err)
 	}
@@ -487,274 +462,12 @@ func pendingToABIResponse(ctx context.Context, errc chan error, abiPending *fast
 	}
 }
 
-func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Response, error) {
-	// use guest cache
-
-	if ok, err := fastly.HTTPCacheIsRequestCacheable(req.abi.req); err != nil {
-		return nil, fmt.Errorf("request not cacheable: %v", err)
-	} else if !ok {
-		// no error during lookup but request not cacheable;
-		abiResp, abiBody, err := req.sendWithoutCaching(backend)
-		if err != nil {
-			return nil, err
-
-		}
-
-		resp, err := newResponse(req, backend, abiResp, abiBody)
-		if err != nil {
-			return nil, fmt.Errorf("construct response: %w", err)
-		}
-
-		resp.updateFastlyCacheHeaders(req)
-		return resp, nil
-	}
-
-	var options fastly.HTTPCacheLookupOptions
-	if key := req.CacheOptions.OverrideKey; key != "" {
-		options.OverrideKey(key)
-		req.CacheOptions.OverrideKey = ""
-	}
-
-	// force the lookup to await in the host, retrieving any errors synchronously
-	cacheHandle, err := fastly.HTTPCacheTransactionLookup(req.abi.req, &options)
-	if err != nil {
-		return nil, fmt.Errorf("cache transaction lookup: %w", err)
-	}
-	// in a function so we can change cacheHandle later and have it reflected here
-	defer func() {
-		if cacheHandle != nil {
-			fastly.HTTPCacheTransactionClose(cacheHandle)
-		}
-	}()
-	if err := httpCacheWait(cacheHandle); err != nil {
-		return nil, err
-	}
-
-	// is there a "usable" cached response (i.e. fresh or within SWR period)
-	resp, err := httpCacheGetFoundResponse(cacheHandle, req, backend, true)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp != nil {
-		// got a response from the cache
-
-		// if this is during SWR, we may be the "lucky winner" who is
-		// tasked with performing a background revalidation
-		if ok, _ := httpCacheMustInsertOrUpdate(cacheHandle); ok {
-			pending, err := req.sendAsyncForCaching(ctx, cacheHandle, backend)
-			if err != nil {
-				return nil, err
-			}
-
-			// Wait for the pending respond, then call any after-end hooks
-			go func(p *pendingBackendRequestForCaching, h *fastly.HTTPCacheHandle) {
-				candidate, err := newCandidateFromPendingBackendCaching(p)
-				if err != nil {
-					// nowhere to log error
-					return
-				}
-				candidate.applyInBackground()
-				fastly.HTTPCacheTransactionClose(h)
-			}(pending, cacheHandle)
-			// let cache handle be closed in goroutine
-			cacheHandle = nil
-		}
-
-		// Meanwhile, whether fresh or in SWR, we can immediately return
-		// the cached response:
-		resp.updateFastlyCacheHeaders(req)
-		return resp, nil
-	}
-
-	// no cached response
-
-	if ok, _ := httpCacheMustInsertOrUpdate(cacheHandle); ok {
-
-		pending, err := req.sendAsyncForCaching(ctx, cacheHandle, backend)
-		if err != nil {
-			return nil, err
-		}
-
-		candidateResp, err := newCandidateFromPendingBackendCaching(pending)
-		if err != nil {
-			return nil, err
-		}
-
-		resp, err := candidateResp.applyAndStreamBack(req)
-		if err != nil {
-			return nil, err
-		}
-		resp.updateFastlyCacheHeaders(req)
-
-		cacheHandle = nil
-
-		return resp, nil
-	}
-
-	// Request collapsing has been disabled: pass the _original_ request through to the
-	// origin without updating the cache.
-	abiResp, abiBody, err := req.sendWithoutCaching(backend)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err = newResponse(req, backend, abiResp, abiBody)
-	if err != nil {
-		return nil, err
-	}
-	resp.updateFastlyCacheHeaders(req)
-	return resp, nil
-
-}
-
-func newRequestFromHandle(reqh *fastly.HTTPRequest, body io.ReadCloser, headers Header, options CacheOptions) (*Request, error) {
-	method, err := reqh.GetMethod()
-	if err != nil {
-		return nil, err
-	}
-	url, err := reqh.GetURI()
-	if err != nil {
-		return nil, err
-	}
-
-	req, _ := NewRequest(method, url, body)
-	req.CacheOptions = options
-	req.Header = headers
-	req.abi.req = reqh
-	req.abi.body, _ = abiBodyFrom(body)
-
-	return req, nil
-}
-
-type pendingBackendRequestForCaching struct {
-	cacheHandle  *fastly.HTTPCacheHandle
-	pending      *fastly.PendingRequest
-	afterSend    func(*CandidateResponse) error
-	cacheOptions CacheOptions
-	req          *Request
-}
-
-func (req *Request) sendAsyncForCaching(ctx context.Context, cacheHandle *fastly.HTTPCacheHandle, backend string) (*pendingBackendRequestForCaching, error) {
-
-	reqh, err := fastly.HTTPCacheGetSuggestedBackendRequest(cacheHandle)
-	if err != nil {
-		return nil, fmt.Errorf("get suggested backend request: %w", err)
-	}
-
-	suggReq, err := newRequestFromHandle(reqh, req.Body, req.Header, req.CacheOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	if suggReq.CacheOptions.BeforeSend != nil {
-		if err := suggReq.CacheOptions.BeforeSend(suggReq); err != nil {
-			// TODO(dgryski): sentinel ErrReject ?
-			return nil, err
-		}
-	}
-
-	// If BeforeSend calls SetBody, abi.body will be updated for the new Body
-	finalCacheOptions := suggReq.CacheOptions
-	suggReq.setABIRequestOptions()
-
-	// copy body
-	var errc chan error = make(chan error, 3)
-	suggReq.copyBody(errc)
-
-	abiPending, err := suggReq.sendAsyncWithoutCaching(ctx, backend)
-	if err != nil {
-		return nil, err
-	}
-
-	return &pendingBackendRequestForCaching{
-		cacheHandle:  cacheHandle,
-		req:          suggReq,
-		pending:      abiPending,
-		afterSend:    req.CacheOptions.AfterSend,
-		cacheOptions: finalCacheOptions,
-	}, nil
-}
-
-func (req *Request) sendAsyncWithoutCaching(_ context.Context, backend string) (*fastly.PendingRequest, error) {
-	abiPending, err := req.abi.req.SendAsyncV2(req.abi.body, backend, false)
-
-	if err != nil {
-		return nil, fmt.Errorf("send async: %w", err)
-	}
-
-	return abiPending, nil
-}
-
-func (req *Request) sendWithoutCaching(backend string) (*fastly.HTTPResponse, *fastly.HTTPBody, error) {
-	abiResp, abiBody, err := req.abi.req.SendV3(req.abi.body, backend)
-	if err != nil {
-		return nil, nil, fmt.Errorf("send v3: %w", err)
-	}
-	return abiResp, abiBody, nil
-}
-
-func (req *Request) mustUseHostCaching() (bool, error) {
-	ok, err := fastly.HTTPCacheIsRequestCacheable(req.abi.req)
-	return !ok, err
-}
-
-// ErrCachingNotSupported is returned by Send() if the requested caching type
-// (host or guest) is not supported by the request configuration or runtime.
-var ErrCachingNotSupported = errors.New("fsthttp: caching not supported")
-
-func (req *Request) shouldUseGuestCaching() (bool, error) {
-	// disabled via buildtags or unsupported hostcalls
-	if !useGuestCaching {
-		if req.CacheOptions.mustUseGuestCaching() {
-			return false, ErrCachingNotSupported
-		}
-
-		return false, nil
-	}
-
-	if req.CacheOptions.Pass {
-		// skip cache
-		return false, nil
-	}
-
-	if req.Method == "PURGE" {
-		// no caching for PURGE
-		return false, nil
-	}
-
-	mustUseHostCaching, err := req.mustUseHostCaching()
-	// check for hostcall unsupported error
-	if err != nil {
-		if status, ok := fastly.IsFastlyError(err); ok && status == fastly.FastlyStatusUnsupported {
-			// disable for future calls
-			useGuestCaching = false
-			return false, nil
-		}
-		return false, err
-	}
-
-	if mustUseHostCaching {
-		if req.CacheOptions.mustUseGuestCaching() {
-			// oops, before/after hooks need guest caching.
-			return false, ErrCachingNotSupported
-		}
-
-		// not cacheable; don't care if there's an error here
-		return false, nil
-	}
-
-	return true, nil
-}
-
 func (req *Request) copyBody(errc chan<- error) {
 	var (
 		bodyExists   = req.Body != nil
 		_, bodyIsABI = req.Body.(*fastly.HTTPBody)
 		shouldCopy   = bodyExists && !bodyIsABI
 	)
-
-	// if bodyIsABI then we should have set abi.body when SetBody calls abiBodyFrom()
 
 	if shouldCopy {
 		_, copyErr := io.Copy(req.abi.body, req.Body)
@@ -771,39 +484,22 @@ func (req *Request) copyBody(errc chan<- error) {
 }
 
 func (req *Request) constructABIRequest() error {
-	if req.abi.req == nil {
-
-		abiReq, err := fastly.NewHTTPRequest()
-		if err != nil {
-			return fmt.Errorf("construct request: %w", err)
-		}
-
-		if err := abiReq.SetMethod(req.Method); err != nil {
-			return fmt.Errorf("set method: %w", err)
-		}
-
-		if err := abiReq.SetURI(req.URL.String()); err != nil {
-			return fmt.Errorf("set URL: %w", err)
-		}
-
-		req.abi.req = abiReq
+	if req.abi.req != nil || req.abi.body != nil {
+		return fmt.Errorf("request already constructed")
 	}
 
-	if req.abi.body == nil {
-
-		abiReqBody, err := abiBodyFrom(req.Body)
-		if err != nil {
-			return fmt.Errorf("get body: %w", err)
-		}
-		req.abi.body = abiReqBody
+	abiReq, err := fastly.NewHTTPRequest()
+	if err != nil {
+		return fmt.Errorf("construct request: %w", err)
 	}
 
-	return nil
-}
+	if err := abiReq.SetMethod(req.Method); err != nil {
+		return fmt.Errorf("set method: %w", err)
+	}
 
-func (req *Request) setABIRequestOptions() error {
-
-	abiReq := req.abi.req
+	if err := abiReq.SetURI(req.URL.String()); err != nil {
+		return fmt.Errorf("set URL: %w", err)
+	}
 
 	if err := abiReq.SetAutoDecompressResponse(fastly.AutoDecompressResponseOptions(req.DecompressResponseOptions)); err != nil {
 		return fmt.Errorf("set auto decompress response: %w", err)
@@ -813,17 +509,10 @@ func (req *Request) setABIRequestOptions() error {
 		return fmt.Errorf("set framing headers mode: %w", err)
 	}
 
-	cacheOpts := fastly.CacheOverrideOptions{
-		Pass:                 req.CacheOptions.Pass,
-		PCI:                  req.CacheOptions.PCI,
-		TTL:                  req.CacheOptions.TTL,
-		StaleWhileRevalidate: req.CacheOptions.StaleWhileRevalidate,
-		SurrogateKey:         req.CacheOptions.SurrogateKey,
-	}
-
-	if err := abiReq.SetCacheOverride(cacheOpts); err != nil {
+	if err := abiReq.SetCacheOverride(fastly.CacheOverrideOptions(req.CacheOptions)); err != nil {
 		return fmt.Errorf("set cache options: %w", err)
 	}
+
 	for _, key := range req.Header.Keys() {
 		vals := req.Header.Values(key)
 		if err := abiReq.SetHeaderValues(key, vals); err != nil {
@@ -831,11 +520,13 @@ func (req *Request) setABIRequestOptions() error {
 		}
 	}
 
-	if key := req.CacheOptions.OverrideKey; key != "" {
-		if err := abiReq.SetHeaderValues("fastly-xqd-cache-key", []string{key}); err != nil {
-			return fmt.Errorf("set headers cache-key: %w", err)
-		}
+	abiReqBody, err := abiBodyFrom(req.Body)
+	if err != nil {
+		return fmt.Errorf("get body: %w", err)
 	}
+
+	req.abi.req = abiReq
+	req.abi.body = abiReqBody
 
 	return nil
 }
@@ -883,32 +574,6 @@ type CacheOptions struct {
 	//
 	// https://docs.fastly.com/en/guides/purging-api-cache-with-surrogate-keys
 	SurrogateKey string
-
-	// Cache key to use in lieu of the automatically-generated cache key based on the request's
-	// properties.
-	OverrideKey string
-
-	// Sets a callback to be invoked if a request is going all the way to a
-	// backend, allowing the request to be modified beforehand.
-	//
-	// This callback is useful when, for example, a backend requires an
-	// additional header to be inserted, but that header is expensive to
-	// produce. The callback will only be invoked if the original request
-	// cannot be responded to from the cache, so the header is only computed
-	// when it is truly needed.
-	BeforeSend func(*Request) error
-
-	// Sets a callback to be invoked after a response is returned from a
-	// backend, but before it is stored into the cache.
-	//
-	// This callback allows for cache properties like TTL to be customized
-	// beyond what the backend response headers specify. It also allows for the
-	// response itself to be modified prior to storing into the cache.
-	AfterSend func(*CandidateResponse) error
-}
-
-func (c *CacheOptions) mustUseGuestCaching() bool {
-	return c.BeforeSend != nil || c.AfterSend != nil
 }
 
 // TLSInfo collects TLS-related metadata for incoming requests. All fields are
