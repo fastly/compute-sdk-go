@@ -1,5 +1,9 @@
 ## Unreleased
 
+## 1.4.2 (2025-04-09)
+
+- fsthttp: update internal debug call for http cache refactoring change
+
 ## 1.4.1 (2025-04-09)
 
 - packaging: Retract (but do not revert) release 1.4.0 and 1.4.1. Builds will default to using 1.3.3.
