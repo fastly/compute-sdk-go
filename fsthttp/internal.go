@@ -5,7 +5,11 @@ package fsthttp
 import "github.com/fastly/compute-sdk-go/internal/abi/fastly"
 
 func (req *Request) ConstructABIRequest() error {
-	return req.constructABIRequest()
+	if err := req.constructABIRequest(); err != nil {
+		return err
+	}
+
+	return req.setABIRequestOptions()
 }
 
 func (req *Request) ABI() (*fastly.HTTPRequest, *fastly.HTTPBody) {
