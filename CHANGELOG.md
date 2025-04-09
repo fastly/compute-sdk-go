@@ -2,6 +2,7 @@
 
 ### Added
 
+- fsthttp: make response polling frequency configurable
 - secretstore: add Plaintext toplevel convenience function
 - acl: add ACL hostcalls
 
