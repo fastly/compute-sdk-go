@@ -367,7 +367,9 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 		if err := req.constructABIRequest(); err != nil {
 			return nil, err
 		}
-		req.setABIRequestOptions()
+		if err := req.setABIRequestOptions(); err != nil {
+			return nil, err
+		}
 	}
 
 	if ok, err := req.shouldUseGuestCaching(); err != nil {
@@ -656,7 +658,9 @@ func (req *Request) sendAsyncForCaching(ctx context.Context, cacheHandle *fastly
 
 	// If BeforeSend calls SetBody, abi.body will be updated for the new Body
 	finalCacheOptions := suggReq.CacheOptions
-	suggReq.setABIRequestOptions()
+	if err = suggReq.setABIRequestOptions(); err != nil {
+		return nil, err
+	}
 
 	// copy body
 	var errc chan error = make(chan error, 3)
