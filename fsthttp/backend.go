@@ -282,7 +282,7 @@ func (b *BackendOptions) CertHostname(host string) *BackendOptions {
 // CACert sets the CA certificate to use when checking the validity of the backend.
 // Setting this will enable SSL for the connection as a side effect.
 //
-// If CACert is not provided (default), the backend's certificate is checked against a set of public CA roots.
+// If CACert is not provided (default), the backend's certificate is validated using a set of public root CAs.
 func (b *BackendOptions) CACert(cert string) *BackendOptions {
 	b.abiOpts.UseSSL(true)
 	b.abiOpts.CACert(cert)
