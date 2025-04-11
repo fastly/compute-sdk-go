@@ -239,6 +239,15 @@ func (b *BackendOptions) BetweenBytesTimeout(t time.Duration) *BackendOptions {
 }
 
 // UseSSL sets whether or not to require TLS for connections to this backend.
+//
+// When using TLS, Fastly checks the validity of the backend's certificate, and fails the connection if the certificate is invalid.
+// This check is not optional: an invalid certificate will cause the backend connection to fail (but read on).
+//
+// By default, the validity check does not require that the certificate hostname matches the hostname of your request.
+// You can use [BackendOptions.CertHostname] to request a check of the certificate hostname.
+//
+// By default, certificate validity uses a set of public certificate authorities.
+// You can specify an alternative CA using [BackendOptions.CACert].
 func (b *BackendOptions) UseSSL(v bool) *BackendOptions {
 	b.abiOpts.UseSSL(v)
 	return b
@@ -262,6 +271,8 @@ func (b *BackendOptions) SSLMaxVersion(max TLSVersion) *BackendOptions {
 
 // CertHostname sets the hostname that the server certificate should declare.
 // Setting this will enable SSL for the connection as a side effect.
+//
+// If CertHostname is not provided (default), the server certificate's hostname can have any value.
 func (b *BackendOptions) CertHostname(host string) *BackendOptions {
 	b.abiOpts.UseSSL(true)
 	b.abiOpts.CertHostname(host)
@@ -270,6 +281,8 @@ func (b *BackendOptions) CertHostname(host string) *BackendOptions {
 
 // CACert sets the CA certificate to use when checking the validity of the backend.
 // Setting this will enable SSL for the connection as a side effect.
+//
+// If CACert is not provided (default), the backend's certificate is validated using a set of public root CAs.
 func (b *BackendOptions) CACert(cert string) *BackendOptions {
 	b.abiOpts.UseSSL(true)
 	b.abiOpts.CACert(cert)
