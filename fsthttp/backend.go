@@ -34,6 +34,20 @@ const (
 	BackendHealthUnhealthy BackendHealth = 2
 )
 
+// String returns a string representation of the backend health.
+func (h BackendHealth) String() string {
+	switch h {
+	case BackendHealthHealthy:
+		return "healthy"
+	case BackendHealthUnhealthy:
+		return "unhealthy"
+	case BackendHealthUnknown:
+		fallthrough
+	default:
+		return "unknown"
+	}
+}
+
 type TLSVersion uint32
 
 // Constants for dynamic backend TLS configuration
