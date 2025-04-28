@@ -526,7 +526,7 @@ func (candidateResponse *CandidateResponse) buildFreshSuggestedCacheWriteOptions
 		keys += extra
 	}
 
-	vals := candidateResponse.abiResp.GetHeaderValues(surrogateKey, RequestLimits.maxHeaderNameLen)
+	vals := candidateResponse.abiResp.GetHeaderValues(surrogateKey, RequestLimits.maxHeaderValueLen)
 	for vals.Next() {
 		if keys != "" {
 			keys += " "
