@@ -3,7 +3,6 @@ package core_test
 import (
 	"fmt"
 	"io"
-	"testing"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/cache/core"
@@ -156,7 +155,7 @@ func ExampleTransaction() {
 	}
 }
 
-func ExampleGetRange() {
+func ExampleFound_GetRange() {
 	const (
 		key      = "my_key"
 		contents = "my cached object"
