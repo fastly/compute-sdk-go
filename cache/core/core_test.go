@@ -188,13 +188,13 @@ func ExampleFound_GetRange() {
 	}
 
 	// If we try to read an invalid range (from > to), we get an error:
-	body, err := f.GetRange(3, 1)
+	_, err = f.GetRange(3, 1)
 	if err == nil {
 		panic("accepted invalid range")
 	}
 
 	// We can use "0" as a signal value to say "everything to the end":
-	body, err = f.GetRange(3, 0)
+	body, err := f.GetRange(3, 0)
 	if err == nil {
 		panic("accepted invalid range")
 	}
