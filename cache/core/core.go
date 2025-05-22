@@ -211,6 +211,9 @@ func (f *Found) GetRange(from, to uint64) (io.ReadCloser, error) {
 	if to > 0 {
 		bopts.To(to)
 	}
+	if to != 0 && from > to {
+		return nil, fmt.Errorf("GetRange from (%d) > to (%d)", from, to)
+	}
 
 	body, err := f.abiEntry.Body(bopts)
 	if err := ignoreNoneError(err); err != nil {

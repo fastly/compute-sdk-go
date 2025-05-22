@@ -154,3 +154,57 @@ func ExampleTransaction() {
 		panic(err)
 	}
 }
+
+func ExampleFound_GetRange() {
+	const (
+		key      = "my_key"
+		contents = "my cached object"
+	)
+
+	// Start by filling the cache...
+	w, err := core.Insert([]byte(key), core.WriteOptions{
+		TTL:           time.Hour,
+		SurrogateKeys: []string{key},
+		Length:        uint64(len(contents)),
+	})
+	if err != nil {
+		panic(err)
+	}
+	if _, err := io.WriteString(w, contents); err != nil {
+		panic(err)
+	}
+	if err := w.Close(); err != nil {
+		panic(err)
+	}
+
+	// We get a response...
+	f, err := core.Lookup([]byte("my_key"), core.LookupOptions{})
+	if err != nil {
+		panic(err)
+	}
+	// ...then discard the body, so we can re-open a new body reading a subset of the bytes.
+	if err := f.Body.Close(); err != nil {
+		panic(err)
+	}
+
+	// If we try to read an invalid range (from > to), we get an error:
+	_, err = f.GetRange(3, 1)
+	if err == nil {
+		panic("accepted invalid range")
+	}
+
+	// We can use "0" as a signal value to say "everything to the end":
+	body, err := f.GetRange(3, 0)
+	if err == nil {
+		panic("accepted invalid range")
+	}
+	cachedStr, err := io.ReadAll(body)
+	if err != nil {
+		panic(err)
+	}
+	if string(cachedStr) != "cached object" {
+		panic(fmt.Sprintf("got: %q, want: %q", cachedStr, "cached object"))
+	}
+
+	fmt.Printf("The cached value was: %s", cachedStr)
+}
