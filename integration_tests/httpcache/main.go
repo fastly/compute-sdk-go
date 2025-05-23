@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -83,6 +84,7 @@ func main() {
 
 type query struct {
 	status *int
+	wait   time.Duration
 }
 
 func (q *query) String() string {
@@ -90,16 +92,19 @@ func (q *query) String() string {
 		return ""
 	}
 
-	var s string
+	var args []string
 
 	if q.status != nil {
-		if s != "" {
-			s += "&"
-		}
-		s += fmt.Sprintf("status=%v", *q.status)
+		s := fmt.Sprintf("status=%v", *q.status)
+		args = append(args, s)
 	}
 
-	return "?" + s
+	if q.wait != 0 {
+		s := fmt.Sprintf("wait=%v", q.wait.Milliseconds())
+		args = append(args, s)
+	}
+
+	return "?" + strings.Join(args, "&")
 }
 
 func getTestReq(method string, q *query, body io.Reader) *fsthttp.Request {
