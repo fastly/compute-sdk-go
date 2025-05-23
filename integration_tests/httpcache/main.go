@@ -245,7 +245,7 @@ func testBeforeSendAddHeader(ctx context.Context) error {
 }
 
 func testRequestCollapse(ctx context.Context) error {
-	r := getTestReq("", nil, nil)
+	r := getTestReq("", &query{wait: 1 * time.Second}, nil)
 
 	var beforeSendCount int
 	var mu sync.Mutex
@@ -270,6 +270,7 @@ func testRequestCollapse(ctx context.Context) error {
 		<-ch
 		var err error
 		resp, err = r.Send(ctx, backend)
+		time.Sleep(10 * time.Millisecond)
 		errch <- err
 	}()
 
@@ -277,6 +278,7 @@ func testRequestCollapse(ctx context.Context) error {
 		<-ch
 		var err error
 		resp2, err = r2.Send(ctx, backend)
+		time.Sleep(20 * time.Millisecond)
 		errch <- err
 	}()
 
