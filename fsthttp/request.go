@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
@@ -489,6 +490,8 @@ func pendingToABIResponse(ctx context.Context, errc chan error, abiPending *fast
 	}
 }
 
+var guestCacheSWRPending sync.WaitGroup
+
 func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Response, error) {
 	// use guest cache
 
@@ -550,7 +553,9 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 			}
 
 			// Wait for the pending respond, then call any after-end hooks
+			guestCacheSWRPending.Add(1)
 			go func(p *pendingBackendRequestForCaching, h *fastly.HTTPCacheHandle) {
+				defer guestCacheSWRPending.Done()
 				candidate, err := newCandidateFromPendingBackendCaching(p)
 				if err != nil {
 					// nowhere to log error
