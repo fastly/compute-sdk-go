@@ -21,6 +21,14 @@ func (o *CacheLookupOptions) SetRequest(req *HTTPRequest) {
 	o.mask |= cacheLookupOptionsMaskRequestHeaders
 }
 
+func (o *CacheLookupOptions) SetAlwaysUseRequestedRange(alwaysUseRequestedRange bool) {
+	if alwaysUseRequestedRange {
+		o.mask |= cacheLookupOptionsMaskAlwaysUseRequestedRange
+	} else {
+		o.mask &= ^cacheLookupOptionsMaskAlwaysUseRequestedRange
+	}
+}
+
 type CacheGetBodyOptions struct {
 	opts cacheGetBodyOptions
 	mask cacheGetBodyOptionsMask

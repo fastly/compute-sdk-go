@@ -721,13 +721,16 @@ type cacheLookupOptions struct {
 //	    (flags (@witx repr u32)
 //	        $reserved
 //	        $request_headers
+//	        $service_id
+//	        $always_use_requested_range
 //	    )
 //	)
 type cacheLookupOptionsMask prim.U32
 
 const (
-	cacheLookupOptionsMaskReserved       cacheLookupOptionsMask = 0b0000_0001 // $reserved
-	cacheLookupOptionsMaskRequestHeaders cacheLookupOptionsMask = 0b0000_0010 // $request_headers
+	cacheLookupOptionsMaskReserved                cacheLookupOptionsMask = 0b0000_0001 // $reserved
+	cacheLookupOptionsMaskRequestHeaders          cacheLookupOptionsMask = 0b0000_0010 // $request_headers
+	cacheLookupOptionsMaskAlwaysUseRequestedRange cacheLookupOptionsMask = 0b0000_1000 // $always_use_requested_range
 )
 
 // witx:
