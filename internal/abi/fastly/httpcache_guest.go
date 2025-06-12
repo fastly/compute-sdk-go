@@ -334,7 +334,7 @@ func HTTPCacheTransactionInsert(h *HTTPCacheHandle, resp *HTTPResponse, opts *HT
 		return nil, err
 	}
 
-	return &HTTPBody{h: body}, nil
+	return &HTTPBody{h: body, closable: true}, nil
 }
 
 // witx:

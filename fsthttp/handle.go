@@ -37,6 +37,8 @@ func Serve(h Handler) {
 
 	h.ServeHTTP(ctx, clientResponseWriter, clientRequest)
 	clientResponseWriter.Close()
+	// wait for any stale-while-revalidate goroutines to complete.
+	guestCacheSWRPending.Wait()
 }
 
 // ServeFunc is sugar for Serve(HandlerFunc(f)).
