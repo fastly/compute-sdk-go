@@ -258,6 +258,16 @@ type LookupOptions struct {
 	// To indicates the ending offset to read from the cached object.  A
 	// value of 0 means to read to the end of the object.
 	To uint64
+
+	// By default, if:
+	// - The size of the cached item's body was not provided by the writer
+	// - The reader requests a specific range of the cached item's body (`From` and `To` are set)
+	// - The writer and reader are concurrent, i.e. the body is streamed from one to the other
+	// then today, the core cache API will ignore the requested range and provide the whole body.
+	//
+	// Setting this flag provides the more intuitive behavior: the range will be respected
+	// during streaming as well.
+	AlwaysUseRequestedRange bool
 }
 
 func abiLookupOptions(opts LookupOptions) (fastly.CacheLookupOptions, error) {
@@ -271,6 +281,8 @@ func abiLookupOptions(opts LookupOptions) (fastly.CacheLookupOptions, error) {
 
 		abiOpts.SetRequest(req)
 	}
+
+	abiOpts.SetAlwaysUseRequestedRange(opts.AlwaysUseRequestedRange)
 
 	return abiOpts, nil
 }

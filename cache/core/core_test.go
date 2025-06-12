@@ -208,3 +208,46 @@ func ExampleFound_GetRange() {
 
 	fmt.Printf("The cached value was: %s", cachedStr)
 }
+
+func ExampleLookupOptions_AlwaysUseRequestedRange() {
+	const (
+		key      = "my_key"
+		contents = "my cached object"
+	)
+
+	// Start an insert; this will be concurrent with the read.
+	// Data written to this handle is streamed into the Fastly cache.
+	w, err := core.Insert([]byte(key), core.WriteOptions{
+		TTL:           time.Hour,
+		SurrogateKeys: []string{key},
+		Length:        uint64(len(contents)),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// With the write still outstanding, start a lookup for a specific range.
+	f, err := core.Lookup([]byte("my_key"), core.LookupOptions{
+		From:                    3,
+		To:                      8,
+		AlwaysUseRequestedRange: true,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Write and flush:
+	if _, err := io.WriteString(w, contents); err != nil {
+		panic(err)
+	}
+
+	cachedStr, err := io.ReadAll(f.Body)
+	if err != nil {
+		panic(err)
+	}
+	if string(cachedStr) != "cached" {
+		panic(fmt.Sprintf("got: %q, want: %q", cachedStr, "cached object"))
+	}
+
+	fmt.Printf("The cached value was: %s", cachedStr)
+}
