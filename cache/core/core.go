@@ -259,10 +259,12 @@ type LookupOptions struct {
 	// value of 0 means to read to the end of the object.
 	To uint64
 
-	// AlwaysUseRequestedRange indicates the provided range should be used
-	// even when the cached item is concurrently streamed.
+	// AlwaysUseRequestedRange forces the provided range to be used during streaming.
 	//
-	// By default, if:
+	// If false, under certain circumstances the entire body will be returned
+	// instead of just the requested range.
+	//
+	// If:
 	//
 	// - AlwaysUseRequestedRange is false
 	// - The size of the cached item's body was not provided by the writer
