@@ -259,14 +259,27 @@ type LookupOptions struct {
 	// value of 0 means to read to the end of the object.
 	To uint64
 
-	// By default, if:
-	// - The size of the cached item's body was not provided by the writer
-	// - The reader requests a specific range of the cached item's body (`From` and `To` are set)
-	// - The writer and reader are concurrent, i.e. the body is streamed from one to the other
-	// then today, the core cache API will ignore the requested range and provide the whole body.
+	// AlwaysUseRequestedRange indicates the provided range should be used
+	// even when the cached item is concurrently streamed.
 	//
-	// Setting this flag provides the more intuitive behavior: the range will be respected
-	// during streaming as well.
+	// By default, if:
+	//
+	// - AlwaysUseRequestedRange is false
+	// - The size of the cached item's body was not provided by the writer
+	// - The reader requests a specific range of the cached item's body
+	//   (`From` and `To` are provided in LookupOptions or GetBodyOptions)
+	// - The writer and reader are concurrent, i.e. the body is streamed from
+	//   the writer to the reader
+	//
+	// then the core cache API will ignore the requested range, and provide
+	// the entire body.
+	//
+	// Setting AlwaysUseRequestedRange to true changes this behavior:
+	// - The reader will block until the start of the requested range has been
+	//   written by the writer. This blocking happens within the
+	//   TransactionLookup or Lookup call (if the range is provided in
+	//   LookupOptions) or in GetBody (if the range is provided to GetBody).
+	// - Only the requested range will be returned to the reader.
 	AlwaysUseRequestedRange bool
 }
 
