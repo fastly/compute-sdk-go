@@ -246,7 +246,7 @@ func ExampleLookupOptions_AlwaysUseRequestedRange() {
 		panic(err)
 	}
 	if string(cachedStr) != "cached" {
-		panic(fmt.Sprintf("got: %q, want: %q", cachedStr, "cached object"))
+		panic(fmt.Sprintf("got: %q, want: %q", cachedStr, "cached"))
 	}
 
 	fmt.Printf("The cached value was: %s", cachedStr)
