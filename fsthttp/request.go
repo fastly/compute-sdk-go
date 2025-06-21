@@ -5,6 +5,7 @@ package fsthttp
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -516,6 +517,9 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 
 	var options fastly.HTTPCacheLookupOptions
 	if key := req.CacheOptions.OverrideKey; key != "" {
+		if len(key) != 32 {
+			return nil, fmt.Errorf("bad length for OverrideKey: %v != 32", len(key))
+		}
 		options.OverrideKey(key)
 		req.CacheOptions.OverrideKey = ""
 	}
@@ -841,6 +845,13 @@ func (req *Request) setABIRequestOptions() error {
 	}
 
 	if key := req.CacheOptions.OverrideKey; key != "" {
+		if len(key) != 32 {
+			return fmt.Errorf("bad length for OverrideKey: %v != 32", len(key))
+		}
+
+		// the header must be 64-byte upper-case hex encoded
+		key = strings.ToUpper(hex.EncodeToString([]byte(key)))
+
 		if err := abiReq.SetHeaderValues("fastly-xqd-cache-key", []string{key}); err != nil {
 			return fmt.Errorf("set headers cache-key: %w", err)
 		}
