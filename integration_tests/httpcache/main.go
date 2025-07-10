@@ -107,7 +107,7 @@ func getTestReq(method string, q *query, body io.Reader) *fsthttp.Request {
 		method = "GET"
 	}
 
-	uri := "https://http-me.glitch.me/anything/" + strconv.Itoa(rand.Int()) + "/" + q.String()
+	uri := "https://http-me.fastly.dev/anything/" + strconv.Itoa(rand.Int()) + "/" + q.String()
 	println("uri=", uri)
 	req, err := fsthttp.NewRequest(method, uri, body)
 	if err != nil {

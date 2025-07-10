@@ -19,7 +19,7 @@ const backend = "httpme"
 
 func TestInternalDebug(t *testing.T) {
 
-	uri := "https://http-me.glitch.me/anything/" + strconv.Itoa(rand.Int()) + "/"
+	uri := "https://http-me.fastly.dev/anything/" + strconv.Itoa(rand.Int()) + "/"
 	req, err := fsthttp.NewRequest("GET", uri, nil)
 	if err != nil {
 		t.Errorf("error during NewRequest: uri=%v err=%v", uri, err)

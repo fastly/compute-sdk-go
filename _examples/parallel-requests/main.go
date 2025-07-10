@@ -23,9 +23,9 @@ func main() {
 		// Send several requests in parallel.
 		var wg sync.WaitGroup
 		for _, url := range []string{
-			"https://http-me.glitch.me/drip=2?wait=3000", // delay 3s + stream body 2s = 5s
-			"https://http-me.glitch.me/drip=2?wait=2000", // delay 2s + stream body 2s = 4s
-			"https://http-me.glitch.me/wait=3000",        // delay 3s + stream body 0s = 3s
+			"https://http-me.fastly.dev/drip=2?wait=3000", // delay 3s + stream body 2s = 5s
+			"https://http-me.fastly.dev/drip=2?wait=2000", // delay 2s + stream body 2s = 4s
+			"https://http-me.fastly.dev/wait=3000",        // delay 3s + stream body 0s = 3s
 		} {
 			wg.Add(1)
 			go func(url string) {

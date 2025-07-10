@@ -19,7 +19,7 @@ func main() {
 		defer cancel()
 
 		// Create the request, and set pass to true, to avoid caching.
-		req, err := fsthttp.NewRequest(fsthttp.MethodGet, "https://http-me.glitch.me/wait=3000", nil)
+		req, err := fsthttp.NewRequest(fsthttp.MethodGet, "https://http-me.fastly.dev/wait=3000", nil)
 		if err != nil {
 			log.Printf("create request: %v", err)
 			return
@@ -28,7 +28,7 @@ func main() {
 
 		// This request takes 3 seconds to complete but should error after 1
 		// second. It also requires your service to be configured with a backend
-		// named "httpme" and pointing to "https://http-me.glitch.me".
+		// named "httpme" and pointing to "https://http-me.fastly.dev".
 		_, err = req.Send(ctx, "httpme")
 		if err != nil {
 			log.Printf("send request errored after %s: %v", time.Since(begin), err)
