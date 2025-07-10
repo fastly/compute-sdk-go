@@ -22,7 +22,7 @@ func main() {
 	})
 
 	mux.HandleFunc("/ip", func(w http.ResponseWriter, r *http.Request) {
-		req, err := fsthttp.NewRequest("GET", "https://http-me.glitch.me/ip", nil)
+		req, err := fsthttp.NewRequest("GET", "https://http-me.fastly.dev/ip", nil)
 		if err != nil {
 			w.WriteHeader(fsthttp.StatusInternalServerError)
 			w.Write([]byte(err.Error()))

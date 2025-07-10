@@ -8,4 +8,4 @@ manifest_version = 2
 name = "example"
 
 [local_server]
-backends.httpme.url = "https://http-me.glitch.me"
+backends.httpme.url = "https://http-me.fastly.dev"

@@ -10,4 +10,4 @@ service_id = ""
 
 
 [local_server.backends.httpme]
-url = "https://http-me.glitch.me"
+url = "https://http-me.fastly.dev"
