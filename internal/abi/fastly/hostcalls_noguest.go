@@ -727,3 +727,11 @@ func HTTPCacheGetSurrogateKeys(h *HTTPCacheHandle) (string, error) {
 func HTTPCacheGetVaryRule(h *HTTPCacheHandle) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
+
+func ShieldingShieldInfo(name string) (*ShieldInfo, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func ShieldingBackendForShield(name string, opts *ShieldingBackendOptions) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}

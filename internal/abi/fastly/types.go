@@ -1623,3 +1623,49 @@ const (
 	httpCacheWriteOptionsFlagLength               httpCacheWriteOptionsMask = 1 << 5
 	httpCacheWriteOptionsFlagSensitiveData        httpCacheWriteOptionsMask = 1 << 6
 )
+
+// shielding.witx
+
+type shieldingBackendOptionsMask prim.U32
+
+const (
+	shieldingBackendOptionsFlagReserved    shieldingBackendOptionsMask = 1 << 0
+	shieldingBackendOptionsFlagUseCacheKey shieldingBackendOptionsMask = 1 << 1
+)
+
+type shieldingBackendOptions struct {
+	// A list of surrogate keys that may be used to purge this response.
+	//
+	// The format is a string containing [valid surrogate
+	// keys](https://www.fastly.com/documentation/reference/http/http-headers/Surrogate-Key/)
+	// separated by spaces.
+	//
+	// If this field is not set, no surrogate keys will be associated with the response. This
+	// means that the response cannot be purged except via a purge-all operation.
+	cacheKeyPtr prim.Pointer[prim.Char8]
+	cacheKeyLen prim.Usize
+}
+
+type ShieldingBackendOptions struct {
+	mask shieldingBackendOptionsMask
+	opts shieldingBackendOptions
+}
+
+func (s *ShieldingBackendOptions) CacheKey(key string) {
+	s.mask |= shieldingBackendOptionsFlagUseCacheKey
+	buf := prim.NewReadBufferFromString(key)
+	s.opts.cacheKeyPtr = prim.ToPointer(buf.Char8Pointer())
+	s.opts.cacheKeyLen = buf.Len()
+}
+
+type ShieldInfo struct {
+	me        bool
+	target    string
+	sslTarget string
+}
+
+func (s *ShieldInfo) RunningOn() bool { return s.me }
+
+func (s *ShieldInfo) Target() string { return s.target }
+
+func (s *ShieldInfo) SSLTarget() string { return s.sslTarget }

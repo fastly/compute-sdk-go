@@ -1,0 +1,13 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["oss@fastly.com"]
+description = ""
+language = "go"
+manifest_version = 2
+name = "shielding"
+
+[local_server.shielding_sites]
+"pdx-or-us" = "Local"
+"bfi-wa-us".unencrypted = "http://localhost"
+"bfi-wa-us".encrypted = "https://localhost"
