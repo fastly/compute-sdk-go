@@ -1,0 +1,20 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["oss@fastly.com"]
+description = ""
+language = "other"
+manifest_version = 2
+name = "hello_world"
+service_id = ""
+
+[local_server]
+
+[local_server.shielding_sites]
+"pdx-or-us" = "Local"
+"bfi-wa-us".unencrypted = "http://localhost"
+"bfi-wa-us".encrypted = "https://localhost"
+
+[local_server.backends]
+[local_server.backends.TheOrigin]
+      url = "https://compute-sdk-test-backend.edgecompute.app/"
