@@ -259,30 +259,26 @@ type LookupOptions struct {
 	// value of 0 means to read to the end of the object.
 	To uint64
 
-	// AlwaysUseRequestedRange forces the provided range to be used during streaming.
+	// LegacyReturnWholeBody restores a legacy behavior around range requests.
 	//
-	// If false, under certain circumstances the entire body will be returned
-	// instead of just the requested range.
-	//
-	// If:
-	//
-	// - AlwaysUseRequestedRange is false
+	// In SDK v1.4.2 and earlier, under certain circumstances the requested range
+	// (From/To) would be ignored. Specifically, if:
+	// - The lookup (reader) is concurrent with the writer of the body
 	// - The size of the cached item's body was not provided by the writer
 	// - The reader requests a specific range of the cached item's body
 	//   (`From` and `To` are provided in LookupOptions or GetBodyOptions)
-	// - The writer and reader are concurrent, i.e. the body is streamed from
-	//   the writer to the reader
+	// then the core cache API would ignore the requested range and provide
+	// the entire body, instead of providing just the requested range.
 	//
-	// then the core cache API will ignore the requested range, and provide
-	// the entire body.
-	//
-	// Setting AlwaysUseRequestedRange to true changes this behavior:
-	// - The reader will block until the start of the requested range has been
-	//   written by the writer. This blocking happens within the
-	//   TransactionLookup or Lookup call (if the range is provided in
-	//   LookupOptions) or in GetBody (if the range is provided to GetBody).
+	// In SDK v1.4.3, the default behavior changed. In a concurrent read/write:
+	// - If From and To are nonzero, the reader will block until the start of
+	//   the requested range has been provided by the writer.
 	// - Only the requested range will be returned to the reader.
-	AlwaysUseRequestedRange bool
+	//
+	// Note that the full body is still provided if the range is invalid.
+	//
+	// LegacyReturnWholeBody restores the v1.4.2 behavior.
+	LegacyReturnWholeBody bool
 }
 
 func abiLookupOptions(opts LookupOptions) (fastly.CacheLookupOptions, error) {
@@ -297,7 +293,7 @@ func abiLookupOptions(opts LookupOptions) (fastly.CacheLookupOptions, error) {
 		abiOpts.SetRequest(req)
 	}
 
-	abiOpts.SetAlwaysUseRequestedRange(opts.AlwaysUseRequestedRange)
+	abiOpts.SetAlwaysUseRequestedRange(!opts.LegacyReturnWholeBody)
 
 	return abiOpts, nil
 }

@@ -209,7 +209,7 @@ func ExampleFound_GetRange() {
 	fmt.Printf("The cached value was: %s", cachedStr)
 }
 
-func ExampleLookupOptions_AlwaysUseRequestedRange() {
+func ExampleLookupOptions_LegacyReturnWholeBody() {
 	const (
 		key      = "my_key"
 		contents = "my cached object"
@@ -227,25 +227,45 @@ func ExampleLookupOptions_AlwaysUseRequestedRange() {
 	}
 
 	// With the write still outstanding, start a lookup for a specific range.
-	f, err := core.Lookup([]byte("my_key"), core.LookupOptions{
-		From:                    3,
-		To:                      8,
-		AlwaysUseRequestedRange: true,
+	legacy, err := core.Lookup([]byte(key), core.LookupOptions{
+		From:                  3,
+		To:                    8,
+		LegacyReturnWholeBody: true,
+	})
+	if err != nil {
+		panic(err)
+	}
+	// With the write still outstanding, start a lookup for a specific range.
+	updated, err := core.Lookup([]byte(key), core.LookupOptions{
+		From: 3,
+		To:   8,
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	// Write and flush:
+	// The read and write are concurrent, and with an unknown length.
+	// In the legacy mode, we'll see the whole body;
+	// in the updated mode, we'll see just the range.
+
+	// Finish writing the body:
 	if _, err := io.WriteString(w, contents); err != nil {
 		panic(err)
 	}
 
-	cachedStr, err := io.ReadAll(f.Body)
+	legacyStr, err := io.ReadAll(legacy.Body)
 	if err != nil {
 		panic(err)
 	}
-	if string(cachedStr) != "cached" {
-		panic(fmt.Sprintf("got: %q, want: %q", cachedStr, "cached"))
+	updatedStr, err := io.ReadAll(updated.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	if got, want := string(legacyStr), "my cached object"; got != want {
+		panic(fmt.Sprintf("got: %q, want: %q", got, want))
+	}
+	if got, want := string(updatedStr), "cached"; got != want {
+		panic(fmt.Sprintf("got: %q, want: %q", got, want))
 	}
 }
