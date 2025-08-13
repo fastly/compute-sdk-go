@@ -220,43 +220,6 @@ type HTTPCacheHandle struct {
 
 // witx:
 //
-//	;;; Perform a cache lookup based on the given request without participating in request
-//	;;; collapsing.
-//	;;;
-//	;;; The request is not consumed.
-//	(@interface func (export "lookup")
-//	    (param $req_handle $request_handle)
-//	    (param $options_mask $http_cache_lookup_options_mask)
-//	    (param $options (@witx pointer $http_cache_lookup_options))
-//	    (result $err (expected $http_cache_handle (error $fastly_status)))
-//	)
-//
-//go:wasmimport fastly_http_cache lookup
-//go:noescape
-func fastlyHTTPCacheLookup(
-	h requestHandle,
-	mask httpCacheLookupOptionsMask,
-	opts prim.Pointer[httpCacheLookupOptions],
-	cacheHandle prim.Pointer[httpCacheHandle],
-) FastlyStatus
-
-func HTTPCacheLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (*HTTPCacheHandle, error) {
-	var h httpCacheHandle = invalidHTTPCacheHandle
-
-	if err := fastlyHTTPCacheLookup(
-		req.h,
-		opts.mask,
-		prim.ToPointer(&opts.opts),
-		prim.ToPointer(&h),
-	).toError(); err != nil {
-		return nil, err
-	}
-
-	return &HTTPCacheHandle{h: h}, nil
-}
-
-// witx:
-//
 //	;;; Perform a cache lookup based on the given request.
 //	;;;
 //	;;; This operation always participates in request collapsing and may return an obligation to
