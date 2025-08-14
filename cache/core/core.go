@@ -258,6 +258,27 @@ type LookupOptions struct {
 	// To indicates the ending offset to read from the cached object.  A
 	// value of 0 means to read to the end of the object.
 	To uint64
+
+	// LegacyReturnWholeBody restores a legacy behavior around range requests.
+	//
+	// In SDK v1.4.2 and earlier, under certain circumstances the requested range
+	// (From/To) would be ignored. Specifically, if:
+	// - The lookup (reader) is concurrent with the writer of the body
+	// - The size of the cached item's body was not provided by the writer
+	// - The reader requests a specific range of the cached item's body
+	//   (`From` and `To` are provided in LookupOptions or GetBodyOptions)
+	// then the core cache API would ignore the requested range and provide
+	// the entire body, instead of providing just the requested range.
+	//
+	// In SDK v1.4.3, the default behavior changed. In a concurrent read/write:
+	// - If From and To are nonzero, the reader will block until the start of
+	//   the requested range has been provided by the writer.
+	// - Only the requested range will be returned to the reader.
+	//
+	// Note that the full body is still provided if the range is invalid.
+	//
+	// LegacyReturnWholeBody restores the v1.4.2 behavior.
+	LegacyReturnWholeBody bool
 }
 
 func abiLookupOptions(opts LookupOptions) (fastly.CacheLookupOptions, error) {
@@ -271,6 +292,8 @@ func abiLookupOptions(opts LookupOptions) (fastly.CacheLookupOptions, error) {
 
 		abiOpts.SetRequest(req)
 	}
+
+	abiOpts.SetAlwaysUseRequestedRange(!opts.LegacyReturnWholeBody)
 
 	return abiOpts, nil
 }

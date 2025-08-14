@@ -208,3 +208,64 @@ func ExampleFound_GetRange() {
 
 	fmt.Printf("The cached value was: %s", cachedStr)
 }
+
+func ExampleLookupOptions_LegacyReturnWholeBody() {
+	const (
+		key      = "my_key"
+		contents = "my cached object"
+	)
+
+	// Start an insert; this will be concurrent with the read.
+	// Data written to this handle is streamed into the Fastly cache.
+	w, err := core.Insert([]byte(key), core.WriteOptions{
+		TTL:           time.Hour,
+		SurrogateKeys: []string{key},
+		Length:        uint64(len(contents)),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// With the write still outstanding, start a lookup for a specific range.
+	legacy, err := core.Lookup([]byte(key), core.LookupOptions{
+		From:                  3,
+		To:                    8,
+		LegacyReturnWholeBody: true,
+	})
+	if err != nil {
+		panic(err)
+	}
+	// With the write still outstanding, start a lookup for a specific range.
+	updated, err := core.Lookup([]byte(key), core.LookupOptions{
+		From: 3,
+		To:   8,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// The read and write are concurrent, and with an unknown length.
+	// In the legacy mode, we'll see the whole body;
+	// in the updated mode, we'll see just the range.
+
+	// Finish writing the body:
+	if _, err := io.WriteString(w, contents); err != nil {
+		panic(err)
+	}
+
+	legacyStr, err := io.ReadAll(legacy.Body)
+	if err != nil {
+		panic(err)
+	}
+	updatedStr, err := io.ReadAll(updated.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	if got, want := string(legacyStr), "my cached object"; got != want {
+		panic(fmt.Sprintf("got: %q, want: %q", got, want))
+	}
+	if got, want := string(updatedStr), "cached"; got != want {
+		panic(fmt.Sprintf("got: %q, want: %q", got, want))
+	}
+}

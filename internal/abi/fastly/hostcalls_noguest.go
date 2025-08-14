@@ -425,6 +425,10 @@ func (o *CacheLookupOptions) SetRequest(req *HTTPRequest) error {
 	return fmt.Errorf("not implemented")
 }
 
+func (o *CacheLookupOptions) SetAlwaysUseRequestedRange(alwaysUseRequestedRange bool) error {
+	return fmt.Errorf("not implemented")
+}
+
 func (o *CacheGetBodyOptions) From(from uint64) error {
 	return fmt.Errorf("not implemented")
 }
