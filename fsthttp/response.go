@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"strconv"
-	"sync"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
@@ -249,10 +248,10 @@ type ResponseWriter interface {
 }
 
 type responseWriter struct {
-	once              sync.Once
 	header            Header
 	abiResp           *fastly.HTTPResponse
 	abiBody           *fastly.HTTPBody
+	wroteHeaders      bool
 	ManualFramingMode bool
 }
 
@@ -279,23 +278,32 @@ func (resp *responseWriter) Header() Header {
 }
 
 func (resp *responseWriter) WriteHeader(code int) {
-	resp.once.Do(func() {
-		resp.abiResp.SetFramingHeadersMode(resp.ManualFramingMode)
-		resp.abiResp.SetStatusCode(code)
-		for _, key := range resp.header.Keys() {
-			resp.abiResp.SetHeaderValues(key, resp.header.Values(key))
-		}
-		resp.abiResp.SendDownstream(resp.abiBody, true)
-	})
+	if resp.wroteHeaders {
+		println("fsthttp: multiple calls to WriteHeader")
+		return
+	}
+
+	resp.abiResp.SetFramingHeadersMode(resp.ManualFramingMode)
+	resp.abiResp.SetStatusCode(code)
+	for _, key := range resp.header.Keys() {
+		resp.abiResp.SetHeaderValues(key, resp.header.Values(key))
+	}
+	resp.abiResp.SendDownstream(resp.abiBody, true)
+
+	resp.wroteHeaders = true
 }
 
 func (resp *responseWriter) Write(p []byte) (int, error) {
-	resp.WriteHeader(200)
+	if !resp.wroteHeaders {
+		resp.WriteHeader(200)
+	}
 	return resp.abiBody.Write(p)
 }
 
 func (resp *responseWriter) Close() error {
-	resp.WriteHeader(200)
+	if !resp.wroteHeaders {
+		resp.WriteHeader(200)
+	}
 	return resp.abiBody.Close()
 }
 
