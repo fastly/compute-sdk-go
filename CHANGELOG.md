@@ -1,5 +1,19 @@
 ## Unreleased
 
+## 1.5.0 (2025-08-14)
+
+- fsthttp: override old values in header.Apply()
+- fsthttp: Respect range during cache streaming
+- all: add support for shielding hostcalls
+- fsthttp: ensure OverrideKey has the correct format
+- all: http-me.glitch.me -> http-me.fastly.dev
+- fsthttp: ensure swr goroutines have completed before exiting
+- internal: mark body returned from HTTPCacheTransactionInsert as closable
+- configstore: handle config store values larger than 8k
+- fsthttp: fix max header value len for GetHeaderValues() call
+- fsthttp: Reject out-of-order ranges
+- fsthttp: Add a String method to BackendHealth
+
 ## 1.4.2 (2025-04-09)
 
 - fsthttp: update internal debug call for http cache refactoring change
