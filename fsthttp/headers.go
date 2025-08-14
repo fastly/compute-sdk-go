@@ -85,6 +85,7 @@ func (h Header) Reset(hs Header) {
 // values from hs totally overwrite existing values in h.
 func (h Header) Apply(hs Header) {
 	for _, key := range hs.Keys() {
+		h.Del(key)
 		for _, value := range hs.Values(key) {
 			h.Add(key, value)
 		}
