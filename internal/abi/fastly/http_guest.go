@@ -1065,27 +1065,103 @@ func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
 
 // (module $fastly_http_downstream
 
-//    ;;; Indicate to the host that we will accept a new request from a client in the future.
-//    (@interface func (export "next_request")
-//        (param $options_mask $next_request_options_mask)
-//        (param $options (@witx pointer $next_request_options))
-//        (result $err (expected $request_promise_handle (error $fastly_status)))
-//    )
+type HTTPRequestPromise struct {
+	h requestPromiseHandle
+}
+
+// witx:
 //
-//    ;;; Block until an additional request from a client is ready,
-//    ;;; and return the request and its associated body.
-//    (@interface func (export "next_request_wait")
-//        (param $handle $request_promise_handle)
-//        (result $err (expected (tuple $request_handle $body_handle) (error $fastly_status)))
-//    )
+// ;;; Indicate to the host that we will accept a new request from a client in the future.
+// (@interface func (export "next_request")
 //
-//    ;;; Abandon a promised future request. Indicate that we are no longer willing to receive
-//    ;;; an additional request from a client in the future.
-//    (@interface func (export "next_request_abandon")
-//        (param $handle $request_promise_handle)
-//        (result $err (expected (error $fastly_status)))
-//    )
+//	(param $options_mask $next_request_options_mask)
+//	(param $options (@witx pointer $next_request_options))
+//	(result $err (expected $request_promise_handle (error $fastly_status)))
 //
+// )
+//
+//go:wasmimport fastly_http_downstream next_request
+//go:noescape
+func fastlyHTTPDownstreamNextRequest(
+	mask nextRequestOptionsMask,
+	opts prim.Pointer[nextRequestOptions],
+	promise prim.Pointer[requestPromiseHandle],
+) FastlyStatus
+
+func DownstreamNextRequest(opts *NextRequestOptions) (*HTTPRequestPromise, error) {
+	var (
+		rh requestPromiseHandle = invalidRequestPromiseHandle
+	)
+
+	if err := fastlyHTTPDownstreamNextRequest(
+		opts.mask,
+		prim.ToPointer(&opts.opts),
+		prim.ToPointer(&rh),
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	return &HTTPRequestPromise{h: rh}, nil
+}
+
+// ;;; Block until an additional request from a client is ready,
+// ;;; and return the request and its associated body.
+// (@interface func (export "next_request_wait")
+//
+//	(param $handle $request_promise_handle)
+//	(result $err (expected (tuple $request_handle $body_handle) (error $fastly_status)))
+//
+// )
+//
+//go:wasmimport fastly_http_downstream next_request_wait
+//go:noescape
+func fastlyHTTPDowstreamNextRequestWait(
+	p requestPromiseHandle,
+	req prim.Pointer[requestHandle],
+	body prim.Pointer[bodyHandle],
+) FastlyStatus
+
+func (p *HTTPRequestPromise) Wait() (*HTTPRequest, *HTTPBody, error) {
+	var (
+		rh requestHandle = invalidRequestHandle
+		bh bodyHandle    = invalidBodyHandle
+	)
+
+	if err := fastlyHTTPDowstreamNextRequestWait(
+		p.h,
+		prim.ToPointer(&rh),
+		prim.ToPointer(&bh),
+	).toError(); err != nil {
+		return nil, nil, err
+	}
+
+	return &HTTPRequest{h: rh}, &HTTPBody{h: bh}, nil
+}
+
+// witx:
+//
+//	;;; Abandon a promised future request. Indicate that we are no longer willing to receive
+//	;;; an additional request from a client in the future.
+//	(@interface func (export "next_request_abandon")
+//	    (param $handle $request_promise_handle)
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream next_request_abandon
+//go:noescape
+func fastlyHTTPDowstreamNextRequestAbandon(
+	p requestPromiseHandle,
+) FastlyStatus
+
+func (p *HTTPRequestPromise) Abandon() error {
+	if err := fastlyHTTPDowstreamNextRequestAbandon(
+		p.h,
+	).toError(); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // witx:
 //

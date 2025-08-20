@@ -193,6 +193,20 @@ func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
 	return fmt.Errorf("not implemented")
 }
 
+type HTTPRequestPromise struct{}
+
+func DownstreamNextRequest(opts *NextRequestOptions) (*HTTPRequestPromise, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (HTTPRequestPromise) Wait() (*HTTPRequest, *HTTPBody, error) {
+	return nil, nil, fmt.Errorf("not implemented")
+}
+
+func (HTTPRequestPromise) Abandon() error {
+	return fmt.Errorf("not implemented")
+}
+
 func (r *HTTPResponse) GetAddrDestIP() (net.IP, error) {
 	return nil, fmt.Errorf("not implemented")
 }
