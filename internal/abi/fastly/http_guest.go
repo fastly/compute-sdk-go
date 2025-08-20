@@ -1112,7 +1112,7 @@ func fastlyHTTPDownstreamOriginalHeaderNames(
 
 // GetOriginalHeaderNames returns an iterator that yields the names of each
 // header of the singleton downstream request.
-func DownstreamOriginalHeaderNames(req *HTTPRequest, maxHeaderNameLen int) *Values {
+func (req *HTTPRequest) DownstreamOriginalHeaderNames(maxHeaderNameLen int) *Values {
 	adapter := func(
 		buf *prim.Char8,
 		bufLen prim.Usize,
@@ -1151,7 +1151,7 @@ func fastlyHTTPDownstreamOriginalHeaderCount(
 
 // GetOriginalHeaderCount returns the number of headers of the singleton
 // downstream request.
-func DownstreamOriginalHeaderCount(r *HTTPRequest) (int, error) {
+func (r *HTTPRequest) DownstreamOriginalHeaderCount() (int, error) {
 	var count prim.U32
 
 	if err := fastlyHTTPDownstreamOriginalHeaderCount(
@@ -1183,7 +1183,7 @@ func fastlyHTTPDownstreamClientIPAddr(
 
 // DownstreamClientIPAddr returns the IP address of the downstream client that
 // performed the singleton downstream request.
-func DownstreamClientIPAddr(r *HTTPRequest) (net.IP, error) {
+func (r *HTTPRequest) DownstreamClientIPAddr() (net.IP, error) {
 	buf := prim.NewWriteBuffer(ipBufLen)
 
 	if err := fastlyHTTPDownstreamClientIPAddr(
@@ -1216,7 +1216,7 @@ func fastlyHTTPDownstreamServerIPAddr(
 
 // DownstreamServerIPAddr returns the IP address of the downstream server that
 // received the HTTP request.
-func DownstreamServerIPAddr(r *HTTPRequest) (net.IP, error) {
+func (r *HTTPRequest) DownstreamServerIPAddr() (net.IP, error) {
 	buf := prim.NewWriteBuffer(ipBufLen)
 
 	if err := fastlyHTTPDownstreamServerIPAddr(
@@ -1283,12 +1283,12 @@ func fastlyHTTPReqDownstreamTLSCipherOpenSSLName(
 
 // DownstreamTLSCipherOpenSSLName returns the name of the OpenSSL TLS cipher
 // used with the singleton downstream request, if any.
-func DownstreamTLSCipherOpenSSLName(req *HTTPRequest) (string, error) {
+func (r *HTTPRequest) DownstreamTLSCipherOpenSSLName() (string, error) {
 	// https://www.fastly.com/documentation/reference/vcl/variables/client-connection/tls-client-cipher/
 	buf := prim.NewWriteBuffer(DefaultSmallBufLen) // Longest (49) = TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256_OLD
 
 	if err := fastlyHTTPReqDownstreamTLSCipherOpenSSLName(
-		req.h,
+		r.h,
 		prim.ToPointer(buf.Char8Pointer()),
 		buf.Cap(),
 		prim.ToPointer(buf.NPointer()),
@@ -1320,7 +1320,7 @@ func fastlyHTTPReqDownstreamTLSProtocol(
 
 // DownstreamTLSProtocol returns the name of the TLS protocol used with the
 // singleton downstream request, if any.
-func DownstreamTLSProtocol(r *HTTPRequest) (string, error) {
+func (r *HTTPRequest) DownstreamTLSProtocol() (string, error) {
 	// https://www.fastly.com/documentation/reference/vcl/variables/client-connection/tls-client-protocol/
 	buf := prim.NewWriteBuffer(DefaultSmallBufLen) // Longest (~8) = TLSv1.2
 
@@ -1357,12 +1357,12 @@ func fastlyHTTPReqDownstreamTLSClientHello(
 
 // DownstreamTLSClientHello returns the ClientHello message sent by the client
 // in the singleton downstream request, if any.
-func DownstreamTLSClientHello(req *HTTPRequest) ([]byte, error) {
+func (r *HTTPRequest) DownstreamTLSClientHello() ([]byte, error) {
 	n := DefaultLargeBufLen // Longest (~132,000); typically < 2^14; RFC https://datatracker.ietf.org/doc/html/rfc8446#section-4.1.2
 	for {
 		buf := prim.NewWriteBuffer(n)
 		status := fastlyHTTPReqDownstreamTLSClientHello(
-			req.h,
+			r.h,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
@@ -1410,11 +1410,11 @@ func fastlyHTTPReqDownstreamTLSJA3MD5(
 ) FastlyStatus
 
 // DownstreamTLSJA3MD5 returns the MD5 []byte representing the JA3 signature of the singleton downstream request, if any.
-func DownstreamTLSJA3MD5(req *HTTPRequest) ([]byte, error) {
+func (r *HTTPRequest) DownstreamTLSJA3MD5() ([]byte, error) {
 	var p [16]byte
 	buf := prim.NewWriteBufferFromBytes(p[:])
 	err := fastlyHTTPReqDownstreamTLSJA3MD5(
-		req.h,
+		r.h,
 		prim.ToPointer(buf.Char8Pointer()),
 		prim.ToPointer(buf.NPointer()),
 	).toError()

@@ -187,12 +187,12 @@ func newClientRequest() (*Request, error) {
 		return nil, fmt.Errorf("read header keys: %w", err)
 	}
 
-	remoteAddr, err := fastly.DownstreamClientIPAddr(abiReq)
+	remoteAddr, err := abiReq.DownstreamClientIPAddr()
 	if err != nil {
 		return nil, fmt.Errorf("get client IP: %w", err)
 	}
 
-	serverAddr, err := fastly.DownstreamServerIPAddr(abiReq)
+	serverAddr, err := abiReq.DownstreamServerIPAddr()
 	if err != nil {
 		return nil, fmt.Errorf("get server IP: %w", err)
 	}
@@ -200,22 +200,22 @@ func newClientRequest() (*Request, error) {
 	var tlsInfo TLSInfo
 	switch u.Scheme {
 	case "https":
-		tlsInfo.Protocol, err = fastly.DownstreamTLSProtocol(abiReq)
+		tlsInfo.Protocol, err = abiReq.DownstreamTLSProtocol()
 		if err != nil {
 			return nil, fmt.Errorf("get TLS protocol: %w", err)
 		}
 
-		tlsInfo.ClientHello, err = fastly.DownstreamTLSClientHello(abiReq)
+		tlsInfo.ClientHello, err = abiReq.DownstreamTLSClientHello()
 		if err != nil {
 			return nil, fmt.Errorf("get TLS client hello: %w", err)
 		}
 
-		tlsInfo.CipherOpenSSLName, err = fastly.DownstreamTLSCipherOpenSSLName(abiReq)
+		tlsInfo.CipherOpenSSLName, err = abiReq.DownstreamTLSCipherOpenSSLName()
 		if err != nil {
 			return nil, fmt.Errorf("get TLS cipher name: %w", err)
 		}
 
-		tlsInfo.JA3MD5, err = fastly.DownstreamTLSJA3MD5(abiReq)
+		tlsInfo.JA3MD5, err = abiReq.DownstreamTLSJA3MD5()
 		if err != nil {
 			return nil, fmt.Errorf("get TLS JA3 MD5: %w", err)
 		}
