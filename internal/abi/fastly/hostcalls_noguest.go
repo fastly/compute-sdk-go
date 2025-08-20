@@ -67,27 +67,27 @@ func (r *HTTPRequest) SetCacheOverride(options CacheOverrideOptions) error {
 	return fmt.Errorf("not implemented")
 }
 
-func DownstreamClientIPAddr() (net.IP, error) {
+func DownstreamClientIPAddr(r *HTTPRequest) (net.IP, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func DownstreamServerIPAddr() (net.IP, error) {
+func DownstreamServerIPAddr(r *HTTPRequest) (net.IP, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func DownstreamTLSCipherOpenSSLName() (string, error) {
+func DownstreamTLSCipherOpenSSLName(r *HTTPRequest) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
-func DownstreamTLSProtocol() (string, error) {
+func DownstreamTLSProtocol(r *HTTPRequest) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
-func DownstreamTLSClientHello() ([]byte, error) {
+func DownstreamTLSClientHello(r *HTTPRequest) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func DownstreamTLSJA3MD5() ([]byte, error) {
+func DownstreamTLSJA3MD5(r *HTTPRequest) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -99,11 +99,11 @@ func (r *HTTPRequest) GetHeaderNames(maxHeaderNameLen int) *Values {
 	return nil
 }
 
-func GetOriginalHeaderNames() *Values {
+func DownstreamOriginalHeaderNames(r *HTTPRequest) *Values {
 	return nil
 }
 
-func GetOriginalHeaderCount() (int, error) {
+func DownstreamOriginalHeaderCount(r *HTTPRequest) (int, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 

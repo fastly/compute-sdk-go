@@ -182,204 +182,6 @@ func (r *HTTPRequest) SetCacheOverride(options CacheOverrideOptions) error {
 
 // witx:
 //
-//	(@interface func (export "downstream_client_ip_addr")
-//	   ;; must be a 16-byte array
-//	   (param $addr_octets_out (@witx pointer char8))
-//	   (result $err $fastly_status)
-//	   (result $nwritten_out (@witx usize))
-//	)
-//
-//go:wasmimport fastly_http_req downstream_client_ip_addr
-//go:noescape
-func fastlyHTTPReqDownstreamClientIPAddr(
-	addrOctetsOut prim.Pointer[prim.Char8], // ipBufLen is 16 bytes
-	nwrittenOut prim.Pointer[prim.Usize],
-) FastlyStatus
-
-// DownstreamClientIPAddr returns the IP address of the downstream client that
-// performed the singleton downstream request.
-func DownstreamClientIPAddr() (net.IP, error) {
-	buf := prim.NewWriteBuffer(ipBufLen)
-
-	if err := fastlyHTTPReqDownstreamClientIPAddr(
-		prim.ToPointer(buf.Char8Pointer()),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
-		return nil, err
-	}
-
-	return net.IP(buf.AsBytes()), nil
-}
-
-// witx:
-//
-//	(@interface func (export "downstream_server_ip_addr")
-//	   ;; must be a 16-byte array
-//	   (param $addr_octets_out (@witx pointer char8))
-//	   (result $err $fastly_status)
-//	   (result $nwritten_out (@witx usize))
-//	)
-//
-//go:wasmimport fastly_http_req downstream_server_ip_addr
-//go:noescape
-func fastlyHTTPReqDownstreamServerIPAddr(
-	addrOctetsOut prim.Pointer[prim.Char8], // ipBufLen is 16 bytes
-	nwrittenOut prim.Pointer[prim.Usize],
-) FastlyStatus
-
-// DownstreamServerIPAddr returns the IP address of the downstream server that
-// received the HTTP request.
-func DownstreamServerIPAddr() (net.IP, error) {
-	buf := prim.NewWriteBuffer(ipBufLen)
-
-	if err := fastlyHTTPReqDownstreamServerIPAddr(
-		prim.ToPointer(buf.Char8Pointer()),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
-		return nil, err
-	}
-
-	return net.IP(buf.AsBytes()), nil
-}
-
-// witx:
-//
-//	(@interface func (export "downstream_tls_cipher_openssl_name")
-//	   (param $cipher_out (@witx pointer char8))
-//	   (param $cipher_max_len (@witx usize))
-//	   (param $nwritten_out (@witx pointer (@witx usize)))
-//	   (result $err $fastly_status)
-//	)
-//
-//go:wasmimport fastly_http_req downstream_tls_cipher_openssl_name
-//go:noescape
-func fastlyHTTPReqDownstreamTLSCipherOpenSSLName(
-	cipherOut prim.Pointer[prim.Char8],
-	cipherMaxLen prim.Usize,
-	nwrittenOut prim.Pointer[prim.Usize],
-) FastlyStatus
-
-// DownstreamTLSCipherOpenSSLName returns the name of the OpenSSL TLS cipher
-// used with the singleton downstream request, if any.
-func DownstreamTLSCipherOpenSSLName() (string, error) {
-	// https://www.fastly.com/documentation/reference/vcl/variables/client-connection/tls-client-cipher/
-	buf := prim.NewWriteBuffer(DefaultSmallBufLen) // Longest (49) = TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256_OLD
-
-	if err := fastlyHTTPReqDownstreamTLSCipherOpenSSLName(
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
-		return "", err
-	}
-
-	return buf.ToString(), nil
-}
-
-// witx:
-//
-//	(@interface func (export "downstream_tls_protocol")
-//	   (param $protocol_out (@witx pointer char8))
-//	   (param $protocol_max_len (@witx usize))
-//	   (param $nwritten_out (@witx pointer (@witx usize)))
-//	   (result $err $fastly_status)
-//	)
-//
-//go:wasmimport fastly_http_req downstream_tls_protocol
-//go:noescape
-func fastlyHTTPReqDownstreamTLSProtocol(
-	protocolOut prim.Pointer[prim.Char8],
-	protocolMaxLen prim.Usize,
-	nwrittenOut prim.Pointer[prim.Usize],
-) FastlyStatus
-
-// DownstreamTLSProtocol returns the name of the TLS protocol used with the
-// singleton downstream request, if any.
-func DownstreamTLSProtocol() (string, error) {
-	// https://www.fastly.com/documentation/reference/vcl/variables/client-connection/tls-client-protocol/
-	buf := prim.NewWriteBuffer(DefaultSmallBufLen) // Longest (~8) = TLSv1.2
-
-	if err := fastlyHTTPReqDownstreamTLSProtocol(
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
-		return "", err
-	}
-
-	return buf.ToString(), nil
-}
-
-// witx:
-//
-//	(@interface func (export "downstream_tls_client_hello")
-//	   (param $chello_out (@witx pointer char8))
-//	   (param $chello_max_len (@witx usize))
-//	   (param $nwritten_out (@witx pointer (@witx usize)))
-//	   (result $err $fastly_status)
-//	)
-//
-//go:wasmimport fastly_http_req downstream_tls_client_hello
-//go:noescape
-func fastlyHTTPReqDownstreamTLSClientHello(
-	chelloOut prim.Pointer[prim.Char8],
-	chelloMaxLen prim.Usize,
-	nwrittenOut prim.Pointer[prim.Usize],
-) FastlyStatus
-
-// DownstreamTLSClientHello returns the ClientHello message sent by the client
-// in the singleton downstream request, if any.
-func DownstreamTLSClientHello() ([]byte, error) {
-	n := DefaultLargeBufLen // Longest (~132,000); typically < 2^14; RFC https://datatracker.ietf.org/doc/html/rfc8446#section-4.1.2
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyHTTPReqDownstreamTLSClientHello(
-			prim.ToPointer(buf.Char8Pointer()),
-			buf.Cap(),
-			prim.ToPointer(buf.NPointer()),
-		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return nil, err
-		}
-		return buf.AsBytes(), nil
-	}
-}
-
-// witx:
-//
-//	(@interface func (export "downstream_tls_ja3_md5")
-//	    ;; must be a 16-byte array
-//	    (param $cja3_md5_out (@witx pointer (@witx char8)))
-//	    (result $err (expected $num_bytes (error $fastly_status)))
-//	)
-//
-//go:wasmimport fastly_http_req downstream_tls_ja3_md5
-//go:noescape
-func fastlyHTTPReqDownstreamTLSJA3MD5(
-	cJA3MD5Out prim.Pointer[prim.Char8],
-	nwrittenOut prim.Pointer[prim.Usize],
-) FastlyStatus
-
-// DownstreamTLSJA3MD5 returns the MD5 []byte representing the JA3 signature of the singleton downstream request, if any.
-func DownstreamTLSJA3MD5() ([]byte, error) {
-	var p [16]byte
-	buf := prim.NewWriteBufferFromBytes(p[:])
-	err := fastlyHTTPReqDownstreamTLSJA3MD5(
-		prim.ToPointer(buf.Char8Pointer()),
-		prim.ToPointer(buf.NPointer()),
-	).toError()
-	if err != nil {
-		return nil, err
-	}
-	return buf.AsBytes(), nil
-}
-
-// witx:
-//
 //	(@interface func (export "new")
 //	  (result $err $fastly_status)
 //	  (result $h $request_handle)
@@ -448,76 +250,6 @@ func (r *HTTPRequest) GetHeaderNames(maxHeaderNameLen int) *Values {
 	}
 
 	return newValues(adapter, maxHeaderNameLen)
-}
-
-// witx:
-//
-//	(@interface func (export "original_header_names_get")
-//	  (param $buf (@witx pointer char8))
-//	  (param $buf_len (@witx usize))
-//	  (param $cursor $multi_value_cursor)
-//	  (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
-//	  (param $nwritten_out (@witx pointer (@witx usize)))
-//	  (result $err $fastly_status)
-//	)
-//
-//go:wasmimport fastly_http_req original_header_names_get
-//go:noescape
-func fastlyHTTPReqOriginalHeaderNamesGet(
-	buf prim.Pointer[prim.Char8],
-	bufLen prim.Usize,
-	cursor multiValueCursor,
-	endingCursorOut prim.Pointer[multiValueCursorResult],
-	nwrittenOut prim.Pointer[prim.Usize],
-) FastlyStatus
-
-// GetOriginalHeaderNames returns an iterator that yields the names of each
-// header of the singleton downstream request.
-func GetOriginalHeaderNames(maxHeaderNameLen int) *Values {
-	adapter := func(
-		buf *prim.Char8,
-		bufLen prim.Usize,
-		cursor multiValueCursor,
-		endingCursorOut *multiValueCursorResult,
-		nwrittenOut *prim.Usize,
-	) FastlyStatus {
-
-		return fastlyHTTPReqOriginalHeaderNamesGet(
-			prim.ToPointer(buf), bufLen,
-			cursor,
-			prim.ToPointer(endingCursorOut),
-			prim.ToPointer(nwrittenOut),
-		)
-	}
-
-	return newValues(adapter, maxHeaderNameLen)
-}
-
-// witx:
-//
-//	(@interface func (export "original_header_count")
-//	  (result $err $fastly_status)
-//	  (result $count u32)
-//	)
-//
-//go:wasmimport fastly_http_req original_header_count
-//go:noescape
-func fastlyHTTPReqOriginalHeaderCount(
-	count prim.Pointer[prim.U32],
-) FastlyStatus
-
-// GetOriginalHeaderCount returns the number of headers of the singleton
-// downstream request.
-func GetOriginalHeaderCount() (int, error) {
-	var count prim.U32
-
-	if err := fastlyHTTPReqOriginalHeaderCount(
-		prim.ToPointer(&count),
-	).toError(); err != nil {
-		return 0, err
-	}
-
-	return int(count), nil
 }
 
 // witx:
@@ -1330,6 +1062,390 @@ func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
 		mode,
 	).toError()
 }
+
+// (module $fastly_http_downstream
+
+//    ;;; Indicate to the host that we will accept a new request from a client in the future.
+//    (@interface func (export "next_request")
+//        (param $options_mask $next_request_options_mask)
+//        (param $options (@witx pointer $next_request_options))
+//        (result $err (expected $request_promise_handle (error $fastly_status)))
+//    )
+//
+//    ;;; Block until an additional request from a client is ready,
+//    ;;; and return the request and its associated body.
+//    (@interface func (export "next_request_wait")
+//        (param $handle $request_promise_handle)
+//        (result $err (expected (tuple $request_handle $body_handle) (error $fastly_status)))
+//    )
+//
+//    ;;; Abandon a promised future request. Indicate that we are no longer willing to receive
+//    ;;; an additional request from a client in the future.
+//    (@interface func (export "next_request_abandon")
+//        (param $handle $request_promise_handle)
+//        (result $err (expected (error $fastly_status)))
+//    )
+//
+
+// witx:
+//
+//	(@interface func (export "downstream_original_header_names")
+//	    (param $req $request_handle)
+//	    (param $buf (@witx pointer (@witx char8)))
+//	    (param $buf_len (@witx usize))
+//	    (param $cursor $multi_value_cursor)
+//	    (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
+//	    (param $nwritten_out (@witx pointer (@witx usize)))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_original_header_names
+//go:noescape
+func fastlyHTTPDownstreamOriginalHeaderNames(
+	req requestHandle,
+	buf prim.Pointer[prim.Char8],
+	bufLen prim.Usize,
+	cursor multiValueCursor,
+	endingCursorOut prim.Pointer[multiValueCursorResult],
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// GetOriginalHeaderNames returns an iterator that yields the names of each
+// header of the singleton downstream request.
+func DownstreamOriginalHeaderNames(req *HTTPRequest, maxHeaderNameLen int) *Values {
+	adapter := func(
+		buf *prim.Char8,
+		bufLen prim.Usize,
+		cursor multiValueCursor,
+		endingCursorOut *multiValueCursorResult,
+		nwrittenOut *prim.Usize,
+	) FastlyStatus {
+
+		return fastlyHTTPDownstreamOriginalHeaderNames(
+			req.h,
+			prim.ToPointer(buf), bufLen,
+			cursor,
+			prim.ToPointer(endingCursorOut),
+			prim.ToPointer(nwrittenOut),
+		)
+	}
+
+	return newValues(adapter, maxHeaderNameLen)
+}
+
+// witx:
+//
+// (@interface func (export "downstream_original_header_count")
+//
+//	(param $req $request_handle)
+//	(result $err (expected $header_count (error $fastly_status)))
+//
+// )
+//
+//go:wasmimport fastly_http_downstream downstream_original_header_count
+//go:noescape
+func fastlyHTTPDownstreamOriginalHeaderCount(
+	req requestHandle,
+	count prim.Pointer[prim.U32],
+) FastlyStatus
+
+// GetOriginalHeaderCount returns the number of headers of the singleton
+// downstream request.
+func DownstreamOriginalHeaderCount(r *HTTPRequest) (int, error) {
+	var count prim.U32
+
+	if err := fastlyHTTPDownstreamOriginalHeaderCount(
+		r.h,
+		prim.ToPointer(&count),
+	).toError(); err != nil {
+		return 0, err
+	}
+
+	return int(count), nil
+}
+
+// witx:
+//
+//	(@interface func (export "downstream_client_ip_addr")
+//	    (param $req $request_handle)
+//	    ;; must be a 16-byte array
+//	    (param $addr_octets_out (@witx pointer (@witx char8)))
+//	    (result $err (expected $num_bytes (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_client_ip_addr
+//go:noescape
+func fastlyHTTPDownstreamClientIPAddr(
+	req requestHandle,
+	addrOctetsOut prim.Pointer[prim.Char8], // ipBufLen is 16 bytes
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// DownstreamClientIPAddr returns the IP address of the downstream client that
+// performed the singleton downstream request.
+func DownstreamClientIPAddr(r *HTTPRequest) (net.IP, error) {
+	buf := prim.NewWriteBuffer(ipBufLen)
+
+	if err := fastlyHTTPDownstreamClientIPAddr(
+		r.h,
+		prim.ToPointer(buf.Char8Pointer()),
+		prim.ToPointer(buf.NPointer()),
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	return net.IP(buf.AsBytes()), nil
+}
+
+// witx:
+//
+//	(@interface func (export "downstream_server_ip_addr")
+//	    (param $req $request_handle)
+//	    ;; must be a 16-byte array
+//	    (param $addr_octets_out (@witx pointer (@witx char8)))
+//	    (result $err (expected $num_bytes (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_server_ip_addr
+//go:noescape
+func fastlyHTTPDownstreamServerIPAddr(
+	req requestHandle,
+	addrOctetsOut prim.Pointer[prim.Char8], // ipBufLen is 16 bytes
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// DownstreamServerIPAddr returns the IP address of the downstream server that
+// received the HTTP request.
+func DownstreamServerIPAddr(r *HTTPRequest) (net.IP, error) {
+	buf := prim.NewWriteBuffer(ipBufLen)
+
+	if err := fastlyHTTPDownstreamServerIPAddr(
+		r.h,
+		prim.ToPointer(buf.Char8Pointer()),
+		prim.ToPointer(buf.NPointer()),
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	return net.IP(buf.AsBytes()), nil
+}
+
+//
+//    (@interface func (export "downstream_client_h2_fingerprint")
+//        (param $req $request_handle)
+//        (param $h2fp_out (@witx pointer (@witx char8)))
+//        (param $h2fp_max_len (@witx usize))
+//        (param $nwritten_out (@witx pointer (@witx usize)))
+//        (result $err (expected (error $fastly_status)))
+//    )
+//
+//    (@interface func (export "downstream_client_request_id")
+//        (param $req $request_handle)
+//        (param $reqid_out (@witx pointer (@witx char8)))
+//        (param $reqid_max_len (@witx usize))
+//        (param $nwritten_out (@witx pointer (@witx usize)))
+//        (result $err (expected (error $fastly_status)))
+//    )
+//
+//    (@interface func (export "downstream_client_oh_fingerprint")
+//        (param $req $request_handle)
+//        (param $ohfp_out (@witx pointer (@witx char8)))
+//        (param $ohfp_max_len (@witx usize))
+//        (param $nwritten_out (@witx pointer (@witx usize)))
+//        (result $err (expected (error $fastly_status)))
+//    )
+//
+//    (@interface func (export "downstream_client_ddos_detected")
+//        (param $req $request_handle)
+//        (result $err (expected $ddos_detected (error $fastly_status)))
+//    )
+
+// witx:
+//
+// (@interface func (export "downstream_tls_cipher_openssl_name")
+//
+//	(param $req $request_handle)
+//	(param $cipher_out (@witx pointer (@witx char8)))
+//	(param $cipher_max_len (@witx usize))
+//	(param $nwritten_out (@witx pointer (@witx usize)))
+//	(result $err (expected (error $fastly_status)))
+//
+// )
+//
+//go:wasmimport fastly_http_downstream downstream_tls_cipher_openssl_name
+//go:noescape
+func fastlyHTTPReqDownstreamTLSCipherOpenSSLName(
+	req requestHandle,
+	cipherOut prim.Pointer[prim.Char8],
+	cipherMaxLen prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// DownstreamTLSCipherOpenSSLName returns the name of the OpenSSL TLS cipher
+// used with the singleton downstream request, if any.
+func DownstreamTLSCipherOpenSSLName(req *HTTPRequest) (string, error) {
+	// https://www.fastly.com/documentation/reference/vcl/variables/client-connection/tls-client-cipher/
+	buf := prim.NewWriteBuffer(DefaultSmallBufLen) // Longest (49) = TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256_OLD
+
+	if err := fastlyHTTPReqDownstreamTLSCipherOpenSSLName(
+		req.h,
+		prim.ToPointer(buf.Char8Pointer()),
+		buf.Cap(),
+		prim.ToPointer(buf.NPointer()),
+	).toError(); err != nil {
+		return "", err
+	}
+
+	return buf.ToString(), nil
+}
+
+// witx:
+//
+//	(@interface func (export "downstream_tls_protocol")
+//	    (param $req $request_handle)
+//	    (param $protocol_out (@witx pointer (@witx char8)))
+//	    (param $protocol_max_len (@witx usize))
+//	    (param $nwritten_out (@witx pointer (@witx usize)))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_tls_protocol
+//go:noescape
+func fastlyHTTPReqDownstreamTLSProtocol(
+	req requestHandle,
+	protocolOut prim.Pointer[prim.Char8],
+	protocolMaxLen prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// DownstreamTLSProtocol returns the name of the TLS protocol used with the
+// singleton downstream request, if any.
+func DownstreamTLSProtocol(r *HTTPRequest) (string, error) {
+	// https://www.fastly.com/documentation/reference/vcl/variables/client-connection/tls-client-protocol/
+	buf := prim.NewWriteBuffer(DefaultSmallBufLen) // Longest (~8) = TLSv1.2
+
+	if err := fastlyHTTPReqDownstreamTLSProtocol(
+		r.h,
+		prim.ToPointer(buf.Char8Pointer()),
+		buf.Cap(),
+		prim.ToPointer(buf.NPointer()),
+	).toError(); err != nil {
+		return "", err
+	}
+
+	return buf.ToString(), nil
+}
+
+// witx:
+//
+//	(@interface func (export "downstream_tls_client_hello")
+//	    (param $req $request_handle)
+//	    (param $chello_out (@witx pointer (@witx char8)))
+//	    (param $chello_max_len (@witx usize))
+//	    (param $nwritten_out (@witx pointer (@witx usize)))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_tls_client_hello
+//go:noescape
+func fastlyHTTPReqDownstreamTLSClientHello(
+	req requestHandle,
+	chelloOut prim.Pointer[prim.Char8],
+	chelloMaxLen prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// DownstreamTLSClientHello returns the ClientHello message sent by the client
+// in the singleton downstream request, if any.
+func DownstreamTLSClientHello(req *HTTPRequest) ([]byte, error) {
+	n := DefaultLargeBufLen // Longest (~132,000); typically < 2^14; RFC https://datatracker.ietf.org/doc/html/rfc8446#section-4.1.2
+	for {
+		buf := prim.NewWriteBuffer(n)
+		status := fastlyHTTPReqDownstreamTLSClientHello(
+			req.h,
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+		if status == FastlyStatusBufLen && buf.NValue() > 0 {
+			n = int(buf.NValue())
+			continue
+		}
+		if err := status.toError(); err != nil {
+			return nil, err
+		}
+		return buf.AsBytes(), nil
+	}
+}
+
+//
+//    (@interface func (export "downstream_tls_raw_client_certificate")
+//        (param $req $request_handle)
+//        (param $raw_client_cert_out (@witx pointer (@witx char8)))
+//        (param $raw_client_cert_max_len (@witx usize))
+//        (param $nwritten_out (@witx pointer (@witx usize)))
+//        (result $err (expected (error $fastly_status)))
+//    )
+//
+//    (@interface func (export "downstream_tls_client_cert_verify_result")
+//        (param $req $request_handle)
+//        (result $err (expected $client_cert_verify_result (error $fastly_status)))
+//    )
+
+// witx:
+//
+//	(@interface func (export "downstream_tls_ja3_md5")
+//	    (param $req $request_handle)
+//	    ;; must be a 16-byte array
+//	    (param $cja3_md5_out (@witx pointer (@witx char8)))
+//	    (result $err (expected $num_bytes (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_tls_ja3_md5
+//go:noescape
+func fastlyHTTPReqDownstreamTLSJA3MD5(
+	req requestHandle,
+	cJA3MD5Out prim.Pointer[prim.Char8],
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// DownstreamTLSJA3MD5 returns the MD5 []byte representing the JA3 signature of the singleton downstream request, if any.
+func DownstreamTLSJA3MD5(req *HTTPRequest) ([]byte, error) {
+	var p [16]byte
+	buf := prim.NewWriteBufferFromBytes(p[:])
+	err := fastlyHTTPReqDownstreamTLSJA3MD5(
+		req.h,
+		prim.ToPointer(buf.Char8Pointer()),
+		prim.ToPointer(buf.NPointer()),
+	).toError()
+	if err != nil {
+		return nil, err
+	}
+	return buf.AsBytes(), nil
+}
+
+//
+//    (@interface func (export "downstream_tls_ja4")
+//        (param $req $request_handle)
+//        (param $ja4_out (@witx pointer (@witx char8)))
+//        (param $ja4_max_len (@witx usize))
+//        (param $nwritten_out (@witx pointer (@witx usize)))
+//        (result $err (expected (error $fastly_status)))
+//    )
+//
+//    (@interface func (export "downstream_compliance_region")
+//        (param $req $request_handle)
+//        (param $region_out (@witx pointer (@witx char8)))
+//        (param $region_max_len (@witx usize))
+//        (param $nwritten_out (@witx pointer (@witx usize)))
+//        (result $err (expected (error $fastly_status)))
+//    )
+//
+//    (@interface func (export "fastly_key_is_valid")
+//        (param $req $request_handle)
+//        (result $err (expected $is_valid (error $fastly_status)))
+//    )
+//)
 
 // (module $fastly_http_body
 
