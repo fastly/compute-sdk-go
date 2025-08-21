@@ -144,12 +144,7 @@ func NewRequest(method string, uri string, body io.Reader) (*Request, error) {
 // _parseRequestURI can be set by SetParseRequestURI
 var _parseRequestURI func(string) (*url.URL, error) = url.ParseRequestURI
 
-func newClientRequest() (*Request, error) {
-	abiReq, abiReqBody, err := fastly.BodyDownstreamGet()
-	if err != nil {
-		return nil, fmt.Errorf("get client request and body: %w", err)
-	}
-
+func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (*Request, error) {
 	method, err := abiReq.GetMethod()
 	if err != nil {
 		return nil, fmt.Errorf("get method: %w", err)
