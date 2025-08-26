@@ -1707,7 +1707,7 @@ type nextRequestOptionsMask prim.U32
 
 const (
 	nextRequestOptionsMaskReserved nextRequestOptionsMask = 0b0000_0001 // $reserved
-	nextRequestOptionsMaskTimeout  nextRequestOptionsMask = 0b0000_0010 // $request_headers
+	nextRequestOptionsMaskTimeout  nextRequestOptionsMask = 0b0000_0010 // $timeout
 )
 
 // witx:
