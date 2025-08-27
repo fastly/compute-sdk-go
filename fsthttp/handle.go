@@ -44,8 +44,20 @@ func serve(h Handler, abireq *fastly.HTTPRequest, abibody *fastly.HTTPBody) {
 	clientResponseWriter.Close()
 }
 
-// ServeMany is sugar for Serve(HandlerFunc(f)).
-func ServeMany(h HandlerFunc, nextTimeout time.Duration, maxRequests int, maxLifetime time.Duration) {
+// ServeManyOptions controls the exit conditions for ServeMany.  Note that Compute might terminate the request hander earlier.
+type ServeManyOptions struct {
+	// NextTimeout is the amount of time to wait for the next request
+	NextTimeout time.Duration
+
+	// MaxLifetime is the total max lifetime for an instance
+	MaxLifetime time.Duration
+
+	// MaxRequests is the maximum number of requests to serve for a single instance
+	MaxRequests int
+}
+
+// ServeMany allows a single Compute instance to handle multiple requests.
+func ServeMany(h HandlerFunc, serveOpts *ServeManyOptions) {
 	start := time.Now()
 
 	abireq, abibody, err := fastly.BodyDownstreamGet()
@@ -58,16 +70,18 @@ func ServeMany(h HandlerFunc, nextTimeout time.Duration, maxRequests int, maxLif
 	var requests int
 	for {
 		requests++
-		if maxRequests != 0 && requests > maxRequests {
+		if serveOpts.MaxRequests != 0 && requests > serveOpts.MaxRequests {
 			break
 		}
 
-		if maxLifetime != 0 && time.Since(start) > maxLifetime {
+		if serveOpts.MaxLifetime != 0 && time.Since(start) > serveOpts.MaxLifetime {
 			break
 		}
 
 		var opts fastly.NextRequestOptions
-		opts.Timeout(nextTimeout)
+		if serveOpts.NextTimeout != 0 {
+			opts.Timeout(serveOpts.NextTimeout)
+		}
 
 		promise, err := fastly.DownstreamNextRequest(&opts)
 		if err != nil {
