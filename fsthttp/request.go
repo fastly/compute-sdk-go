@@ -144,12 +144,7 @@ func NewRequest(method string, uri string, body io.Reader) (*Request, error) {
 // _parseRequestURI can be set by SetParseRequestURI
 var _parseRequestURI func(string) (*url.URL, error) = url.ParseRequestURI
 
-func newClientRequest() (*Request, error) {
-	abiReq, abiReqBody, err := fastly.BodyDownstreamGet()
-	if err != nil {
-		return nil, fmt.Errorf("get client request and body: %w", err)
-	}
-
+func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (*Request, error) {
 	method, err := abiReq.GetMethod()
 	if err != nil {
 		return nil, fmt.Errorf("get method: %w", err)
@@ -187,12 +182,12 @@ func newClientRequest() (*Request, error) {
 		return nil, fmt.Errorf("read header keys: %w", err)
 	}
 
-	remoteAddr, err := fastly.DownstreamClientIPAddr()
+	remoteAddr, err := abiReq.DownstreamClientIPAddr()
 	if err != nil {
 		return nil, fmt.Errorf("get client IP: %w", err)
 	}
 
-	serverAddr, err := fastly.DownstreamServerIPAddr()
+	serverAddr, err := abiReq.DownstreamServerIPAddr()
 	if err != nil {
 		return nil, fmt.Errorf("get server IP: %w", err)
 	}
@@ -200,22 +195,22 @@ func newClientRequest() (*Request, error) {
 	var tlsInfo TLSInfo
 	switch u.Scheme {
 	case "https":
-		tlsInfo.Protocol, err = fastly.DownstreamTLSProtocol()
+		tlsInfo.Protocol, err = abiReq.DownstreamTLSProtocol()
 		if err != nil {
 			return nil, fmt.Errorf("get TLS protocol: %w", err)
 		}
 
-		tlsInfo.ClientHello, err = fastly.DownstreamTLSClientHello()
+		tlsInfo.ClientHello, err = abiReq.DownstreamTLSClientHello()
 		if err != nil {
 			return nil, fmt.Errorf("get TLS client hello: %w", err)
 		}
 
-		tlsInfo.CipherOpenSSLName, err = fastly.DownstreamTLSCipherOpenSSLName()
+		tlsInfo.CipherOpenSSLName, err = abiReq.DownstreamTLSCipherOpenSSLName()
 		if err != nil {
 			return nil, fmt.Errorf("get TLS cipher name: %w", err)
 		}
 
-		tlsInfo.JA3MD5, err = fastly.DownstreamTLSJA3MD5()
+		tlsInfo.JA3MD5, err = abiReq.DownstreamTLSJA3MD5()
 		if err != nil {
 			return nil, fmt.Errorf("get TLS JA3 MD5: %w", err)
 		}

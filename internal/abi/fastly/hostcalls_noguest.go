@@ -67,27 +67,27 @@ func (r *HTTPRequest) SetCacheOverride(options CacheOverrideOptions) error {
 	return fmt.Errorf("not implemented")
 }
 
-func DownstreamClientIPAddr() (net.IP, error) {
+func (r *HTTPRequest) DownstreamClientIPAddr() (net.IP, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func DownstreamServerIPAddr() (net.IP, error) {
+func (r *HTTPRequest) DownstreamServerIPAddr() (net.IP, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func DownstreamTLSCipherOpenSSLName() (string, error) {
+func (r *HTTPRequest) DownstreamTLSCipherOpenSSLName() (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
-func DownstreamTLSProtocol() (string, error) {
+func (r *HTTPRequest) DownstreamTLSProtocol() (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
-func DownstreamTLSClientHello() ([]byte, error) {
+func (r *HTTPRequest) DownstreamTLSClientHello() ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func DownstreamTLSJA3MD5() ([]byte, error) {
+func (r *HTTPRequest) DownstreamTLSJA3MD5() ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -99,11 +99,11 @@ func (r *HTTPRequest) GetHeaderNames(maxHeaderNameLen int) *Values {
 	return nil
 }
 
-func GetOriginalHeaderNames() *Values {
+func (r *HTTPRequest) DownstreamOriginalHeaderNames() *Values {
 	return nil
 }
 
-func GetOriginalHeaderCount() (int, error) {
+func (r *HTTPRequest) DownstreamOriginalHeaderCount() (int, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
@@ -190,6 +190,20 @@ func (r *HTTPRequest) SetAutoDecompressResponse(options AutoDecompressResponseOp
 }
 
 func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
+	return fmt.Errorf("not implemented")
+}
+
+type HTTPRequestPromise struct{}
+
+func DownstreamNextRequest(opts *NextRequestOptions) (*HTTPRequestPromise, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (HTTPRequestPromise) Wait() (*HTTPRequest, *HTTPBody, error) {
+	return nil, nil, fmt.Errorf("not implemented")
+}
+
+func (HTTPRequestPromise) Abandon() error {
 	return fmt.Errorf("not implemented")
 }
 

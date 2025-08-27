@@ -82,6 +82,9 @@ const (
 
 	// FastlyStatusLimitExceeded maps to $fastly_status $limitexceeded.
 	FastlyStatusLimitExceeded FastlyStatus = 13
+
+	// FastlyStatusAgain maps to $fastly_status $again.
+	FastlyStatusAgain FastlyStatus = 14
 )
 
 // String implements fmt.Stringer.
@@ -115,6 +118,8 @@ func (s FastlyStatus) String() string {
 		return "HTTPInvalidStatus"
 	case FastlyStatusLimitExceeded:
 		return "LimitExceeded"
+	case FastlyStatusAgain:
+		return "Again"
 	default:
 		return fmt.Sprintf("FastlyStatus(%d)", s)
 	}
@@ -283,6 +288,15 @@ type responseHandle handle
 
 const (
 	invalidResponseHandle = responseHandle(math.MaxUint32 - 1)
+)
+
+// witx:
+//
+//	(typename $request_promise_handle (handle))
+type requestPromiseHandle handle
+
+const (
+	invalidRequestPromiseHandle = requestPromiseHandle(math.MaxUint32 - 1)
 )
 
 // witx:
@@ -1672,3 +1686,43 @@ func (s *ShieldInfo) RunningOn() bool { return s.me }
 func (s *ShieldInfo) Target() string { return s.target }
 
 func (s *ShieldInfo) SSLTarget() string { return s.sslTarget }
+
+// witx:
+//
+
+type NextRequestOptions struct {
+	mask nextRequestOptionsMask
+	opts nextRequestOptions
+}
+
+// witx:
+//
+// (typename $next_request_options_mask
+//     (flags (@witx repr u32)
+//         $reserved
+//         $timeout
+//     ))
+
+type nextRequestOptionsMask prim.U32
+
+const (
+	nextRequestOptionsMaskReserved nextRequestOptionsMask = 0b0000_0001 // $reserved
+	nextRequestOptionsMaskTimeout  nextRequestOptionsMask = 0b0000_0010 // $timeout
+)
+
+// witx:
+//
+// (typename $next_request_options
+//
+//	(record
+//	    ;; A maximum amount of time to wait for a downstream request to appear, in milliseconds.
+//	    (field $timeout_ms u64)
+//	))
+type nextRequestOptions struct {
+	timeoutMs prim.U64
+}
+
+func (n *NextRequestOptions) Timeout(t time.Duration) {
+	n.mask |= nextRequestOptionsMaskTimeout
+	n.opts.timeoutMs = prim.U64(t.Milliseconds())
+}
