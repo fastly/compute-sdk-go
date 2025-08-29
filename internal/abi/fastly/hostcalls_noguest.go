@@ -91,6 +91,42 @@ func (r *HTTPRequest) DownstreamTLSJA3MD5() ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
+func (r *HTTPRequest) DownstreamH2Fingerprint() ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamRequestID() (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamOHFingerprint() ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamDDOSDetected() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamTLSRawCertificate() ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamTLSClientCertVerifyResult() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamTLSJA4() ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamComplianceRegion() (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamFastlyKeyIsValid() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
 func NewHTTPRequest() (*HTTPRequest, error) {
 	return nil, fmt.Errorf("not implemented")
 }

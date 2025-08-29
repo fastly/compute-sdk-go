@@ -76,6 +76,9 @@ type Request struct {
 	// TLSInfo collects TLS metadata for incoming requests received over HTTPS.
 	TLSInfo TLSInfo
 
+	// Fingerprint collects fingerprint metadata for incoming requests
+	fingerprint *Fingerprint
+
 	// SendPollInterval determines how often the Send method will check for
 	// completed requests. While polling, the Go runtime is suspended, and all
 	// user code stops execution. A shorter interval will make Send more
@@ -105,6 +108,9 @@ type Request struct {
 	// message body, and any framing headers already set in the message are
 	// discarded.
 	ManualFramingMode bool
+
+	// RequestID is the current Fastly request ID
+	RequestID string
 
 	sent bool // a request may only be sent once
 
@@ -160,6 +166,11 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		return nil, fmt.Errorf("get protocol version: %w", err)
 	}
 
+	reqID, err := abiReq.DownstreamRequestID()
+	if err != nil {
+		return nil, fmt.Errorf("get request id: %w", err)
+	}
+
 	header := NewHeader()
 	keys := abiReq.GetHeaderNames()
 	for keys.Next() {
@@ -209,6 +220,23 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		if err != nil {
 			return nil, fmt.Errorf("get TLS JA3 MD5: %w", err)
 		}
+
+		tlsInfo.JA4, err = abiReq.DownstreamTLSJA4()
+		if err != nil {
+			return nil, fmt.Errorf("get TLS JA4: %w", err)
+		}
+
+		tlsInfo.RawClientCertificate, err = abiReq.DownstreamTLSRawCertificate()
+		if err != nil {
+			return nil, fmt.Errorf("get TLS raw client certificate: %w", err)
+		}
+
+		if tlsInfo.RawClientCertificate != nil {
+			tlsInfo.ClientCertIsVerified, err = abiReq.DownstreamTLSClientCertVerifyResult()
+			if err != nil {
+				return nil, fmt.Errorf("get TLS client certificate verify: %w", err)
+			}
+		}
 	}
 
 	// Setting the fsthttp.Request Host field to the url.URL Host field is
@@ -226,6 +254,7 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		RemoteAddr: remoteAddr.String(),
 		ServerAddr: serverAddr.String(),
 		TLSInfo:    tlsInfo,
+		RequestID:  reqID,
 	}, nil
 }
 
@@ -335,6 +364,39 @@ func (req *Request) AddCookie(c *Cookie) {
 	} else {
 		req.Header.Set("Cookie", s)
 	}
+}
+
+// Fingerprint returns a fleshed-out Fingerprint object for the request.
+func (req *Request) Fingerprint() (*Fingerprint, error) {
+	if req.fingerprint != nil {
+		return req.fingerprint, nil
+	}
+
+	var err error
+
+	var fingerprint Fingerprint
+	fingerprint.H2, err = req.abi.req.DownstreamH2Fingerprint()
+	if err != nil {
+		if status, ok := fastly.IsFastlyError(err); ok && status != fastly.FastlyStatusNone {
+			return nil, fmt.Errorf("get H2 fingerprint: %w", err)
+		}
+	}
+
+	fingerprint.OH, err = req.abi.req.DownstreamOHFingerprint()
+	if err != nil {
+		if status, ok := fastly.IsFastlyError(err); ok && status != fastly.FastlyStatusNone {
+			return nil, fmt.Errorf("get OH fingerprint: %w", err)
+		}
+	}
+
+	fingerprint.DDOSDetected, err = req.abi.req.DownstreamDDOSDetected()
+	if err != nil {
+		return nil, fmt.Errorf("get ddos detected: %w", err)
+	}
+
+	req.fingerprint = &fingerprint
+
+	return req.fingerprint, nil
 }
 
 // Send the request to the named backend. Requests may only be sent to
@@ -940,6 +1002,29 @@ type TLSInfo struct {
 	// JA3MD5 contains the bytes of the JA3 signature of the client TLS request.
 	// See https://www.fastly.com/blog/the-state-of-tls-fingerprinting-whats-working-what-isnt-and-whats-next
 	JA3MD5 []byte
+
+	// JA4 contains the bytes of the JA4 signature of the client TLS request.
+	// See https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4.md
+	JA4 []byte
+
+	// RawClientCertificate contains the bytes of the raw client certificate, if one was provided.
+	RawClientCertificate []byte
+
+	// ClientCertIsVerified is true if the provided client certificate is valid.
+	ClientCertIsVerified bool
+}
+
+// Fingerprint holds various fingerprints for a request.
+type Fingerprint struct {
+
+	// H2 is the HTTP/2 fingerprint of a client request if available
+	H2 []byte
+
+	// OH is a fingerprint of the client request's original headers
+	OH []byte
+
+	// DDOSDetected is true if the request was determined to be part of a DDOS attack.
+	DDOSDetected bool
 }
 
 // DecompressResponseOptions control the auto decompress response behaviour.
