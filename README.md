@@ -2,6 +2,8 @@
 
 Go SDK for building [Fastly Compute](https://www.fastly.com/products/edge-compute) applications with [Go](https://go.dev) (1.21+) and [TinyGo](https://tinygo.org/) (0.28.1+).
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/fastly/compute-sdk-go.svg)](https://pkg.go.dev/github.com/fastly/compute-sdk-go)
+
 ## Quick Start
 
 The Fastly Developer Hub has a great [Quick Start guide for Go](https://developer.fastly.com/learning/compute/go/).
