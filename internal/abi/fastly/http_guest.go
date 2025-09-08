@@ -1671,7 +1671,7 @@ func fastlyHTTPReqDownstreamTLSJA4(
 ) FastlyStatus
 
 func (r *HTTPRequest) DownstreamTLSJA4() ([]byte, error) {
-	n := DefaultLargeBufLen // Longest (~132,000); typically < 2^14; RFC https://datatracker.ietf.org/doc/html/rfc8446#section-4.1.2
+	n := DefaultSmallBufLen // JA4 hashes should be <64 bytes
 	for {
 		buf := prim.NewWriteBuffer(n)
 		status := fastlyHTTPReqDownstreamTLSJA4(
