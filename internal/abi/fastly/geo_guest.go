@@ -39,21 +39,15 @@ func GeoLookup(ip net.IP) ([]byte, error) {
 	}
 	addrOctets := prim.NewReadBufferFromBytes(ip)
 
-	n := DefaultMediumBufLen
-	for {
-		buf := prim.NewWriteBuffer(n) // initial geo buf size
-		status := fastlyGeoLookup(
+	value, err := withAdaptiveBuffer(DefaultMediumBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyGeoLookup(
 			prim.ToPointer(addrOctets.Char8Pointer()), addrOctets.Len(),
 			prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return nil, err
-		}
-		return buf.AsBytes(), nil
+	})
+	if err != nil {
+		return nil, err
 	}
+	return value.AsBytes(), nil
 }

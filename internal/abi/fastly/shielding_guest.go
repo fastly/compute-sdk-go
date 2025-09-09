@@ -30,13 +30,14 @@ func fastlyShieldingShieldingInfo(
 func ShieldingShieldInfo(name string) (*ShieldInfo, error) {
 
 	n := prim.NewReadBufferFromString(name).Wstring()
-	buf := prim.NewWriteBuffer(DefaultMediumBufLen)
-
-	if err := fastlyShieldingShieldingInfo(
-		n.Data, n.Len,
-		prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
+	buf, err := withAdaptiveBuffer(DefaultMediumBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyShieldingShieldingInfo(
+			n.Data, n.Len,
+			prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -98,19 +99,17 @@ func fastlyShieldingBackendForShield(
 func ShieldingBackendForShield(name string, opts *ShieldingBackendOptions) (backend string, err error) {
 
 	n := prim.NewReadBufferFromString(name)
-
-	buf := prim.NewWriteBuffer(DefaultMediumBufLen)
-
-	if err := fastlyShieldingBackendForShield(
-		prim.ToPointer(n.Char8Pointer()), n.Len(),
-		opts.mask, prim.ToPointer(&opts.opts),
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
+	value, err := withAdaptiveBuffer(DefaultMediumBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyShieldingBackendForShield(
+			prim.ToPointer(n.Char8Pointer()), n.Len(),
+			opts.mask, prim.ToPointer(&opts.opts),
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+	})
+	if err != nil {
 		return "", err
-
 	}
-
-	return buf.ToString(), nil
+	return value.ToString(), nil
 }

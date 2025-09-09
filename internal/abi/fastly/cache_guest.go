@@ -417,24 +417,18 @@ func fastlyCacheGetUserMetadata(
 ) FastlyStatus
 
 func (c *CacheEntry) UserMetadata() ([]byte, error) {
-	n := DefaultMediumBufLen
-	for {
-		buf := prim.NewWriteBuffer(n) // Longest (unknown)
-		status := fastlyCacheGetUserMetadata(
+	value, err := withAdaptiveBuffer(DefaultMediumBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyCacheGetUserMetadata(
 			c.h,
 			prim.ToPointer(buf.U8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return nil, err
-		}
-		return buf.AsBytes(), nil
+	})
+	if err != nil {
+		return nil, err
 	}
+	return value.AsBytes(), nil
 }
 
 // witx:

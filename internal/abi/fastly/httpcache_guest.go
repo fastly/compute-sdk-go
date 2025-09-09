@@ -194,24 +194,19 @@ func fastlyHTTPCacheGetSuggestedCacheKey(
 ) FastlyStatus
 
 func HTTPCacheGetSuggestedCacheKey(req *HTTPRequest) ([]byte, error) {
-	n := 32 // Cache keys are 32 bytes, per doc comment above.
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyHTTPCacheGetSuggestedCacheKey(
+	// Cache keys are 32 bytes, per doc comment above. This is future-proofing.
+	value, err := withAdaptiveBuffer(32, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPCacheGetSuggestedCacheKey(
 			req.h,
 			prim.ToPointer(buf.U8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return nil, err
-		}
-		return buf.AsBytes(), nil
+	})
+	if err != nil {
+		return nil, err
 	}
+	return value.AsBytes(), nil
 }
 
 type HTTPCacheHandle struct {
@@ -1047,23 +1042,17 @@ func fastlyHTTPCacheGetVaryRule(
 ) FastlyStatus
 
 func HTTPCacheGetVaryRule(h *HTTPCacheHandle) (string, error) {
-	n := DefaultSmallBufLen
-
-	for {
-		buf := prim.NewWriteBuffer(n) // Longest (unknown)
-		status := fastlyHTTPCacheGetVaryRule(
+	// Longest (unknown)
+	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPCacheGetVaryRule(
 			h.h,
 			prim.ToPointer(buf.U8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return "", err
-		}
-		return string(buf.AsBytes()), nil
+	})
+	if err != nil {
+		return "", err
 	}
+	return value.ToString(), nil
 }
