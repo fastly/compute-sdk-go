@@ -76,6 +76,9 @@ type Request struct {
 	// TLSInfo collects TLS metadata for incoming requests received over HTTPS.
 	TLSInfo TLSInfo
 
+	// tlsClientCertificateInfo is information about the tls client certificate, if available
+	clientCertificate *TLSClientCertificateInfo
+
 	// Fingerprint collects fingerprint metadata for incoming requests
 	fingerprint *Fingerprint
 
@@ -226,17 +229,6 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 			return nil, fmt.Errorf("get TLS JA4: %w", err)
 		}
 
-		tlsInfo.RawClientCertificate, err = abiReq.DownstreamTLSRawCertificate()
-		if err != nil {
-			return nil, fmt.Errorf("get TLS raw client certificate: %w", err)
-		}
-
-		if tlsInfo.RawClientCertificate != nil {
-			tlsInfo.ClientCertIsVerified, err = abiReq.DownstreamTLSClientCertVerifyResult()
-			if err != nil {
-				return nil, fmt.Errorf("get TLS client certificate verify: %w", err)
-			}
-		}
 	}
 
 	// Setting the fsthttp.Request Host field to the url.URL Host field is
@@ -397,6 +389,10 @@ func (req *Request) Fingerprint() (*Fingerprint, error) {
 	req.fingerprint = &fingerprint
 
 	return req.fingerprint, nil
+}
+
+func (req *Request) ComplianceRegion() (string, error) {
+	return req.abi.req.DownstreamComplianceRegion()
 }
 
 // Send the request to the named backend. Requests may only be sent to
@@ -1006,7 +1002,33 @@ type TLSInfo struct {
 	// JA4 contains the bytes of the JA4 signature of the client TLS request.
 	// See https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4.md
 	JA4 []byte
+}
 
+func (req *Request) TLSClientCertificateInfo() (*TLSClientCertificateInfo, error) {
+	if req.clientCertificate != nil {
+		return req.clientCertificate, nil
+	}
+
+	var err error
+	var cert TLSClientCertificateInfo
+
+	cert.RawClientCertificate, err = req.abi.req.DownstreamTLSRawCertificate()
+	if err != nil {
+		return nil, fmt.Errorf("get TLS raw client certificate: %w", err)
+	}
+
+	if cert.RawClientCertificate != nil {
+		cert.ClientCertIsVerified, err = req.abi.req.DownstreamTLSClientCertVerifyResult()
+		if err != nil {
+			return nil, fmt.Errorf("get TLS client certificate verify: %w", err)
+		}
+	}
+
+	req.clientCertificate = &cert
+	return req.clientCertificate, nil
+}
+
+type TLSClientCertificateInfo struct {
 	// RawClientCertificate contains the bytes of the raw client certificate, if one was provided.
 	RawClientCertificate []byte
 
