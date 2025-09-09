@@ -8,38 +8,32 @@ GO_BUILD_FLAGS := -tags=fastlyinternaldebug,nofastlyhostcalls
 GO_TEST_FLAGS  := -v
 GO_PACKAGES    := ./...
 
+.PHONY: test-go
 test-go:
 	go test $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
-.PHONY: test-go
 
 # Using this target lets viceroy provide the wasm runtime, eliminating a dependency on wasmtime.
 TINYGO_TARGET := ./targets/fastly-compute-wasip1.json
 
-test-tinygo:
-	tinygo test -target=$(TINYGO_TARGET) $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
 .PHONY: test-tinygo
+test-tinygo: viceroy
+	tinygo test -target=$(TINYGO_TARGET) $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
 
 # Integration tests use viceroy and override the default values for these variables.
 test-integration-%: GO_BUILD_FLAGS := -tags=fastlyinternaldebug
 test-integration-%: GO_PACKAGES    := ./integration_tests/...
 
-# Big Go needs these to target wasi.
-test-%-go: export GOARCH := wasm
-test-%-go: export GOOS   := wasip1
 
 .PHONY: test-integration
 test-integration: test-integration-go test-integration-tinygo
-.PHONY: test-integration
 
 .PHONY: test-integration-go
-test-integration-go: export GOARCH=wasm
-test-integration-go: export GOOS=wasip1
 test-integration-go: viceroy
-	go test -exec "viceroy run -C fastly.toml" $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
+	GOARCH=wasm GOOS=wasip1 go test -exec "viceroy run -C fastly.toml" $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
 
-test-integration-tinygo: tools/viceroy
-	tinygo test -target=$(TINYGO_TARGET) $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
 .PHONY: test-integration-tinygo
+test-integration-tinygo: viceroy
+	tinygo test -target=$(TINYGO_TARGET) $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
 
 # End to end tests use serve.sh and override the default values for these variables.
 test-e2e-%: GO_BUILD_FLAGS := -tags=fastlyinternaldebug
@@ -51,7 +45,7 @@ test-e2e: test-e2e-go test-e2e-tinygo
 
 .PHONY: test-e2e-go
 test-e2e-go: viceroy
-	go test -exec "serve.sh viceroy run -C fastly.toml" $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
+	GOARCH=wasm GOOS=wasip1 go test -exec "serve.sh viceroy run -C fastly.toml" $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
 
 .PHONY: test-e2e-tinygo
 test-e2e-tinygo: TINYGO_TARGET := ./targets/fastly-compute-wasip1-serve.json

@@ -8,23 +8,20 @@ on:
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         include:
-          # Newest supported configuration
-          - go-version: "1.23" # pairs with TinyGo 0.33.0+
+          - go-version: "1.25.1" # pairs with TinyGo 0.39.0+
+            tinygo-version: "0.39.0"
+            tinygo-wasi-target: "wasip1"
+          - go-version: "1.23.12" # pairs with TinyGo 0.33.0+
             tinygo-version: "0.35.0"
             tinygo-wasi-target: "wasip1"
-          - go-version: "1.22" # pairs with TinyGo 0.31.2
-            tinygo-version: "0.31.2"
-            tinygo-wasi-target: "wasi"
-          # Oldest supported configuration
-          - go-version: "1.21" # pairs with TinyGo 0.29.0
-            tinygo-version: "0.29.0"
-            tinygo-wasi-target: "wasi"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
@@ -32,19 +29,13 @@ jobs:
       - uses: ./.github/actions/install-tinygo
         with:
           tinygo-version: ${{ matrix.tinygo-version }}
+      - run: tinygo version
 
       - name: Setup Fastly CLI
-        uses: fastly/compute-actions/setup@v7
-
-      - name: Install Viceroy
-        run: make tools/viceroy
-
-      - name: Print dependency versions
-        run: |
-          go version
-          tinygo version
-          fastly version
-          viceroy --version
+        uses: fastly/compute-actions/setup@v11
+        with:
+          verbose: true
+      - run: fastly version
 
       - name: Tests - Go
         run: make test-go
