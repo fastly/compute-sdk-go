@@ -12,10 +12,7 @@ import (
 )
 
 // ResponseLimits are the limits for the components of an HTTP response.
-var ResponseLimits = Limits{
-	maxHeaderNameLen:  fastly.DefaultLargeBufLen,
-	maxHeaderValueLen: fastly.DefaultLargeBufLen,
-}
+var ResponseLimits Limits
 
 // Response to an outgoing HTTP request made by this server.
 type Response struct {
@@ -87,10 +84,10 @@ func newResponse(req *Request, backend string, abiResp *fastly.HTTPResponse, abi
 	}
 
 	header := NewHeader()
-	keys := abiResp.GetHeaderNames(ResponseLimits.maxHeaderNameLen)
+	keys := abiResp.GetHeaderNames()
 	for keys.Next() {
 		k := string(keys.Bytes())
-		vals := abiResp.GetHeaderValues(k, ResponseLimits.maxHeaderValueLen)
+		vals := abiResp.GetHeaderValues(k)
 		for vals.Next() {
 			v := string(vals.Bytes())
 			header.Add(k, v)

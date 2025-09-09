@@ -13,6 +13,25 @@ import (
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
 )
 
+// withAdaptiveBuffer is a helper function that calls the provided function with
+// an initial size, and repeats the call with the indicated buffer size when
+// initSize is exceeded by the value.
+func withAdaptiveBuffer(initSize int, f func(buf *prim.WriteBuffer) FastlyStatus) (*prim.WriteBuffer, error) {
+	n := initSize
+	for {
+		buf := prim.NewWriteBuffer(n)
+		status := f(buf)
+		if status == FastlyStatusBufLen && buf.NValue() > 0 {
+			n = int(buf.NValue())
+			continue
+		}
+		if err := status.toError(); err != nil {
+			return nil, err
+		}
+		return buf, nil
+	}
+}
+
 // (module $fastly_http_req
 
 // witx:
@@ -231,7 +250,7 @@ func fastlyHTTPReqHeaderNamesGet(
 
 // GetHeaderNames returns an iterator that yields the names of each header of
 // the request.
-func (r *HTTPRequest) GetHeaderNames(maxHeaderNameLen int) *Values {
+func (r *HTTPRequest) GetHeaderNames() *Values {
 	adapter := func(
 		buf *prim.Char8,
 		bufLen prim.Usize,
@@ -249,7 +268,7 @@ func (r *HTTPRequest) GetHeaderNames(maxHeaderNameLen int) *Values {
 		)
 	}
 
-	return newValues(adapter, maxHeaderNameLen)
+	return newValues(adapter, DefaultLargeBufLen)
 }
 
 // witx:
@@ -275,21 +294,22 @@ func fastlyHTTPReqHeaderValueGet(
 
 // GetHeaderValue returns the first header value of the given header name on the
 // request, if any.
-func (r *HTTPRequest) GetHeaderValue(name string, maxHeaderValueLen int) (string, error) {
-	buf := prim.NewWriteBuffer(maxHeaderValueLen)
+func (r *HTTPRequest) GetHeaderValue(name string) (string, error) {
+	// Most header keys are short: e.g. "Host", "Content-Type", "User-Agent", etc.
 	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
-
-	if err := fastlyHTTPReqHeaderValueGet(
-		r.h,
-		nameBuffer.Data, nameBuffer.Len,
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
+	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPReqHeaderValueGet(
+			r.h,
+			nameBuffer.Data, nameBuffer.Len,
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+	})
+	if err != nil {
 		return "", err
 	}
-
-	return buf.ToString(), nil
+	return value.ToString(), nil
 }
 
 // witx:
@@ -319,7 +339,7 @@ func fastlyHTTPReqHeaderValuesGet(
 
 // GetHeaderValues returns an iterator that yields the values for the named
 // header that are of the request.
-func (r *HTTPRequest) GetHeaderValues(name string, maxHeaderValueLen int) *Values {
+func (r *HTTPRequest) GetHeaderValues(name string) *Values {
 	adapter := func(
 		buf *prim.Char8,
 		bufLen prim.Usize,
@@ -339,7 +359,7 @@ func (r *HTTPRequest) GetHeaderValues(name string, maxHeaderValueLen int) *Value
 		)
 	}
 
-	return newValues(adapter, maxHeaderValueLen)
+	return newValues(adapter, DefaultLargeBufLen)
 }
 
 // witx:
@@ -483,24 +503,19 @@ func fastlyHTTPReqMethodGet(
 
 // GetMethod returns the HTTP method of the request.
 func (r *HTTPRequest) GetMethod() (string, error) {
-	n := DefaultSmallBufLen // HTTP Methods are short: GET, POST, etc.
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyHTTPReqMethodGet(
+	// HTTP Methods are short: GET, POST, etc.
+	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPReqMethodGet(
 			r.h,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return "", err
-		}
-		return buf.ToString(), nil
+	})
+	if err != nil {
+		return "", err
 	}
+	return value.ToString(), nil
 }
 
 // witx:
@@ -549,24 +564,19 @@ func fastlyHTTPReqURIGet(
 
 // GetURI returns the fully qualified URI of the request.
 func (r *HTTPRequest) GetURI() (string, error) {
-	n := DefaultMediumBufLen // Longest (unknown); Typically less than 1024, but some browsers accept much longer
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyHTTPReqURIGet(
+	// Longest (unknown); Typically less than 1024, but some browsers accept much longer
+	value, err := withAdaptiveBuffer(DefaultMediumBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPReqURIGet(
 			r.h,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return "", err
-		}
-		return buf.ToString(), nil
+	})
+	if err != nil {
+		return "", err
 	}
+	return value.ToString(), nil
 }
 
 // witx:
@@ -1188,7 +1198,7 @@ func fastlyHTTPDownstreamOriginalHeaderNames(
 
 // GetOriginalHeaderNames returns an iterator that yields the names of each
 // header of the singleton downstream request.
-func (req *HTTPRequest) DownstreamOriginalHeaderNames(maxHeaderNameLen int) *Values {
+func (req *HTTPRequest) DownstreamOriginalHeaderNames() *Values {
 	adapter := func(
 		buf *prim.Char8,
 		bufLen prim.Usize,
@@ -1206,7 +1216,7 @@ func (req *HTTPRequest) DownstreamOriginalHeaderNames(maxHeaderNameLen int) *Val
 		)
 	}
 
-	return newValues(adapter, maxHeaderNameLen)
+	return newValues(adapter, DefaultLargeBufLen)
 }
 
 // witx:
@@ -1836,7 +1846,7 @@ func fastlyHTTPRespHeaderNamesGet(
 
 // GetHeaderNames returns an iterator that yields the names of each header of
 // the response.
-func (r *HTTPResponse) GetHeaderNames(maxHeaderNameLen int) *Values {
+func (r *HTTPResponse) GetHeaderNames() *Values {
 	adapter := func(
 		buf *prim.Char8,
 		bufLen prim.Usize,
@@ -1855,7 +1865,7 @@ func (r *HTTPResponse) GetHeaderNames(maxHeaderNameLen int) *Values {
 		)
 	}
 
-	return newValues(adapter, maxHeaderNameLen)
+	return newValues(adapter, DefaultLargeBufLen)
 }
 
 // witx:
@@ -1881,21 +1891,21 @@ func fastlyHTTPRespHeaderValueGet(
 
 // GetHeaderValue returns the first header value of the given header name on the
 // response, if any.
-func (r *HTTPResponse) GetHeaderValue(name string, maxHeaderValueLen int) (string, error) {
-	buf := prim.NewWriteBuffer(maxHeaderValueLen)
+func (r *HTTPResponse) GetHeaderValue(name string) (string, error) {
 	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
-
-	if err := fastlyHTTPRespHeaderValueGet(
-		r.h,
-		nameBuffer.Data, nameBuffer.Len,
-		prim.ToPointer(buf.Char8Pointer()),
-		buf.Cap(),
-		prim.ToPointer(buf.NPointer()),
-	).toError(); err != nil {
+	value, err := withAdaptiveBuffer(DefaultLargeBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPRespHeaderValueGet(
+			r.h,
+			nameBuffer.Data, nameBuffer.Len,
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+	})
+	if err != nil {
 		return "", err
 	}
-
-	return buf.ToString(), nil
+	return value.ToString(), nil
 }
 
 // witx:
@@ -1925,7 +1935,7 @@ func fastlyHTTPRespHeaderValuesGet(
 
 // GetHeaderValues returns an iterator that yields the values for the named
 // header that are of the response.
-func (r *HTTPResponse) GetHeaderValues(name string, maxHeaderValueLen int) *Values {
+func (r *HTTPResponse) GetHeaderValues(name string) *Values {
 	adapter := func(
 		buf *prim.Char8,
 		bufLen prim.Usize,
@@ -1946,7 +1956,7 @@ func (r *HTTPResponse) GetHeaderValues(name string, maxHeaderValueLen int) *Valu
 		)
 	}
 
-	return newValues(adapter, maxHeaderValueLen)
+	return newValues(adapter, DefaultLargeBufLen)
 }
 
 // witx:

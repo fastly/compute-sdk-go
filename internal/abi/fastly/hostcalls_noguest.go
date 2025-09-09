@@ -95,7 +95,7 @@ func NewHTTPRequest() (*HTTPRequest, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) GetHeaderNames(maxHeaderNameLen int) *Values {
+func (r *HTTPRequest) GetHeaderNames() *Values {
 	return nil
 }
 
@@ -111,7 +111,7 @@ func (r *HTTPRequest) GetHeaderValue(name string, maxHeaderValueLen int) (string
 	return "", fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) GetHeaderValues(name string, maxHeaderValueLen int) *Values {
+func (r *HTTPRequest) GetHeaderValues(name string) *Values {
 	return nil
 }
 
@@ -281,15 +281,15 @@ func NewHTTPResponse() (*HTTPResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (r *HTTPResponse) GetHeaderNames(maxHeaderNameLen int) *Values {
+func (r *HTTPResponse) GetHeaderNames() *Values {
 	return nil
 }
 
-func (r *HTTPResponse) GetHeaderValue(name string, maxHeaderValueLen int) (string, error) {
+func (r *HTTPResponse) GetHeaderValue(name string) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
-func (r *HTTPResponse) GetHeaderValues(name string, maxHeaderValueLen int) *Values {
+func (r *HTTPResponse) GetHeaderValues(name string) *Values {
 	return nil
 }
 
