@@ -404,7 +404,7 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 	)
 
 	switch underlyingReaderFrom(req.Body).(type) {
-	case nil, *bytes.Buffer, *bytes.Reader, *strings.Reader:
+	case nil, *bytes.Buffer, *bytes.Reader, *strings.Reader, *fastly.HTTPBody:
 		streaming = false
 	}
 
