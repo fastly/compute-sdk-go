@@ -386,6 +386,11 @@ func (req *Request) Fingerprint() (*Fingerprint, error) {
 		return nil, fmt.Errorf("get ddos detected: %w", err)
 	}
 
+	fingerprint.FastlyKeyIsValid, err = req.abi.req.DownstreamFastlyKeyIsValid()
+	if err != nil {
+		return nil, fmt.Errorf("get fastly key is valid: %w", err)
+	}
+
 	req.fingerprint = &fingerprint
 
 	return req.fingerprint, nil
@@ -1043,6 +1048,9 @@ type Fingerprint struct {
 
 	// DDOSDetected is true if the request was determined to be part of a DDOS attack.
 	DDOSDetected bool
+
+	// FastlyKeyIsValid is true if the request contains a valid Fastly API token.
+	FastlyKeyIsValid bool
 }
 
 // DecompressResponseOptions control the auto decompress response behaviour.
