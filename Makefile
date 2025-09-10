@@ -1,10 +1,7 @@
 .DEFAULT: test
 
-test: test-go test-tinygo test-integration
 .PHONY: test
-
-# Makes tools/viceroy available as an executable within Makefile recipes.
-PATH := $(PWD)/tools:$(PATH)
+test: test-go test-tinygo test-integration test-e2e
 
 # Override these with environment variables or directly on the make command line.
 GO_BUILD_FLAGS := -tags=fastlyinternaldebug,nofastlyhostcalls
@@ -26,35 +23,51 @@ test-tinygo:
 test-integration-%: GO_BUILD_FLAGS := -tags=fastlyinternaldebug
 test-integration-%: GO_PACKAGES    := ./integration_tests/...
 
+# Big Go needs these to target wasi.
+test-%-go: export GOARCH := wasm
+test-%-go: export GOOS   := wasip1
+
+.PHONY: test-integration
 test-integration: test-integration-go test-integration-tinygo
 .PHONY: test-integration
 
-test-integration-go: tools/viceroy
-	GOARCH=wasm GOOS=wasip1 go test -exec "viceroy run -C fastly.toml" $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
 .PHONY: test-integration-go
+test-integration-go: export GOARCH=wasm
+test-integration-go: export GOOS=wasip1
+test-integration-go: viceroy
+	go test -exec "viceroy run -C fastly.toml" $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
 
 test-integration-tinygo: tools/viceroy
 	tinygo test -target=$(TINYGO_TARGET) $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
 .PHONY: test-integration-tinygo
 
-tools/viceroy: | tools # Download latest version of Viceroy ./tools/viceroy; delete it if you'd like to upgrade
-	@arch=$$(uname -m | sed 's/x86_64/amd64/'); \
-		os=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
-		url=$$(curl -s https://api.github.com/repos/fastly/viceroy/releases/latest | jq --arg arch $$arch --arg os $$os -r '.assets[] | select((.name | contains($$arch)) and (.name | contains($$os))) | .browser_download_url'); \
-		filename=$$(basename $$url); \
-		curl -sSLO $$url && \
-		tar -xzf $$filename --directory ./tools/ && \
-		rm $$filename && \
-		./tools/viceroy --version && \
-		touch ./tools/viceroy
-ifneq ($(strip $(GITHUB_PATH)),)
-	@echo "$(PWD)/tools" >> "$(GITHUB_PATH)"
-endif
+# End to end tests use serve.sh and override the default values for these variables.
+test-e2e-%: GO_BUILD_FLAGS := -tags=fastlyinternaldebug
+test-e2e-%: GO_PACKAGES    := ./end_to_end_tests/...
+test-e2e-%: export PATH := $(PWD)/end_to_end_tests:$(PATH) # allows go test to find serve.sh
 
-tools:
-	@mkdir -p tools
+.PHONY: test-e2e
+test-e2e: test-e2e-go test-e2e-tinygo
 
-viceroy-update:
-	@rm -f tools/viceroy
-	@$(MAKE) tools/viceroy
-.PHONY: viceroy-update
+.PHONY: test-e2e-go
+test-e2e-go: viceroy
+	go test -exec "serve.sh viceroy run -C fastly.toml" $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
+
+.PHONY: test-e2e-tinygo
+test-e2e-tinygo: TINYGO_TARGET := ./targets/fastly-compute-wasip1-serve.json
+test-e2e-tinygo: viceroy
+	tinygo test -target=$(TINYGO_TARGET) $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
+
+.PHONY: viceroy
+viceroy:
+	@which viceroy || ( \
+	    echo "viceroy not found: please ensure it is installed and available in your PATH:" && \
+		echo $$PATH && \
+		echo && \
+		echo "The fastly CLI installs Viceroy in the fastly subdirectory of the path returned by" && \
+		echo "os.UserConfigDir():" && \
+		echo "  > On Unix systems, it returns \$$XDG_CONFIG_HOME if non-empty, else \$$HOME/.config." && \
+		echo "  > On Darwin, it returns \$$HOME/Library/Application Support." && \
+		echo "From https://pkg.go.dev/os#UserConfigDir" && \
+		exit 1 \
+	)
