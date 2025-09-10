@@ -1710,6 +1710,7 @@ func fastlyHTTPReqDownstreamComplianceRegion(
 	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
+// DownstreamComplianceRegion returns the compliance region (US/EU/None) for the request.
 func (r *HTTPRequest) DownstreamComplianceRegion() (string, error) {
 	n := 4
 	for {

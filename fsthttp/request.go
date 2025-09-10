@@ -391,10 +391,6 @@ func (req *Request) Fingerprint() (*Fingerprint, error) {
 	return req.fingerprint, nil
 }
 
-func (req *Request) ComplianceRegion() (string, error) {
-	return req.abi.req.DownstreamComplianceRegion()
-}
-
 // Send the request to the named backend. Requests may only be sent to
 // backends that have been preconfigured in your service, regardless of
 // their URL. Once sent, a request cannot be sent again.
