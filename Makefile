@@ -1,63 +1,124 @@
-.DEFAULT: test
+## Show this help message
+.PHONY: help
+help: help-awk
 
+## Run all SDK tests [unit, integration, end-to-end] using Go and TinyGo
 .PHONY: test
-test: test-go test-tinygo test-integration test-e2e
+test: test-go test-tinygo
 
-# Override these with environment variables or directly on the make command line.
-GO_BUILD_FLAGS := -tags=fastlyinternaldebug,nofastlyhostcalls
-GO_TEST_FLAGS  := -v
-GO_PACKAGES    := ./...
-
+## Run all SDK tests using only Go
 .PHONY: test-go
-test-go:
-	@echo ">> Running Go tests..." >&2
-	go test $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
+test-go: test-unit-go test-integration-go test-e2e-go
 
-# Using this target lets viceroy provide the wasm runtime, eliminating a dependency on wasmtime.
-TINYGO_TARGET := ./targets/fastly-compute-wasip1.json
-
+## Run all SDK tests using only TinyGo
 .PHONY: test-tinygo
-test-tinygo: viceroy
-	@echo ">> Running TinyGo tests..." >&2
-	tinygo test -target=$(TINYGO_TARGET) $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
+test-tinygo: test-unit-tinygo test-integration-tinygo test-e2e-tinygo
 
-# Integration tests use viceroy and override the default values for these variables.
-test-integration-%: GO_BUILD_FLAGS := -tags=fastlyinternaldebug
-test-integration-%: GO_PACKAGES    := ./integration_tests/...
+## Customize test runs by changing defaults for GO_TEST_FLAGS & GO_PACKAGES
+.PHONY: defaults
+defaults: defaults-go defaults-tinygo
 
+## Run only [unit] tests using Go and TinyGo
+.PHONY: test-unit
+test-unit: test-unit-go test-unit-tinygo
 
+## Run only [integration] tests using Go and TinyGo
 .PHONY: test-integration
 test-integration: test-integration-go test-integration-tinygo
 
-.PHONY: test-integration-go
-test-integration-go: viceroy
-	@echo ">> Running Go integration tests..." >&2
-	GOARCH=wasm GOOS=wasip1 go test -exec "viceroy run -C fastly.toml" $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
-
-.PHONY: test-integration-tinygo
-test-integration-tinygo: viceroy
-	@echo ">> Running TinyGo integration tests..." >&2
-	tinygo test -target=$(TINYGO_TARGET) $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
-
-# End to end tests use serve.sh and override the default values for these variables.
-test-e2e-%: GO_BUILD_FLAGS := -tags=fastlyinternaldebug
-test-e2e-%: GO_PACKAGES    := ./end_to_end_tests/...
-test-e2e-%: export PATH := $(PWD)/end_to_end_tests:$(PATH) # allows go test to find serve.sh
-
+## Run only [end-to-end] tests using Go and TinyGo
 .PHONY: test-e2e
 test-e2e: test-e2e-go test-e2e-tinygo
 
+.PHONY: defaults-go
+defaults-go:
+	@echo GO_TEST_FLAGS=$(GO_TEST_FLAGS)
+	@echo GO_PACKAGES=$(GO_PACKAGES)
+
+# := is immediate assignment, evaluated once
+GO_TEST_FLAGS := -v
+GO_PACKAGES   := ./...
+
+.PHONY: defaults-tinygo
+defaults-tinygo:
+	@echo TINYGO_TEST_FLAGS=$(TINYGO_TEST_FLAGS)
+	@echo TINYGO_PACKAGES=$(TINYGO_PACKAGES)
+
+# TINYGO_ variables derive from the GO_ versions.
+# = is recursive assignment, expanded at each use
+TINYGO_TEST_FLAGS = $(GO_TEST_FLAGS)
+TINYGO_PACKAGES   = $(GO_PACKAGES)
+TINYGO_BUILD_TAGS = $(GO_BUILD_TAGS)
+
+# With the defaults arranged, each type of test (unit, integration, end-to-end)
+# needs specific modifications. Integration tests use `test -exec viceroy`,
+# end-to-end tests use `test -exec serve.sh`.
+
+# Change build tags for different test types:
+test-unit-%:         GO_BUILD_TAGS := fastlyinternaldebug nofastlyhostcalls
+test-integration-%:  GO_BUILD_TAGS := fastlyinternaldebug
+test-e2e-%: 		 GO_BUILD_TAGS := fastlyinternaldebug
+
+# Change package lists for different test types:
+test-integration-%:  GO_PACKAGES   := ./integration_tests/...
+test-e2e-%: 		 GO_PACKAGES   := ./end_to_end_tests/...
+
+# Match tinygo targets for build tags and viceroy args:
+test-%-go:       EXEC_ARGS := viceroy run -C fastly.toml
+test-%-tinygo:   TINYGO_TARGET := ./targets/fastly-compute-wasip1.json
+test-e2e-tinygo: TINYGO_TARGET := ./targets/fastly-compute-wasip1-serve.json
+
+# Allow `test -exec` and tinygo's emulator target to find `serve.sh`:
+test-e2e-%: export PATH := $(PWD)/end_to_end_tests:$(PATH)
+
+# GOFLAGS brings all the options together. They are used directly in the command
+# lines in recipes below to avoid hiding them in the environment.
+test-%-go:     GOFLAGS     = $(GO_TEST_FLAGS) -tags=$(subst $(space),$(comma),$(GO_BUILD_TAGS))
+test-%-tinygo: TINYGOFLAGS = $(TINYGO_TEST_FLAGS) -target=$(TINYGO_TARGET) -tags=$(subst $(space),$(comma),$(TINYGO_BUILD_TAGS))
+
+## Run only [unit] tests using Go
+.PHONY: test-unit-go
+test-unit-go:
+	@echo >&2
+	@echo ">> Running Go [unit] tests..." >&2
+	go test $(GOFLAGS) $(GO_PACKAGES)
+
+## Run only [unit] tests using TinyGo
+.PHONY: test-unit-tinygo
+test-unit-tinygo: viceroy
+	@echo >&2
+	@echo ">> Running TinyGo [unit] tests..." >&2
+	tinygo test $(TINYGOFLAGS) $(TINYGO_PACKAGES)
+
+## Run only [integration] tests using Go
+.PHONY: test-integration-go
+test-integration-go: viceroy
+	@echo >&2
+	@echo ">> Running Go [integration] tests..." >&2
+	GOARCH=wasm GOOS=wasip1 go test -exec "$(EXEC_ARGS)" $(GOFLAGS) $(GO_PACKAGES)
+
+## Run only [integration] tests using TinyGo
+.PHONY: test-integration-tinygo
+test-integration-tinygo: viceroy
+	@echo >&2
+	@echo ">> Running TinyGo [integration] tests..." >&2
+	tinygo test $(TINYGOFLAGS) $(TINYGO_PACKAGES)
+
+## Run only [end-to-end] tests using Go
 .PHONY: test-e2e-go
 test-e2e-go: viceroy
-	@echo ">> Running Go end-to-end tests..." >&2
-	GOARCH=wasm GOOS=wasip1 go test -exec "serve.sh viceroy run -C fastly.toml" $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
+	@echo >&2
+	@echo ">> Running Go [end-to-end] tests..." >&2
+	GOARCH=wasm GOOS=wasip1 go test -exec "serve.sh $(EXEC_ARGS)" $(GOFLAGS) $(GO_PACKAGES)
 
+## Run only [end-to-end] tests using TinyGo
 .PHONY: test-e2e-tinygo
-test-e2e-tinygo: TINYGO_TARGET := ./targets/fastly-compute-wasip1-serve.json
 test-e2e-tinygo: viceroy
-	@echo ">> Running TinyGo end-to-end tests..." >&2
-	tinygo test -target=$(TINYGO_TARGET) $(GO_BUILD_FLAGS) $(GO_TEST_FLAGS) $(GO_PACKAGES)
+	@echo >&2
+	@echo ">> Running TinyGo [end-to-end] tests..." >&2
+	tinygo test $(TINYGOFLAGS) $(TINYGO_PACKAGES)
 
+## Check for viceroy on path
 .PHONY: viceroy
 viceroy:
 	@which viceroy || ( \
@@ -71,3 +132,22 @@ viceroy:
 		echo "From https://pkg.go.dev/os#UserConfigDir" && \
 		exit 1 \
 	)
+
+empty :=
+space := $(empty) $(empty)
+comma := ,
+
+.PHONY: help-awk
+help-awk:
+	@awk ' \
+			/^[ \t]*##/ { \
+					help=$$0; \
+					sub(/^##[ \t]*/, "", help); \
+			} \
+			/^[a-zA-Z0-9_-]+:/ { \
+					if (help) { \
+							printf "\033[36m%-20s\033[0m %s\n", $$1, help; \
+							help=""; \
+					} \
+			} \
+	' $(MAKEFILE_LIST)
