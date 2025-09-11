@@ -390,20 +390,50 @@ type Values struct {
 	err      error            //
 }
 
-// newValuesBuffer constructs a Values iterator over the provided hostcall. The buffer
-// is used to receive writes from the hostcall. It must be large enough to avoid
-// BufLen errors.
+// newValuesBuffer constructs a Values iterator over the provided hostcall. The
+// buffer is used to receive writes from the hostcall. If it is too small, it
+// will allocate and resize to accommodate the actual size of the hostcall
+// output.
 func newValuesBuffer(f multiValueHostcall, buffer []byte) *Values {
+	if buffer == nil {
+		buffer = make([]byte, 0, DefaultMediumBufLen)
+	}
 	return &Values{
 		f:      f,
 		buffer: buffer,
 	}
 }
 
-// newValues is a helper constructor that allocates a buffer of capacity cap and
+// newValues is a helper that allocates a buffer of capacity cap and
 // provides it to newValuesBuffer.
 func newValues(f multiValueHostcall, cap int) *Values {
 	return newValuesBuffer(f, make([]byte, 0, cap))
+}
+
+func (v *Values) nextValue() {
+	var result multiValueCursorResult
+	for {
+		buf := prim.NewWriteBufferFromBytes(v.buffer)
+		status := v.f(
+			buf.Char8Pointer(),
+			buf.Cap(),
+			v.cursor,
+			&result,
+			buf.NPointer(),
+		)
+		if status == FastlyStatusBufLen && buf.NValue() > 0 {
+			v.buffer = make([]byte, 0, int(buf.NValue()))
+			continue
+		}
+		v.err = status.toError()
+		if v.err != nil {
+			return
+		}
+		v.cursor = result.toCursor()
+		v.finished = result.isFinished()
+		v.pending = buf.AsBytes()
+		return
+	}
 }
 
 // Next prepares the next value for reading with the Bytes method. It returns
@@ -411,75 +441,43 @@ func newValues(f multiValueHostcall, cap int) *Values {
 // Err should be called to distinguish between those two cases. Every call to
 // Bytes, even the first one, must be preceded by a call to Next.
 func (v *Values) Next() bool {
-	var (
-		haveError         = v.err != nil
-		hostcallsFinished = v.finished
-		nothingPending    = len(v.pending) == 0
-	)
-	if haveError || (hostcallsFinished && nothingPending) {
+	// Check first for no further values.
+	if v.err != nil {
 		return false
 	}
-
-	// 1. Make the hostcall and have it write into v.buffer.
-	// 2. Set v.pending to v.buffer, another "view" to the same backing array.
-	// 3. Slide v.pending forward, value by value, for each call to Next.
-	// 4. All values are consumed when len(v.pending) == 0.
-	// 5. Repeat until the hostcall returns finished.
-	//
-	// We assume the hostcall always writes complete values to the buffer, never
-	// splitting a value over multiple calls. Said another way: we assume every
-	// value ends with a terminator.
-
-	if nothingPending {
-		var (
-			buf    = prim.NewWriteBufferFromBytes(v.buffer)
-			result = multiValueCursorResult(0)
-		)
-		if err := v.f(
-			buf.Char8Pointer(),
-			buf.Cap(),
-			v.cursor,
-			&result,
-			buf.NPointer(),
-		).toError(); err != nil {
-			v.finished, v.err = true, err
+	if len(v.pending) == 0 {
+		if v.finished {
 			return false
 		}
 
-		// If nothing was written, we're done.
-		if buf.NValue() == 0 {
-			v.finished = true
+		// Get more data from the hostcall.
+		//
+		// The hostcall always writes complete values, up to the buffer's capacity,
+		// or returns BufLen, never splitting a value over multiple calls. Said
+		// another way: every value ends with a terminator. So we process via these
+		// steps:
+		//
+		// 1. Call nextValue() to update v.buffer, which resizes in response to BufLen.
+		// 2. Set v.pending to the rest of v.buffer, a "view" on the same [...]byte.
+		// 3. Set v.value to the bytes before the next \0 in v.pending,
+		// value by value, for each call to Next().
+		// 4. All values in pending are consumed when len(v.pending) == 0.
+		// 5. Repeat until nextValue() sets v.finished and len(v.pending) == 0.
+
+		v.nextValue()
+		if v.err != nil {
 			return false
 		}
-
-		// If we're finished, no more hostcalls, please.
-		// Otherwise, update the cursor for the next hostcall.
-		if result.isFinished() {
-			v.finished = true
-		} else {
-			v.cursor = result.toCursor()
-		}
-
-		// Capture the result.
-		v.pending = buf.AsBytes()
 	}
 
-	// Pending buffer has something.
-	// Find the first terminator.
-	idx := bytes.IndexByte(v.pending, 0)
-	if idx < 0 {
+	// Pending buffer has something from nextValue(). Find the first terminator
+	// and advance the sliding windows.
+	var term bool
+	v.value, v.pending, term = bytes.Cut(v.pending, []byte{0})
+	if !term && !v.finished {
 		v.err = fmt.Errorf("missing terminator")
-		return false
 	}
-
-	// Capture the first value.
-	v.value = v.pending[:idx]
-
-	// Slide the pending window forward.
-	v.pending = v.pending[idx+1:] // +1 for terminator
-
-	// We've got something.
-	return true
+	return term
 }
 
 // Err returns the error, if any, that was encountered during iteration.

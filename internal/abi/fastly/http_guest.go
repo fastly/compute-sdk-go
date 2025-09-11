@@ -239,7 +239,6 @@ func (r *HTTPRequest) GetHeaderNames() *Values {
 		endingCursorOut *multiValueCursorResult,
 		nwrittenOut *prim.Usize,
 	) FastlyStatus {
-
 		return fastlyHTTPReqHeaderNamesGet(
 			r.h,
 			prim.ToPointer(buf), bufLen,
@@ -249,7 +248,7 @@ func (r *HTTPRequest) GetHeaderNames() *Values {
 		)
 	}
 
-	return newValues(adapter, DefaultLargeBufLen)
+	return newValues(adapter, DefaultMediumBufLen) // Large enough to get most header names in a single call.
 }
 
 // witx:
@@ -340,7 +339,7 @@ func (r *HTTPRequest) GetHeaderValues(name string) *Values {
 		)
 	}
 
-	return newValues(adapter, DefaultLargeBufLen)
+	return newValues(adapter, DefaultLargeBufLen) // Large enough to get most header values in a single call.
 }
 
 // witx:
@@ -631,7 +630,6 @@ func fastlyHTTPReqVersionSet(
 
 // SetVersion sets the HTTP version of the request.
 func (r *HTTPRequest) SetVersion(v HTTPVersion) error {
-
 	return fastlyHTTPReqVersionSet(
 		r.h,
 		v,
@@ -1187,7 +1185,6 @@ func (req *HTTPRequest) DownstreamOriginalHeaderNames() *Values {
 		endingCursorOut *multiValueCursorResult,
 		nwrittenOut *prim.Usize,
 	) FastlyStatus {
-
 		return fastlyHTTPDownstreamOriginalHeaderNames(
 			req.h,
 			prim.ToPointer(buf), bufLen,
@@ -1197,7 +1194,7 @@ func (req *HTTPRequest) DownstreamOriginalHeaderNames() *Values {
 		)
 	}
 
-	return newValues(adapter, DefaultLargeBufLen)
+	return newValues(adapter, DefaultMediumBufLen)
 }
 
 // witx:
@@ -1543,7 +1540,6 @@ func fastlyHTTPBodyAppend(
 
 // Append the other body to this one.
 func (b *HTTPBody) Append(other *HTTPBody) error {
-
 	if err := fastlyHTTPBodyAppend(
 		b.h,
 		other.h,
@@ -1841,7 +1837,7 @@ func (r *HTTPResponse) GetHeaderNames() *Values {
 		)
 	}
 
-	return newValues(adapter, DefaultLargeBufLen)
+	return newValues(adapter, DefaultMediumBufLen) // Large enough to get most header names in a single call.
 }
 
 // witx:
@@ -1932,7 +1928,7 @@ func (r *HTTPResponse) GetHeaderValues(name string) *Values {
 		)
 	}
 
-	return newValues(adapter, DefaultLargeBufLen)
+	return newValues(adapter, DefaultLargeBufLen) // Large enough to get most header values in a single call.
 }
 
 // witx:
