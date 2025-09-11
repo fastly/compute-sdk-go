@@ -1,4 +1,5 @@
 name: Build Examples
+
 on:
   push:
     branches:
@@ -13,10 +14,10 @@ jobs:
       matrix:
         include:
           # Newest supported configuration
-          - go-version: "1.25" # pairs with TinyGo 0.39.0
+          - go-version: "1.25.1" # pairs with TinyGo 0.39.0
             tinygo-version: "0.39.0"
           # Oldest supported configuration
-          - go-version: "1.23" # pairs with TinyGo 0.33.0
+          - go-version: "1.23.12" # pairs with TinyGo 0.33.0
             tinygo-version: "0.33.0"
 
     steps:
@@ -45,5 +46,5 @@ jobs:
         run: |
           for i in _examples/*/; do
             echo ${GITHUB_WORKSPACE}/$i
-            cd ${GITHUB_WORKSPACE}/$i && tinygo build -target=wasip1 -tags fastlyinternaldebug
+            cd ${GITHUB_WORKSPACE}/$i && tinygo build -target=${GITHUB_WORKSPACE}/targets/fastly-compute-wasip1.json -tags fastlyinternaldebug
           done
