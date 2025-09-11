@@ -547,7 +547,7 @@ func testAfterSendCandidateResponsePropertiesUncached(ctx context.Context) error
 
 		if got, err := r.Vary(); err != nil {
 			return fmt.Errorf("candidate.vary has err=%v, want nil", err)
-		} else if want := "accept-encoding"; got != want {
+		} else if want := ""; got != want {
 			return fmt.Errorf("candidate.vary=%v, want %v", got, want)
 		}
 
@@ -585,7 +585,7 @@ func testAfterSendCandidateResponsePropertiesUncached(ctx context.Context) error
 		return fmt.Errorf("response.ttl()=%v, %v, want %v, %v", got, ok, 3600, true)
 	}
 
-	if got, want := resp.Vary(), "accept-encoding"; got != want {
+	if got, want := resp.Vary(), ""; got != want {
 		return fmt.Errorf("response.Vary()=%v, want %v", got, want)
 	}
 
@@ -671,7 +671,7 @@ func testAfterSendCandidateResponsePropertiesCached(ctx context.Context) error {
 		return fmt.Errorf("response.ttl()=%v, %v, want %v, %v", got, ok, 0, true)
 	}
 
-	if got, want := resp.Vary(), "accept-encoding"; got != want {
+	if got, want := resp.Vary(), ""; got != want {
 		return fmt.Errorf("response.Vary()=%v, want %v", got, want)
 	}
 
