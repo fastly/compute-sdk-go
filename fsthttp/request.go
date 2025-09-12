@@ -1053,6 +1053,7 @@ type Fingerprint struct {
 	DDOSDetected bool
 
 	// FastlyKeyIsValid is true if the request contains a valid Fastly API token.
+	// This is for services to restrict authenticating PURGE requests for the readthrough cache.
 	FastlyKeyIsValid bool
 }
 
