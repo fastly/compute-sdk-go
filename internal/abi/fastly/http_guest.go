@@ -1314,24 +1314,18 @@ func fastlyHTTPDownstreamH2Fingerprint(
 ) FastlyStatus
 
 func (r *HTTPRequest) DownstreamH2Fingerprint() ([]byte, error) {
-	n := DefaultMediumBufLen
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyHTTPDownstreamH2Fingerprint(
+	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPDownstreamH2Fingerprint(
 			r.h,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return nil, err
-		}
-		return buf.AsBytes(), nil
+	})
+	if err != nil {
+		return nil, err
 	}
+	return value.AsBytes(), nil
 }
 
 // witx;
@@ -1354,24 +1348,18 @@ func fastlyHTTPDownstreamRequestID(
 ) FastlyStatus
 
 func (r *HTTPRequest) DownstreamRequestID() (string, error) {
-	n := DefaultSmallBufLen
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyHTTPDownstreamRequestID(
+	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPDownstreamRequestID(
 			r.h,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return "", err
-		}
-		return buf.ToString(), nil
+	})
+	if err != nil {
+		return "", err
 	}
+	return value.ToString(), nil
 }
 
 // witx:
@@ -1394,24 +1382,18 @@ func fastlyHTTPDownstreamOHFingerprint(
 ) FastlyStatus
 
 func (r *HTTPRequest) DownstreamOHFingerprint() ([]byte, error) {
-	n := DefaultSmallBufLen
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyHTTPDownstreamOHFingerprint(
+	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPDownstreamOHFingerprint(
 			r.h,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return nil, err
-		}
-		return buf.AsBytes(), nil
+	})
+	if err != nil {
+		return nil, err
 	}
+	return value.AsBytes(), nil
 }
 
 // witx:
@@ -1573,24 +1555,18 @@ func fastlyHTTPReqDownstreamTLSRawCertificate(
 ) FastlyStatus
 
 func (r *HTTPRequest) DownstreamTLSRawCertificate() ([]byte, error) {
-	n := DefaultLargeBufLen // Longest (~132,000); typically < 2^14; RFC https://datatracker.ietf.org/doc/html/rfc8446#section-4.1.2
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyHTTPReqDownstreamTLSRawCertificate(
+	value, err := withAdaptiveBuffer(DefaultLargeBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPReqDownstreamTLSRawCertificate(
 			r.h,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return nil, err
-		}
-		return buf.AsBytes(), nil
+	})
+	if err != nil {
+		return nil, err
 	}
+	return value.AsBytes(), nil
 }
 
 // witx:
@@ -1671,24 +1647,18 @@ func fastlyHTTPReqDownstreamTLSJA4(
 ) FastlyStatus
 
 func (r *HTTPRequest) DownstreamTLSJA4() ([]byte, error) {
-	n := DefaultSmallBufLen // JA4 hashes should be <64 bytes
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyHTTPReqDownstreamTLSJA4(
+	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPReqDownstreamTLSJA4(
 			r.h,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return nil, err
-		}
-		return buf.AsBytes(), nil
+	})
+	if err != nil {
+		return nil, err
 	}
+	return value.AsBytes(), nil
 }
 
 // witx:
@@ -1712,24 +1682,18 @@ func fastlyHTTPReqDownstreamComplianceRegion(
 
 // DownstreamComplianceRegion returns the compliance region (US/EU/None) for the request.
 func (r *HTTPRequest) DownstreamComplianceRegion() (string, error) {
-	n := 4
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyHTTPReqDownstreamComplianceRegion(
+	value, err := withAdaptiveBuffer(4, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPReqDownstreamComplianceRegion(
 			r.h,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return "", err
-		}
-		return buf.ToString(), nil
+	})
+	if err != nil {
+		return "", err
 	}
+	return value.ToString(), nil
 }
 
 // witx;

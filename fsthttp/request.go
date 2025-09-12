@@ -117,10 +117,12 @@ type Request struct {
 
 	sent bool // a request may only be sent once
 
-	abi struct {
-		req  *fastly.HTTPRequest
-		body *fastly.HTTPBody
-	}
+	abi reqAbi
+}
+
+type reqAbi struct {
+	req  *fastly.HTTPRequest
+	body *fastly.HTTPBody
 }
 
 // NewRequest constructs an outgoing request with the given HTTP method, URI,
@@ -247,6 +249,7 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		ServerAddr: serverAddr.String(),
 		TLSInfo:    tlsInfo,
 		RequestID:  reqID,
+		abi:        reqAbi{req: abiReq, body: abiReqBody},
 	}, nil
 }
 
