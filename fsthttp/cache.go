@@ -224,7 +224,7 @@ func newCandidate(c *fastly.HTTPCacheHandle, opts *CacheOptions, abiResp *fastly
 	}
 
 	// Fastly-specific heuristic: by default, we do not cache responses that set cookies
-	if v, err := abiResp.GetHeaderValue("set-cookie", ResponseLimits.maxHeaderValueLen); err == nil && v != "" && storageAction != fastly.HTTPCacheStorageActionDoNotStore {
+	if v, err := abiResp.GetHeaderValue("set-cookie"); err == nil && v != "" && storageAction != fastly.HTTPCacheStorageActionDoNotStore {
 		storageAction = fastly.HTTPCacheStorageActionRecordUncacheable
 	}
 
@@ -278,7 +278,7 @@ func (candidateResponse *CandidateResponse) DelHeader(key string) error {
 
 // Header gets a header from the candidate response.
 func (candidateResponse *CandidateResponse) Header(key string) (string, error) {
-	v, err := candidateResponse.abiResp.GetHeaderValue(key, ResponseLimits.maxHeaderValueLen)
+	v, err := candidateResponse.abiResp.GetHeaderValue(key)
 	if err != nil {
 		return "", fmt.Errorf("get header: %w", err)
 	}
@@ -526,7 +526,7 @@ func (candidateResponse *CandidateResponse) buildFreshSuggestedCacheWriteOptions
 		keys += extra
 	}
 
-	vals := candidateResponse.abiResp.GetHeaderValues(surrogateKey, RequestLimits.maxHeaderValueLen)
+	vals := candidateResponse.abiResp.GetHeaderValues(surrogateKey)
 	for vals.Next() {
 		if keys != "" {
 			keys += " "

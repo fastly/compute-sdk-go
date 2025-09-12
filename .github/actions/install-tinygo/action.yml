@@ -4,7 +4,7 @@ inputs:
   tinygo-version:
     description: "The version of TinyGo to install"
     required: true
-    default: "0.33.0"
+    default: "0.39.0"
 runs:
   using: "composite"
   steps:

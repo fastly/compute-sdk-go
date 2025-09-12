@@ -1,37 +1,37 @@
 package fsthttp
 
+import "math"
+
 // Limits handles HTTP limits
-type Limits struct {
-	maxHeaderNameLen  int
-	maxHeaderValueLen int
-	maxMethodLen      int
-	maxURLLen         int
-}
+// Deprecated: limits are enforced at a different level within the platform.
+type Limits struct{}
 
 // MaxHeaderNameLen gets the header name limit
+// Deprecated: the limit is not enforced, buffer sizing is adaptive.
 func (limits *Limits) MaxHeaderNameLen() int {
-	return limits.maxHeaderNameLen
+	return math.MaxInt
 }
 
 // SetMaxHeaderNameLen sets the header name limit
-func (limits *Limits) SetMaxHeaderNameLen(len int) {
-	limits.maxHeaderNameLen = len
+// Deprecated: the limit is not enforced, buffer sizing is adaptive.
+func (limits *Limits) SetMaxHeaderNameLen(_ int) {
 }
 
 // MaxHeaderValueLen gets the header value limit
+// Deprecated: the limit is not enforced, buffer sizing is adaptive.
 func (limits *Limits) MaxHeaderValueLen() int {
-	return limits.maxHeaderValueLen
+	return math.MaxInt
 }
 
 // SetMaxHeaderValueLen sets the header value limit
-func (limits *Limits) SetMaxHeaderValueLen(len int) {
-	limits.maxHeaderValueLen = len
+// Deprecated: the limit is not enforced, buffer sizing is adaptive.
+func (limits *Limits) SetMaxHeaderValueLen(_ int) {
 }
 
 // MaxMethodLen gets the request method limit
 // Deprecated: the limit is not enforced, buffer sizing is adaptive.
 func (limits *Limits) MaxMethodLen() int {
-	return limits.maxMethodLen
+	return math.MaxInt
 }
 
 // SetMaxMethodLen sets the request method limit
@@ -42,7 +42,7 @@ func (limits *Limits) SetMaxMethodLen(_ int) {
 // MaxURLLen gets the request URL limit
 // Deprecated: the limit is not enforced, buffer sizing is adaptive.
 func (limits *Limits) MaxURLLen() int {
-	return limits.maxURLLen
+	return math.MaxInt
 }
 
 // SetMaxURLLen sets the request URL limit

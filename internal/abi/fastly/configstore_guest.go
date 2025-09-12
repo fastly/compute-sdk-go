@@ -80,24 +80,18 @@ func (c *ConfigStore) GetBytes(key string) ([]byte, error) {
 	}
 	keyStr := keyBuffer.Wstring()
 
-	n := DefaultSmallBufLen
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyConfigStoreGet(
+	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyConfigStoreGet(
 			c.h,
 			keyStr.Data, keyStr.Len,
 			prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return nil, err
-		}
-		return buf.AsBytes(), nil
+	})
+	if err != nil {
+		return nil, err
 	}
+	return value.AsBytes(), nil
 }
 
 // Has returns true if key is found.

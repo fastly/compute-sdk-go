@@ -18,12 +18,7 @@ import (
 )
 
 // RequestLimits are the limits for the components of an HTTP request.
-var RequestLimits = Limits{
-	maxHeaderNameLen:  fastly.DefaultLargeBufLen,
-	maxHeaderValueLen: fastly.DefaultLargeBufLen,
-	maxMethodLen:      fastly.DefaultMediumBufLen,
-	maxURLLen:         fastly.DefaultLargeBufLen,
-}
+var RequestLimits Limits
 
 // Request represents an HTTP request received by this server from a requesting
 // client, or to be sent from this server during this execution. Some fields
@@ -166,10 +161,10 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 	}
 
 	header := NewHeader()
-	keys := abiReq.GetHeaderNames(RequestLimits.maxHeaderNameLen)
+	keys := abiReq.GetHeaderNames()
 	for keys.Next() {
 		k := string(keys.Bytes())
-		vals := abiReq.GetHeaderValues(k, RequestLimits.maxHeaderValueLen)
+		vals := abiReq.GetHeaderValues(k)
 		for vals.Next() {
 			v := string(vals.Bytes())
 			header.Add(k, v)

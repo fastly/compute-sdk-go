@@ -29,22 +29,17 @@ func fastlyDeviceDetectionLookup(
 
 func DeviceLookup(userAgent string) ([]byte, error) {
 	userAgentBuffer := prim.NewReadBufferFromString(userAgent).Wstring()
-	n := DefaultMediumBufLen // Longest JSON of https://www.fastly.com/documentation/reference/vcl/variables/client-request/client-identified/
-	for {
-		buf := prim.NewWriteBuffer(n)
-		status := fastlyDeviceDetectionLookup(
+	// Longest JSON of https://www.fastly.com/documentation/reference/vcl/variables/client-request/client-identified/
+	value, err := withAdaptiveBuffer(DefaultMediumBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyDeviceDetectionLookup(
 			userAgentBuffer.Data, userAgentBuffer.Len,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
 			prim.ToPointer(buf.NPointer()),
 		)
-		if status == FastlyStatusBufLen && buf.NValue() > 0 {
-			n = int(buf.NValue())
-			continue
-		}
-		if err := status.toError(); err != nil {
-			return nil, err
-		}
-		return buf.AsBytes(), nil
+	})
+	if err != nil {
+		return nil, err
 	}
+	return value.AsBytes(), nil
 }
