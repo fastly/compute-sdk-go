@@ -79,8 +79,8 @@ type Request struct {
 	// tlsClientCertificateInfo is information about the tls client certificate, if available
 	clientCertificate *TLSClientCertificateInfo
 
-	// Fingerprint collects fingerprint metadata for incoming requests
-	fingerprint *Fingerprint
+	// FastlyMeta collects Fastly-specific metadata for incoming requests
+	fastlyMeta *FastlyMeta
 
 	// SendPollInterval determines how often the Send method will check for
 	// completed requests. While polling, the Go runtime is suspended, and all
@@ -361,42 +361,42 @@ func (req *Request) AddCookie(c *Cookie) {
 	}
 }
 
-// Fingerprint returns a fleshed-out Fingerprint object for the request.
-func (req *Request) Fingerprint() (*Fingerprint, error) {
-	if req.fingerprint != nil {
-		return req.fingerprint, nil
+// FastlyMeta returns a fleshed-out FastlyMeta object for the request.
+func (req *Request) FastlyMeta() (*FastlyMeta, error) {
+	if req.fastlyMeta != nil {
+		return req.fastlyMeta, nil
 	}
 
 	var err error
 
-	var fingerprint Fingerprint
-	fingerprint.H2, err = req.abi.req.DownstreamH2Fingerprint()
+	var fastlyMeta FastlyMeta
+	fastlyMeta.H2, err = req.abi.req.DownstreamH2Fingerprint()
 	if err != nil {
 		if status, ok := fastly.IsFastlyError(err); ok && status != fastly.FastlyStatusNone {
 			return nil, fmt.Errorf("get H2 fingerprint: %w", err)
 		}
 	}
 
-	fingerprint.OH, err = req.abi.req.DownstreamOHFingerprint()
+	fastlyMeta.OH, err = req.abi.req.DownstreamOHFingerprint()
 	if err != nil {
 		if status, ok := fastly.IsFastlyError(err); ok && status != fastly.FastlyStatusNone {
 			return nil, fmt.Errorf("get OH fingerprint: %w", err)
 		}
 	}
 
-	fingerprint.DDOSDetected, err = req.abi.req.DownstreamDDOSDetected()
+	fastlyMeta.DDOSDetected, err = req.abi.req.DownstreamDDOSDetected()
 	if err != nil {
 		return nil, fmt.Errorf("get ddos detected: %w", err)
 	}
 
-	fingerprint.FastlyKeyIsValid, err = req.abi.req.DownstreamFastlyKeyIsValid()
+	fastlyMeta.FastlyKeyIsValid, err = req.abi.req.DownstreamFastlyKeyIsValid()
 	if err != nil {
 		return nil, fmt.Errorf("get fastly key is valid: %w", err)
 	}
 
-	req.fingerprint = &fingerprint
+	req.fastlyMeta = &fastlyMeta
 
-	return req.fingerprint, nil
+	return req.fastlyMeta, nil
 }
 
 // Send the request to the named backend. Requests may only be sent to
@@ -1040,8 +1040,8 @@ type TLSClientCertificateInfo struct {
 	ClientCertIsVerified bool
 }
 
-// Fingerprint holds various fingerprints for a request.
-type Fingerprint struct {
+// FastlyMeta holds various Fastly-specific metadata for a request.
+type FastlyMeta struct {
 
 	// H2 is the HTTP/2 fingerprint of a client request if available
 	H2 []byte
