@@ -1314,6 +1314,7 @@ func fastlyHTTPDownstreamH2Fingerprint(
 ) FastlyStatus
 
 func (r *HTTPRequest) DownstreamH2Fingerprint() ([]byte, error) {
+	// H2 hashes should be <64 bytes
 	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
 		return fastlyHTTPDownstreamH2Fingerprint(
 			r.h,
@@ -1382,6 +1383,7 @@ func fastlyHTTPDownstreamOHFingerprint(
 ) FastlyStatus
 
 func (r *HTTPRequest) DownstreamOHFingerprint() ([]byte, error) {
+	// OH fingerprints are <64
 	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
 		return fastlyHTTPDownstreamOHFingerprint(
 			r.h,
@@ -1555,6 +1557,7 @@ func fastlyHTTPReqDownstreamTLSRawCertificate(
 ) FastlyStatus
 
 func (r *HTTPRequest) DownstreamTLSRawCertificate() ([]byte, error) {
+	// Longest (~132,000); typically < 2^14; RFC https://datatracker.ietf.org/doc/html/rfc8446#section-4.1.2
 	value, err := withAdaptiveBuffer(DefaultLargeBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
 		return fastlyHTTPReqDownstreamTLSRawCertificate(
 			r.h,
@@ -1647,6 +1650,7 @@ func fastlyHTTPReqDownstreamTLSJA4(
 ) FastlyStatus
 
 func (r *HTTPRequest) DownstreamTLSJA4() ([]byte, error) {
+	// JA4 hashes should be <64 bytes
 	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
 		return fastlyHTTPReqDownstreamTLSJA4(
 			r.h,
