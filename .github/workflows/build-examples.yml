@@ -1,4 +1,6 @@
 name: Build Examples
+permissions:
+  contents: read
 
 on:
   push:
@@ -7,17 +9,20 @@ on:
   pull_request:
 
 jobs:
+  get-go-version:
+    uses: ./.github/workflows/reusable-go-version.yml
+
   build-examples:
     runs-on: ubuntu-latest
-
+    needs: get-go-version
     strategy:
       matrix:
         include:
           # Newest supported configuration
-          - go-version: "1.25.1" # pairs with TinyGo 0.39.0
+          - go-version: ${{ needs.get-go-version.outputs.go-version-latest }}
             tinygo-version: "0.39.0"
           # Oldest supported configuration
-          - go-version: "1.23.12" # pairs with TinyGo 0.33.0
+          - go-version: ${{ needs.get-go-version.outputs.go-version-mod }}
             tinygo-version: "0.33.0"
 
     steps:

@@ -1,5 +1,7 @@
 # Tests the codebase.
 name: Test
+permissions:
+  contents: read
 
 on:
   push:
@@ -8,35 +10,17 @@ on:
   pull_request:
 
 jobs:
-  go-mod-version:
-    runs-on: ubuntu-latest
-    outputs:
-      go-version-mod: ${{ steps.get-versions.outputs.mod }}
-      go-version-latest: ${{ steps.get-versions.outputs.latest }}
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
-        with:
-          go-version: "stable"
-      - id: get-versions
-        run: |
-          output=$(go list -m -u go)
-          mod_version=$(echo "$output" | awk '{print $2}')
-          latest_version=$(echo "$output" | awk '{print $3}' | tr -d '[]')
-          latest_version=${latest_version:-$mod_version}
-          echo "mod=${mod_version}" >> $GITHUB_OUTPUT
-          echo "latest=${latest_version}" >> $GITHUB_OUTPUT
-      - name: Download Go modules
-        run: go mod download
+  get-go-version:
+    uses: ./.github/workflows/reusable-go-version.yml
 
   lint:
     runs-on: ubuntu-latest
-    needs: go-mod-version
+    needs: get-go-version
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ needs.go-mod-version.outputs.go-version-latest }}
+          go-version: ${{ needs.get-go-version.outputs.go-version-latest }}
 
       - name: vet
         run: go vet ./...
@@ -58,14 +42,14 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    needs: go-mod-version
+    needs: go-version
     strategy:
       matrix:
         include:
-          - go-version: ${{ needs.go-mod-version.outputs.go-version-latest }}
-            tinygo-version: "0.39.0"
-          - go-version: ${{ needs.go-mod-version.outputs.go-version-mod }}
-            tinygo-version: "0.35.0"
+          - go-version: ${{ needs.go-version.outputs.latest-version }}
+            tinygo-version: ${{ needs.go-version.outputs.tinygo-latest-version }}
+          - go-version: ${{ needs.go-version.outputs.mod-version }}
+            tinygo-version: ${{ needs.go-version.outputs.tinygo-mod-version }}
 
     steps:
       - uses: actions/checkout@v5
