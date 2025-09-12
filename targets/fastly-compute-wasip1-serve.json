@@ -1,4 +1,4 @@
 {
   "inherits": ["wasip1"],
-  "emulator": "serve.sh --debug viceroy run -C fastly.toml {}"
+  "emulator": "serve.sh viceroy run -C fastly.toml {}"
 }

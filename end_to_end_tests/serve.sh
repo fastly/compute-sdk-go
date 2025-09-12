@@ -15,10 +15,33 @@
 
 set -e
 set -u
+set -m
 
 fastly_pid=""
 addr="127.0.0.1:23456"
 debug=false
+prefix="$(basename "$0")"
+
+# Logs a message to stderr with a prefix.
+# Globals:
+#   prefix
+# Arguments:
+#   $1: The message to log.
+log() {
+  echo "${prefix}: $1" >&2
+}
+
+# Logs a message to stderr only if debug is enabled.
+# Adds the [DEBUG] prefix to output.
+# Globals:
+#   prefix
+# Arguments:
+#   $1: The message to log.
+log_debug() {
+  if [[ "${debug}" == "true" ]]; then
+    log "[DEBUG]: $1"
+  fi
+}
 
 # Cleans up the server listening on addr and any child processes.
 # Globals:
@@ -27,43 +50,78 @@ cleanup() {
   set +e
   if [[ -n "${fastly_pid}" ]] && ps -p "${fastly_pid}" > /dev/null; then
     if command -v pkill >/dev/null; then
-      pkill -INT -g "$(ps -o pgid= -p "${fastly_pid}")"
+      local pgid
+      pgid=$(ps -o pgid= -p "${fastly_pid}" | xargs)
+      pkill -INT -g "${pgid}"
     else
       kill -INT -"${fastly_pid}"
     fi
   fi
 
-  local port
-  port=$(echo "${addr}" | cut -d: -f2)
-  local pids
-  pids=$(lsof -i :${port} -t)
-  if [[ -n "${pids}" ]]; then
-    kill -TERM ${pids}
+  if command -v lsof >/dev/null; then
+    local port
+    port=$(echo "${addr}" | cut -d: -f2)
+    local pids
+    pids=$(lsof -i :${port} -t)
+    if [[ -n "${pids}" ]]; then
+      kill -INT ${pids}
+    fi
   fi
+
+  wait_for_server "${addr}" stop
 }
 trap cleanup EXIT
 
-# Waits for the server to start listening on the specified address.
+# Waits for the server to start or stop listening on the specified address.
 # Globals:
 #   debug
 # Arguments:
 #   $1: The address to check (e.g., "127.0.0.1:23456")
+#   $2: Optional. If set, waits for the server to stop.
 wait_for_server() {
   local addr="$1"
+  local negate="${2:-}"
   local host
   host=$(echo "${addr}" | cut -d: -f1)
   local port
   port=$(echo "${addr}" | cut -d: -f2)
 
-  [[ "${debug}" == "true" ]] && echo "Waiting for server to start..." >&2
-  for i in {1..5}; do
-    sleep 2
-    if nc -z "${host}" "${port}"; then
-      [[ "${debug}" == "true" ]] && echo "Server started." >&2
+  local verb="start"
+  local past_verb="started"
+  if [[ -n "${negate}" ]]; then
+    verb="stop"
+    past_verb="stopped"
+  fi
+
+  _check_server() {
+    local host="$1"
+    local port="$2"
+
+    if [[ "${debug}" == "true" ]]; then
+      log_debug "Checking port with /dev/tcp/${host}/${port}"
+    fi
+
+    (true &>/dev/null <>/dev/tcp/${host}/${port})
+  }
+
+  log_debug "Waiting for server to ${verb}..."
+  for i in {1..30}; do
+    sleep 1
+
+    local condition_met=false
+    if [[ -z "${negate}" ]]; then
+      _check_server "${host}" "${port}" && condition_met=true
+    else
+      ! _check_server "${host}" "${port}" && condition_met=true
+    fi
+
+    if ${condition_met}; then
+      log_debug "Server ${past_verb}."
       return 0
     fi
-    if (( i == 10 )); then
-      echo "Server did not start after 10 seconds." >&2
+
+    if (( i == 30 )); then
+      log "Server did not ${verb} after 30 seconds."
       return 1
     fi
   done
@@ -85,7 +143,7 @@ main() {
   fi
 
   if (( $# == 0 )); then
-    echo "Usage: $0 [--debug] <binary> [args...]" >&2
+    log "Usage: $0 [--debug] <binary> [args...]"
     exit 1
   fi
 
@@ -98,32 +156,30 @@ main() {
       --addr)
         addr="$2"
         shift 2
-        ;;      *)
+        ;;
+      *)
         exec_args+=("$1")
         shift
-        ;;    esac
+        ;;
+    esac
   done
 
-  local fastly_args="--verbose"
-  # local fastly_args="--metadata-show --verbose"
-
-  # TODO: --addr (find self in fastly.toml)
-  fastly compute serve --addr "${addr}" ${fastly_args} >&2 &
-  fastly_pid=$!
-
+  local server_cmd=()
+  local fastly_args=("--addr" "${addr}")
   if [[ "${debug}" == "true" ]]; then
-    echo "Fastly PID: ${fastly_pid}" >&2
-    echo "Fastly command: fastly compute serve --addr \"${addr}\" ${fastly_args} &" >&2
+    fastly_args+=("--verbose")
+    fastly_args+=("--metadata-show")
   fi
 
+  server_cmd+=("fastly" "compute" "serve")
+  server_cmd+=("${fastly_args[@]}")
+  log "server command >> ${server_cmd[*]} >&2 &"
+
+  "${server_cmd[@]}" >&2 &
+  fastly_pid=$!
   wait_for_server "${addr}"
 
-  if [[ "${debug}" == "true" ]]; then
-    echo "-- Executing --" >&2
-    echo "Cmd: ${binary}" >&2
-    echo "Args: ${exec_args[@]}" >&2
-  fi
-
+  log "test command >> ${binary} ${exec_args[*]}"
   "${binary}" "${exec_args[@]}"
 }
 
