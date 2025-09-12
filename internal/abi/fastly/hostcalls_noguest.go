@@ -107,7 +107,7 @@ func (r *HTTPRequest) DownstreamDDOSDetected() (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) DownstreamTLSRawCertificate() ([]byte, error) {
+func (r *HTTPRequest) DownstreamTLSRawClientCertificate() ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

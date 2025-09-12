@@ -1016,7 +1016,7 @@ func (req *Request) TLSClientCertificateInfo() (*TLSClientCertificateInfo, error
 	var err error
 	var cert TLSClientCertificateInfo
 
-	cert.RawClientCertificate, err = req.abi.req.DownstreamTLSRawCertificate()
+	cert.RawClientCertificate, err = req.abi.req.DownstreamTLSRawClientCertificate()
 	if err != nil {
 		return nil, fmt.Errorf("get TLS raw client certificate: %w", err)
 	}

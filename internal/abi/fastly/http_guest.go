@@ -1549,17 +1549,17 @@ func (r *HTTPRequest) DownstreamTLSClientHello() ([]byte, error) {
 //
 //go:wasmimport fastly_http_downstream downstream_tls_raw_client_certificate
 //go:noescape
-func fastlyHTTPReqDownstreamTLSRawCertificate(
+func fastlyHTTPReqDownstreamTLSRawClientCertificate(
 	req requestHandle,
 	certOut prim.Pointer[prim.Char8],
 	certMaxLen prim.Usize,
 	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
-func (r *HTTPRequest) DownstreamTLSRawCertificate() ([]byte, error) {
+func (r *HTTPRequest) DownstreamTLSRawClientCertificate() ([]byte, error) {
 	// Longest (~132,000); typically < 2^14; RFC https://datatracker.ietf.org/doc/html/rfc8446#section-4.1.2
 	value, err := withAdaptiveBuffer(DefaultLargeBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
-		return fastlyHTTPReqDownstreamTLSRawCertificate(
+		return fastlyHTTPReqDownstreamTLSRawClientCertificate(
 			r.h,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
