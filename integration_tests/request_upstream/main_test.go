@@ -113,7 +113,7 @@ func TestRequestUpstreamBody(t *testing.T) {
 		{name: "bytes.Buffer", body: bytes.NewBuffer(body), size: bodySize},
 		{name: "strings.Reader", body: strings.NewReader(string(body)), size: bodySize},
 		{name: "io.NopCloser", body: io.NopCloser(bytes.NewReader(body)), chunked: true},
-		{name: "fastly.HTTPBody", body: b, chunked: true},
+		{name: "fastly.HTTPBody", body: b, size: bodySize},
 	}
 
 	for _, tc := range testcases {
