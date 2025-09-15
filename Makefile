@@ -18,6 +18,10 @@ test-tinygo: test-unit-tinygo test-integration-tinygo test-e2e-tinygo
 .PHONY: defaults
 defaults: defaults-go defaults-tinygo
 
+## Build examples using Go and TinyGo
+.PHONY: build-examples
+build-examples: build-examples-go build-examples-tinygo
+
 ## Run only [unit] tests using Go and TinyGo
 .PHONY: test-unit
 test-unit: test-unit-go test-unit-tinygo
@@ -58,15 +62,17 @@ TINYGO_BUILD_TAGS = $(GO_BUILD_TAGS)
 test-unit-%:         GO_BUILD_TAGS := fastlyinternaldebug nofastlyhostcalls
 test-integration-%:  GO_BUILD_TAGS := fastlyinternaldebug
 test-e2e-%: 		 GO_BUILD_TAGS := fastlyinternaldebug
+build-examples-%:    GO_BUILD_TAGS := fastlyinternaldebug
 
 # Change package lists for different test types:
 test-integration-%:  GO_PACKAGES   := ./integration_tests/...
 test-e2e-%: 		 GO_PACKAGES   := ./end_to_end_tests/...
 
 # Match tinygo targets for build tags and viceroy args:
-test-%-go:       EXEC_ARGS := viceroy run -C fastly.toml
-test-%-tinygo:   TINYGO_TARGET := ./targets/fastly-compute-wasip1.json
-test-e2e-tinygo: TINYGO_TARGET := ./targets/fastly-compute-wasip1-serve.json
+test-%-go:       	   EXEC_ARGS := viceroy run -C fastly.toml
+test-%-tinygo:   	   TINYGO_TARGET := ./targets/fastly-compute-wasip1.json
+test-e2e-tinygo: 	   TINYGO_TARGET := ./targets/fastly-compute-wasip1-serve.json
+build-examples-tinygo: TINYGO_TARGET ?= ./targets/fastly-compute-wasip1.json
 
 # Allow `test -exec` and tinygo's emulator target to find `serve.sh`:
 test-e2e-%: export PATH := $(PWD)/end_to_end_tests:$(PATH)
@@ -117,6 +123,26 @@ test-e2e-tinygo: viceroy
 	@echo >&2
 	@echo ">> Running TinyGo [end-to-end] tests..." >&2
 	tinygo test $(TINYGOFLAGS) $(TINYGO_PACKAGES)
+
+## Build examples using Go
+# `go build` can accept multiple packages, proving that compilation succeeds,
+# and throw away the result automatically.
+.PHONY: build-examples-go $(GO_EXAMPLES)
+build-examples-go:
+	@echo >&2
+	@echo ">> Building examples with Go..." >&2
+	go build $(GOFLAGS) ./_examples/*/
+
+## Build examples using TinyGo
+# `tinygo build` doesn't accept multiple packages, so we use make wildcards.
+EXAMPLE_DIRS := $(patsubst _examples/%/,%,$(filter %/, $(wildcard _examples/*/)))
+TINYGO_EXAMPLES := $(addprefix build-examples-tinygo-,$(EXAMPLE_DIRS))
+.PHONY: build-examples-tinygo $(TINYGO_EXAMPLES)
+build-examples-tinygo: $(TINYGO_EXAMPLES)
+$(TINYGO_EXAMPLES): build-examples-tinygo-%:
+	@echo >&2
+	@echo ">> Building examples with TinyGo..." >&2
+	tinygo build $(TINYGOFLAGS) -o /dev/null ./_examples/$*/main.go
 
 ## Check for viceroy on path
 .PHONY: viceroy
