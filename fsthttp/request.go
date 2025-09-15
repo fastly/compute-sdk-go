@@ -76,6 +76,12 @@ type Request struct {
 	// TLSInfo collects TLS metadata for incoming requests received over HTTPS.
 	TLSInfo TLSInfo
 
+	// tlsClientCertificateInfo is information about the tls client certificate, if available
+	clientCertificate *TLSClientCertificateInfo
+
+	// FastlyMeta collects Fastly-specific metadata for incoming requests
+	fastlyMeta *FastlyMeta
+
 	// SendPollInterval determines how often the Send method will check for
 	// completed requests. While polling, the Go runtime is suspended, and all
 	// user code stops execution. A shorter interval will make Send more
@@ -106,12 +112,17 @@ type Request struct {
 	// discarded.
 	ManualFramingMode bool
 
+	// RequestID is the current Fastly request ID
+	RequestID string
+
 	sent bool // a request may only be sent once
 
-	abi struct {
-		req  *fastly.HTTPRequest
-		body *fastly.HTTPBody
-	}
+	abi reqAbi
+}
+
+type reqAbi struct {
+	req  *fastly.HTTPRequest
+	body *fastly.HTTPBody
 }
 
 // NewRequest constructs an outgoing request with the given HTTP method, URI,
@@ -158,6 +169,11 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 	proto, major, minor, err := abiReq.GetVersion()
 	if err != nil {
 		return nil, fmt.Errorf("get protocol version: %w", err)
+	}
+
+	reqID, err := abiReq.DownstreamRequestID()
+	if err != nil {
+		return nil, fmt.Errorf("get request id: %w", err)
 	}
 
 	header := NewHeader()
@@ -209,6 +225,12 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		if err != nil {
 			return nil, fmt.Errorf("get TLS JA3 MD5: %w", err)
 		}
+
+		tlsInfo.JA4, err = abiReq.DownstreamTLSJA4()
+		if err != nil {
+			return nil, fmt.Errorf("get TLS JA4: %w", err)
+		}
+
 	}
 
 	// Setting the fsthttp.Request Host field to the url.URL Host field is
@@ -226,6 +248,8 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		RemoteAddr: remoteAddr.String(),
 		ServerAddr: serverAddr.String(),
 		TLSInfo:    tlsInfo,
+		RequestID:  reqID,
+		abi:        reqAbi{req: abiReq, body: abiReqBody},
 	}, nil
 }
 
@@ -335,6 +359,44 @@ func (req *Request) AddCookie(c *Cookie) {
 	} else {
 		req.Header.Set("Cookie", s)
 	}
+}
+
+// FastlyMeta returns a fleshed-out FastlyMeta object for the request.
+func (req *Request) FastlyMeta() (*FastlyMeta, error) {
+	if req.fastlyMeta != nil {
+		return req.fastlyMeta, nil
+	}
+
+	var err error
+
+	var fastlyMeta FastlyMeta
+	fastlyMeta.H2, err = req.abi.req.DownstreamH2Fingerprint()
+	if err != nil {
+		if status, ok := fastly.IsFastlyError(err); ok && status != fastly.FastlyStatusNone {
+			return nil, fmt.Errorf("get H2 fingerprint: %w", err)
+		}
+	}
+
+	fastlyMeta.OH, err = req.abi.req.DownstreamOHFingerprint()
+	if err != nil {
+		if status, ok := fastly.IsFastlyError(err); ok && status != fastly.FastlyStatusNone {
+			return nil, fmt.Errorf("get OH fingerprint: %w", err)
+		}
+	}
+
+	fastlyMeta.DDOSDetected, err = req.abi.req.DownstreamDDOSDetected()
+	if err != nil {
+		return nil, fmt.Errorf("get ddos detected: %w", err)
+	}
+
+	fastlyMeta.FastlyKeyIsValid, err = req.abi.req.DownstreamFastlyKeyIsValid()
+	if err != nil {
+		return nil, fmt.Errorf("get fastly key is valid: %w", err)
+	}
+
+	req.fastlyMeta = &fastlyMeta
+
+	return req.fastlyMeta, nil
 }
 
 // Send the request to the named backend. Requests may only be sent to
@@ -940,6 +1002,59 @@ type TLSInfo struct {
 	// JA3MD5 contains the bytes of the JA3 signature of the client TLS request.
 	// See https://www.fastly.com/blog/the-state-of-tls-fingerprinting-whats-working-what-isnt-and-whats-next
 	JA3MD5 []byte
+
+	// JA4 contains the bytes of the JA4 signature of the client TLS request.
+	// See https://github.com/FoxIO-LLC/ja4/blob/main/technical_details/JA4.md
+	JA4 []byte
+}
+
+func (req *Request) TLSClientCertificateInfo() (*TLSClientCertificateInfo, error) {
+	if req.clientCertificate != nil {
+		return req.clientCertificate, nil
+	}
+
+	var err error
+	var cert TLSClientCertificateInfo
+
+	cert.RawClientCertificate, err = req.abi.req.DownstreamTLSRawClientCertificate()
+	if err != nil {
+		return nil, fmt.Errorf("get TLS raw client certificate: %w", err)
+	}
+
+	if cert.RawClientCertificate != nil {
+		cert.ClientCertIsVerified, err = req.abi.req.DownstreamTLSClientCertVerifyResult()
+		if err != nil {
+			return nil, fmt.Errorf("get TLS client certificate verify: %w", err)
+		}
+	}
+
+	req.clientCertificate = &cert
+	return req.clientCertificate, nil
+}
+
+type TLSClientCertificateInfo struct {
+	// RawClientCertificate contains the bytes of the raw client certificate, if one was provided.
+	RawClientCertificate []byte
+
+	// ClientCertIsVerified is true if the provided client certificate is valid.
+	ClientCertIsVerified bool
+}
+
+// FastlyMeta holds various Fastly-specific metadata for a request.
+type FastlyMeta struct {
+
+	// H2 is the HTTP/2 fingerprint of a client request if available
+	H2 []byte
+
+	// OH is a fingerprint of the client request's original headers
+	OH []byte
+
+	// DDOSDetected is true if the request was determined to be part of a DDOS attack.
+	DDOSDetected bool
+
+	// FastlyKeyIsValid is true if the request contains a valid Fastly API token.
+	// This is for services to restrict authenticating PURGE requests for the readthrough cache.
+	FastlyKeyIsValid bool
 }
 
 // DecompressResponseOptions control the auto decompress response behaviour.
