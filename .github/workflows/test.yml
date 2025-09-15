@@ -81,4 +81,4 @@ jobs:
         run: make build-examples-go
 
       - name: Build examples TinyGo
-        run: make -j 4 build-examples-tinygo
+        run: make build-examples-tinygo

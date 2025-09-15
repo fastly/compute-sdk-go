@@ -138,10 +138,11 @@ build-examples-go:
 EXAMPLE_DIRS := $(patsubst _examples/%/,%,$(filter %/, $(wildcard _examples/*/)))
 TINYGO_EXAMPLES := $(addprefix build-examples-tinygo-,$(EXAMPLE_DIRS))
 .PHONY: build-examples-tinygo $(TINYGO_EXAMPLES)
-build-examples-tinygo: $(TINYGO_EXAMPLES)
-$(TINYGO_EXAMPLES): build-examples-tinygo-%:
+build-examples-tinygo:
 	@echo >&2
 	@echo ">> Building examples with TinyGo..." >&2
+	@$(MAKE) -j4 $(TINYGO_EXAMPLES)
+$(TINYGO_EXAMPLES): build-examples-tinygo-%:
 	tinygo build $(TINYGOFLAGS) -o /dev/null ./_examples/$*/main.go
 
 ## Check for viceroy on path
