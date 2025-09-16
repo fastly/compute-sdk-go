@@ -101,6 +101,7 @@ wait_for_server() {
       log_debug "Checking port with /dev/tcp/${host}/${port}"
     fi
 
+    # This uses a bash built-in command to check if a host & port is listening.
     (true &>/dev/null <>/dev/tcp/${host}/${port})
   }
 
