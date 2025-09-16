@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fastly/compute-sdk-go/fsthttp/imageopto"
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
 
@@ -114,6 +115,8 @@ type Request struct {
 
 	// RequestID is the current Fastly request ID
 	RequestID string
+
+	ImageOptimizerOpts *imageopto.Opts
 
 	sent bool // a request may only be sent once
 
@@ -541,6 +544,27 @@ var guestCacheSWRPending sync.WaitGroup
 
 func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Response, error) {
 	// use guest cache
+
+	if req.ImageOptimizerOpts != nil {
+		// Send this request through the Image Optimizer infrastructure
+		query, err := req.ImageOptimizerOpts.QueryString()
+		if err != nil {
+			return nil, err
+		}
+
+		abiResp, abiBody, err := req.abi.req.SendToImageOpto(req.abi.body, backend, query)
+		if err != nil {
+			return nil, err
+
+		}
+
+		resp, err := newResponse(req, backend, abiResp, abiBody)
+		if err != nil {
+			return nil, fmt.Errorf("construct response: %w", err)
+		}
+
+		return resp, nil
+	}
 
 	if ok, err := fastly.HTTPCacheIsRequestCacheable(req.abi.req); err != nil {
 		return nil, fmt.Errorf("request not cacheable: %v", err)
