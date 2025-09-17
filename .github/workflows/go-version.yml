@@ -1,0 +1,56 @@
+# Determines the Go version from go.mod and the latest available Go version to
+# use in the test matrix.
+name: Go Version
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    outputs:
+      mod-version:
+        description: "The Go version specified in the go.mod file."
+        value: ${{ jobs.go-mod.outputs.mod-version }}
+      latest-version:
+        description: "The latest available Go version."
+        value: ${{ jobs.go-mod.outputs.latest-version }}
+      tinygo-mod-version:
+        description: "The TinyGo version that pairs with the version in go.mod."
+        value: ${{ jobs.go-mod.outputs.tinygo-mod-version }}
+      tinygo-latest-version:
+        description: "The latest available TinyGo version."
+        value: ${{ jobs.go-mod.outputs.tinygo-latest-version }}
+
+jobs:
+  go-mod:
+    runs-on: ubuntu-latest
+    outputs:
+      mod-version: ${{ steps.get-versions.outputs.mod-version }}
+      latest-version: ${{ steps.get-versions.outputs.latest-version }}
+      tinygo-mod-version: ${{ steps.get-versions.outputs.tinygo-mod-version }}
+      tinygo-latest-version: ${{ steps.get-versions.outputs.tinygo-latest-version }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "stable"
+
+      - name: Get Go and TinyGo versions
+        id: get-versions
+        shell: bash
+        run: |
+          output=$(go list -m -u go)
+          mod_version=$(echo "$output" | awk '{print $2}')
+          latest_version=$(echo "$output" | awk '{print $3}' | tr -d '[]')
+          latest_version=${latest_version:-$mod_version}
+          echo "mod-version=${mod_version}" >> $GITHUB_OUTPUT
+          echo "latest-version=${latest_version}" >> $GITHUB_OUTPUT
+          tinygo_mod_version=$(awk '/\/\/\+tinygo / {print $2}' < go.mod)
+          echo "tinygo-mod-version=${tinygo_mod_version}" >> $GITHUB_OUTPUT
+          tinygo_latest_version=$(curl -fsSL "https://api.github.com/repos/tinygo-org/tinygo/releases/latest" | jq -r '.tag_name | sub("^v"; "")')
+          echo "tinygo-latest-version=${tinygo_latest_version}" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
+
+      - name: Download Go modules to populate cache
+        run: |
+          go mod download
+          go mod download -modfile=tools.mod

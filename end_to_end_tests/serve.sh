@@ -17,9 +17,10 @@ set -e
 set -u
 set -m
 
-fastly_pid=""
+# Globals that coordinate across functions.
 addr="127.0.0.1:23456"
 debug=false
+fastly_pid=""
 prefix="$(basename "$0")"
 
 # Logs a message to stderr with a prefix.
@@ -49,23 +50,7 @@ log_debug() {
 cleanup() {
   set +e
   if [[ -n "${fastly_pid}" ]] && ps -p "${fastly_pid}" > /dev/null; then
-    if command -v pkill >/dev/null; then
-      local pgid
-      pgid=$(ps -o pgid= -p "${fastly_pid}" | xargs)
-      pkill -INT -g "${pgid}"
-    else
-      kill -INT -"${fastly_pid}"
-    fi
-  fi
-
-  if command -v lsof >/dev/null; then
-    local port
-    port=$(echo "${addr}" | cut -d: -f2)
-    local pids
-    pids=$(lsof -i :${port} -t)
-    if [[ -n "${pids}" ]]; then
-      kill -INT ${pids}
-    fi
+    kill -HUP -"${fastly_pid}"
   fi
 
   wait_for_server "${addr}" stop
@@ -178,6 +163,7 @@ main() {
 
   "${server_cmd[@]}" >&2 &
   fastly_pid=$!
+  disown
   wait_for_server "${addr}"
 
   log "test command >> ${binary} ${exec_args[*]}"

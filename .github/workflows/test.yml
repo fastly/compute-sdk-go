@@ -1,0 +1,84 @@
+# Tests the codebase.
+name: Test
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  go-version:
+    uses: ./.github/workflows/go-version.yml
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: go-version
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ needs.go-version.outputs.latest-version }}
+
+      - name: Download tool dependencies
+        run: go mod download -modfile=tools.mod
+
+      - name: vet
+        run: go vet ./...
+
+      - name: staticcheck
+        run: go tool -modfile=tools.mod staticcheck ./...
+
+      - name: nilness
+        run: go tool -modfile=tools.mod nilness ./...
+
+      - name: ineffassign
+        run: go tool -modfile=tools.mod ineffassign ./...
+
+  test:
+    runs-on: ubuntu-latest
+    needs: go-version
+    strategy:
+      matrix:
+        include:
+          - go-version: ${{ needs.go-version.outputs.latest-version }}
+            tinygo-version: ${{ needs.go-version.outputs.tinygo-latest-version }}
+          - go-version: ${{ needs.go-version.outputs.mod-version }}
+            tinygo-version: ${{ needs.go-version.outputs.tinygo-mod-version }}
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Setup Fastly CLI
+        uses: fastly/compute-actions/setup@v11
+
+      - name: Symlink Viceroy to expected location
+        run: |
+          fastly version
+          ln -s "$(which viceroy)" "${XDG_CONFIG_HOME:-$HOME/.config}/fastly/viceroy"
+
+      - name: Tests - Go
+        run: make test-go
+
+      # Test TinyGo once Go tests have passed
+
+      - uses: acifani/setup-tinygo@v2
+        with:
+          tinygo-version: ${{ matrix.tinygo-version }}
+          binaryen-version: "124"
+
+      - name: Tests - TinyGo
+        run: make test-tinygo
+
+      # Ensure code examples compile
+
+      - name: Build examples Go
+        run: make build-examples-go
+
+      - name: Build examples TinyGo
+        run: make build-examples-tinygo
