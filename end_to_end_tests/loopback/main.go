@@ -3,10 +3,10 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
 )
@@ -19,15 +19,19 @@ func main() {
 		for k, v := range r.Header {
 			fmt.Printf("%s: %s\n", k, v)
 		}
-		fmt.Println("--")
-		var body bytes.Buffer
+
+		// Print the body, if any
+		var body strings.Builder
 		n, err := io.Copy(&body, r.Body)
 		if err != nil {
 			panic(err)
 		}
 		if n > 0 {
-			fmt.Printf("Body =\n%s\n", body.String())
+			fmt.Println("-- Body --")
+			fmt.Println(body.String())
 		}
+		fmt.Println("--")
+
 		fm, err := r.FastlyMeta()
 		if err != nil {
 			panic(err)
@@ -35,6 +39,11 @@ func main() {
 			panic("FastlyMeta() returned nil")
 		}
 		fmt.Printf("FastlyMeta() = %+v\n", fm)
+		ti, err := r.TLSClientCertificateInfo()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("TLSClientCertificateInfo() = %+v\n", ti)
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Set("X-Test-Header", "present")

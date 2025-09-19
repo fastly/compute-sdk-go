@@ -371,17 +371,13 @@ func (req *Request) FastlyMeta() (*FastlyMeta, error) {
 
 	var fastlyMeta FastlyMeta
 	fastlyMeta.H2, err = req.abi.req.DownstreamH2Fingerprint()
-	if err != nil {
-		if status, ok := fastly.IsFastlyError(err); ok && status != fastly.FastlyStatusNone {
-			return nil, fmt.Errorf("get H2 fingerprint: %w", err)
-		}
+	if err = ignoreNoneError(err); err != nil {
+		return nil, fmt.Errorf("get H2 fingerprint: %w", err)
 	}
 
 	fastlyMeta.OH, err = req.abi.req.DownstreamOHFingerprint()
-	if err != nil {
-		if status, ok := fastly.IsFastlyError(err); ok && status != fastly.FastlyStatusNone {
-			return nil, fmt.Errorf("get OH fingerprint: %w", err)
-		}
+	if err = ignoreNoneError(err); err != nil {
+		return nil, fmt.Errorf("get OH fingerprint: %w", err)
 	}
 
 	fastlyMeta.DDOSDetected, err = req.abi.req.DownstreamDDOSDetected()
@@ -1017,7 +1013,7 @@ func (req *Request) TLSClientCertificateInfo() (*TLSClientCertificateInfo, error
 	var cert TLSClientCertificateInfo
 
 	cert.RawClientCertificate, err = req.abi.req.DownstreamTLSRawClientCertificate()
-	if err != nil {
+	if err = ignoreNoneError(err); err != nil {
 		return nil, fmt.Errorf("get TLS raw client certificate: %w", err)
 	}
 
