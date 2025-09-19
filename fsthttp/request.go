@@ -230,7 +230,6 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		if err != nil {
 			return nil, fmt.Errorf("get TLS JA4: %w", err)
 		}
-
 	}
 
 	// Setting the fsthttp.Request Host field to the url.URL Host field is
@@ -279,7 +278,6 @@ func (req *Request) SetBody(body io.Reader) {
 		// TODO(dgryski): sadly ignoring error here :(
 		req.abi.body, _ = abiBodyFrom(req.Body)
 	}
-
 }
 
 // Clone returns a copy of the request. The returned copy will have a nil Body
@@ -497,7 +495,6 @@ func newResponseFromABIPending(ctx context.Context, req *Request, backend string
 	}
 
 	abiResp, abiRespBody, err := pendingToABIResponse(ctx, errc, abiPending, pollIntervalFn)
-
 	if err != nil {
 		return nil, fmt.Errorf("poll: %w", err)
 	}
@@ -551,7 +548,6 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 		abiResp, abiBody, err := req.sendWithoutCaching(backend)
 		if err != nil {
 			return nil, err
-
 		}
 
 		resp, err := newResponse(req, backend, abiResp, abiBody)
@@ -664,7 +660,6 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 	}
 	resp.updateFastlyCacheHeaders(req)
 	return resp, nil
-
 }
 
 func newRequestFromHandle(reqh *fastly.HTTPRequest, body io.ReadCloser, headers Header, options CacheOptions) (*Request, error) {
@@ -695,7 +690,6 @@ type pendingBackendRequestForCaching struct {
 }
 
 func (req *Request) sendAsyncForCaching(ctx context.Context, cacheHandle *fastly.HTTPCacheHandle, backend string) (*pendingBackendRequestForCaching, error) {
-
 	reqh, err := fastly.HTTPCacheGetSuggestedBackendRequest(cacheHandle)
 	if err != nil {
 		return nil, fmt.Errorf("get suggested backend request: %w", err)
@@ -739,7 +733,6 @@ func (req *Request) sendAsyncForCaching(ctx context.Context, cacheHandle *fastly
 
 func (req *Request) sendAsyncWithoutCaching(_ context.Context, backend string) (*fastly.PendingRequest, error) {
 	abiPending, err := req.abi.req.SendAsyncV2(req.abi.body, backend, false)
-
 	if err != nil {
 		return nil, fmt.Errorf("send async: %w", err)
 	}
@@ -863,7 +856,6 @@ func (req *Request) constructABIRequest() error {
 }
 
 func (req *Request) setABIRequestOptions() error {
-
 	abiReq := req.abi.req
 
 	if err := abiReq.SetAutoDecompressResponse(fastly.AutoDecompressResponseOptions(req.DecompressResponseOptions)); err != nil {
@@ -964,6 +956,9 @@ type CacheOptions struct {
 	// produce. The callback will only be invoked if the original request
 	// cannot be responded to from the cache, so the header is only computed
 	// when it is truly needed.
+	//
+	// NOTE: To enable BeforeSend the build tag fsthttp_guest_cache must be set.
+	// Without it, the function will always return an error.
 	BeforeSend func(*Request) error
 
 	// Sets a callback to be invoked after a response is returned from a
@@ -972,6 +967,9 @@ type CacheOptions struct {
 	// This callback allows for cache properties like TTL to be customized
 	// beyond what the backend response headers specify. It also allows for the
 	// response itself to be modified prior to storing into the cache.
+	//
+	// NOTE: To enable AfterSend the build tag fsthttp_guest_cache must be set.
+	// Without it, the function will always return an error.
 	AfterSend func(*CandidateResponse) error
 }
 
@@ -1038,7 +1036,6 @@ type TLSClientCertificateInfo struct {
 
 // FastlyMeta holds various Fastly-specific metadata for a request.
 type FastlyMeta struct {
-
 	// H2 is the HTTP/2 fingerprint of a client request if available
 	H2 []byte
 
