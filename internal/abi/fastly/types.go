@@ -146,6 +146,14 @@ func (s FastlyStatus) toSendError(d sendErrorDetail) error {
 	return FastlyError{Status: s, Detail: d}
 }
 
+func ignoreNoneError(err error) error {
+	status, ok := IsFastlyError(err)
+	if ok && status == FastlyStatusNone {
+		return nil
+	}
+	return err
+}
+
 // FastlyError decorates error-class FastlyStatus values and implements the
 // error interface.
 //

@@ -1413,15 +1413,18 @@ func fastlyHTTPDownstreamDDOSDetected(
 ) FastlyStatus
 
 func (r *HTTPRequest) DownstreamDDOSDetected() (bool, error) {
-	var detected bool
+	var detected struct {
+		b bool
+		_ prim.Usize // align padding
+	}
 	if err := fastlyHTTPDownstreamDDOSDetected(
 		r.h,
-		prim.ToPointer(&detected),
+		prim.ToPointer(&detected.b),
 	).toError(); err != nil {
 		return false, err
 	}
 
-	return detected, nil
+	return detected.b, nil
 }
 
 // witx:
@@ -1717,15 +1720,18 @@ func fastlyHTTPDownstreamFastlyKeyIsValid(
 ) FastlyStatus
 
 func (r *HTTPRequest) DownstreamFastlyKeyIsValid() (bool, error) {
-	var valid bool
+	var valid struct {
+		b bool
+		_ prim.Usize // align padding
+	}
 	if err := fastlyHTTPDownstreamFastlyKeyIsValid(
 		r.h,
-		prim.ToPointer(&valid),
+		prim.ToPointer(&valid.b),
 	).toError(); err != nil {
 		return false, err
 	}
 
-	return valid, nil
+	return valid.b, nil
 }
 
 // (module $fastly_http_body
