@@ -785,7 +785,7 @@ type PendingRequest struct {
 // The body is buffered and sent all at once. Returns immediately with a
 // reference to the newly created request.
 func (r *HTTPRequest) SendAsync(requestBody *HTTPBody, backend string) (*PendingRequest, error) {
-	var pendingHandle = invalidPendingRequestHandle
+	pendingHandle := invalidPendingRequestHandle
 
 	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
 
@@ -838,7 +838,7 @@ func fastlyHTTPReqSendAsyncV2(
 // The body is buffered and sent all at once. Returns immediately with a
 // reference to the newly created request.  Does not set `X-Cache` or similar.
 func (r *HTTPRequest) SendAsyncV2(requestBody *HTTPBody, backend string, streaming bool) (*PendingRequest, error) {
-	var pendingHandle = invalidPendingRequestHandle
+	pendingHandle := invalidPendingRequestHandle
 
 	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
 
@@ -884,7 +884,7 @@ func fastlyHTTPReqSendAsyncStreaming(
 // buffered and sent all at once. Returns immediately with a reference to the
 // newly created request.
 func (r *HTTPRequest) SendAsyncStreaming(requestBody *HTTPBody, backend string) (*PendingRequest, error) {
-	var pendingHandle = invalidPendingRequestHandle
+	pendingHandle := invalidPendingRequestHandle
 
 	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
 
@@ -1078,9 +1078,7 @@ func fastlyHTTPDownstreamNextRequest(
 ) FastlyStatus
 
 func DownstreamNextRequest(opts *NextRequestOptions) (*HTTPRequestPromise, error) {
-	var (
-		rh requestPromiseHandle = invalidRequestPromiseHandle
-	)
+	var rh requestPromiseHandle = invalidRequestPromiseHandle
 
 	if err := fastlyHTTPDownstreamNextRequest(
 		opts.mask,
@@ -1793,7 +1791,7 @@ func fastlyHTTPBodyNew(
 
 // NewHTTPBody returns a new, empty HTTP body.
 func NewHTTPBody() (*HTTPBody, error) {
-	var b = invalidBodyHandle
+	b := invalidBodyHandle
 
 	if err := fastlyHTTPBodyNew(
 		prim.ToPointer(&b),
@@ -1973,7 +1971,6 @@ func fastlyHTTPBodyKnownLength(
 // The length of the cached item may be unknown if the item is currently being streamed into
 // the cache without a fixed length.
 func (b *HTTPBody) Length() (uint64, error) {
-
 	var l prim.U64
 
 	if err := fastlyHTTPBodyKnownLength(
@@ -2008,7 +2005,7 @@ type HTTPResponse struct {
 
 // NewHTTPREsponse returns a valid, empty HTTP response.
 func NewHTTPResponse() (*HTTPResponse, error) {
-	var respHandle = invalidResponseHandle
+	respHandle := invalidResponseHandle
 
 	if err := fastlyHTTPRespNew(
 		prim.ToPointer(&respHandle),
@@ -2054,7 +2051,6 @@ func (r *HTTPResponse) GetHeaderNames() *Values {
 		endingCursorOut *multiValueCursorResult,
 		nwrittenOut *prim.Usize,
 	) FastlyStatus {
-
 		return fastlyHTTPRespHeaderNamesGet(
 			r.h,
 			prim.ToPointer(buf),
@@ -2331,7 +2327,6 @@ func fastlyHTTPRespVersionSet(
 
 // SetVersion sets the HTTP version of the response.
 func (r *HTTPResponse) SetVersion(v HTTPVersion) error {
-
 	return fastlyHTTPRespVersionSet(
 		r.h,
 		v,
