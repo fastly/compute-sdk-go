@@ -248,7 +248,6 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		ServerAddr: serverAddr.String(),
 		TLSInfo:    tlsInfo,
 		RequestID:  reqID,
-		abi:        reqAbi{req: abiReq, body: abiReqBody},
 	}, nil
 }
 
