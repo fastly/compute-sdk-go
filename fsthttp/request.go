@@ -117,7 +117,8 @@ type Request struct {
 
 	sent bool // a request may only be sent once
 
-	abi reqAbi
+	abi        reqAbi
+	downstream reqAbi
 }
 
 type reqAbi struct {
@@ -248,7 +249,7 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		ServerAddr: serverAddr.String(),
 		TLSInfo:    tlsInfo,
 		RequestID:  reqID,
-		abi:        reqAbi{req: abiReq, body: abiReqBody},
+		downstream: reqAbi{req: abiReq, body: abiReqBody},
 	}, nil
 }
 
@@ -368,22 +369,22 @@ func (req *Request) FastlyMeta() (*FastlyMeta, error) {
 	var err error
 
 	var fastlyMeta FastlyMeta
-	fastlyMeta.H2, err = req.abi.req.DownstreamH2Fingerprint()
+	fastlyMeta.H2, err = req.downstream.req.DownstreamH2Fingerprint()
 	if err = ignoreNoneError(err); err != nil {
 		return nil, fmt.Errorf("get H2 fingerprint: %w", err)
 	}
 
-	fastlyMeta.OH, err = req.abi.req.DownstreamOHFingerprint()
+	fastlyMeta.OH, err = req.downstream.req.DownstreamOHFingerprint()
 	if err = ignoreNoneError(err); err != nil {
 		return nil, fmt.Errorf("get OH fingerprint: %w", err)
 	}
 
-	fastlyMeta.DDOSDetected, err = req.abi.req.DownstreamDDOSDetected()
+	fastlyMeta.DDOSDetected, err = req.downstream.req.DownstreamDDOSDetected()
 	if err != nil {
 		return nil, fmt.Errorf("get ddos detected: %w", err)
 	}
 
-	fastlyMeta.FastlyKeyIsValid, err = req.abi.req.DownstreamFastlyKeyIsValid()
+	fastlyMeta.FastlyKeyIsValid, err = req.downstream.req.DownstreamFastlyKeyIsValid()
 	if err != nil {
 		return nil, fmt.Errorf("get fastly key is valid: %w", err)
 	}
@@ -1010,13 +1011,13 @@ func (req *Request) TLSClientCertificateInfo() (*TLSClientCertificateInfo, error
 	var err error
 	var cert TLSClientCertificateInfo
 
-	cert.RawClientCertificate, err = req.abi.req.DownstreamTLSRawClientCertificate()
+	cert.RawClientCertificate, err = req.downstream.req.DownstreamTLSRawClientCertificate()
 	if err = ignoreNoneError(err); err != nil {
 		return nil, fmt.Errorf("get TLS raw client certificate: %w", err)
 	}
 
 	if cert.RawClientCertificate != nil {
-		cert.ClientCertIsVerified, err = req.abi.req.DownstreamTLSClientCertVerifyResult()
+		cert.ClientCertIsVerified, err = req.downstream.req.DownstreamTLSClientCertVerifyResult()
 		if err != nil {
 			return nil, fmt.Errorf("get TLS client certificate verify: %w", err)
 		}
