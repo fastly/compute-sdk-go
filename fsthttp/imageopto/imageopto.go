@@ -524,10 +524,6 @@ func (o *Opts) QueryString() string {
 		args = append(args, "region="+string(o.Region))
 	}
 
-	if o.Width.IsSet() {
-		args = append(args, "width="+o.Width.String())
-	}
-
 	if o.Auto.IsSet() {
 		args = append(args, "auto="+o.Auto.String())
 	}
@@ -626,6 +622,10 @@ func (o *Opts) QueryString() string {
 
 	if o.TrimColor != nil {
 		args = append(args, "trim-color="+encodeCommas(o.TrimColor.String()))
+	}
+
+	if o.Width.IsSet() {
+		args = append(args, "width="+o.Width.String())
 	}
 
 	return strings.Join(args, "&")
