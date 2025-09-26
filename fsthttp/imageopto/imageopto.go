@@ -1,6 +1,7 @@
 package imageopto
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -18,6 +19,8 @@ const (
 	RegionAsia      Region = "asia"
 	RegionAustralia Region = "australia"
 )
+
+func (r Region) IsSet() bool { return r != "" }
 
 type Format string
 
@@ -279,6 +282,14 @@ func (h *HexColor) String() string {
 
 }
 
+func (h *HexColor) Validate() error {
+	if h.A < 0.0 || h.A > 1.0 {
+		return errors.New("imageopto: hexcolor alpha out of range")
+	}
+
+	return nil
+}
+
 type TrimColor struct {
 	Color     HexColor
 	Threshold float32
@@ -290,6 +301,18 @@ func (t *TrimColor) String() string {
 	}
 
 	return t.Color.String()
+}
+
+func (t *TrimColor) Validate() error {
+	if err := t.Color.Validate(); err != nil {
+		return err
+	}
+
+	if t.Threshold < 0.0 || t.Threshold > 1.0 {
+		return errors.New("imageopto: trimcolor threshold out of range 0.0 .. 1.0")
+	}
+
+	return nil
 }
 
 type BWModeState int
@@ -472,6 +495,17 @@ func (s *Sharpen) String() string {
 	return fmt.Sprintf("a%v,r%v,t%v", s.Amount, fmtFloat(float64(s.Radius)), s.Threshold)
 }
 
+func (s *Sharpen) Validate() error {
+	if s.Amount > 10 {
+		return errors.New("imageopto: sharpen amount out of range 0 .. 10")
+	}
+	if s.Radius < 0.5 || s.Radius > 1000 {
+		return errors.New("imageopto: sharpen radius out of range 0.5 .. 1000")
+	}
+
+	return nil
+}
+
 type EnableOpt string
 
 const (
@@ -516,6 +550,65 @@ type Opts struct {
 
 func encodeCommas(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, ",", "%2C"), ":", "%3A")
+}
+
+func (o *Opts) ValidateParams() error {
+
+	// TODO(dgryski): not every parameter is validated for correctness here
+
+	if !o.Region.IsSet() {
+		return errors.New("imageopto: region is not set")
+	}
+
+	if b := o.BgColor; b != nil {
+		if b.A < 0.0 || b.A > 1.0 {
+			return errors.New("imageopto: alpha out of range 0..1")
+		}
+	}
+
+	if b := o.Brightness; b != 0 {
+		if b < -100 || b > 100 {
+			return errors.New("imageopto: brightness out of range -100 .. 100")
+		}
+	}
+
+	if c := o.Contrast; c != 0 {
+		if c < -100 || c > 100 {
+			return errors.New("imageopto: contrast out of range -100 .. 100")
+		}
+	}
+
+	if d := o.Dpr; d != 0 {
+		if d < 0 || d > 10 {
+			return errors.New("imageopto: dpr out of range 0 .. 10")
+		}
+	}
+
+	if q := o.Quality; q != 0 {
+		if q > 100 {
+			return errors.New("imageopto: quality out of range 0 .. 10")
+		}
+	}
+
+	if s := o.Saturation; s != 0 {
+		if s < -100 || s > 100 {
+			return errors.New("imageopto: saturation out of range -100 .. 100")
+		}
+	}
+
+	if s := o.Sharpen; s != nil {
+		if err := s.Validate(); err != nil {
+			return err
+		}
+	}
+
+	if t := o.TrimColor; t != nil {
+		if err := t.Validate(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (o *Opts) QueryString() string {

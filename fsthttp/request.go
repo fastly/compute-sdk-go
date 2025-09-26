@@ -548,6 +548,10 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 	if req.ImageOptimizerOpts != nil {
 		// Send this request through the Image Optimizer infrastructure
 
+		if err := req.ImageOptimizerOpts.ValidateParams(); err != nil {
+			return nil, err
+		}
+
 		query := req.ImageOptimizerOpts.QueryString()
 
 		abiResp, abiBody, err := req.abi.req.SendToImageOpto(req.abi.body, backend, query)
