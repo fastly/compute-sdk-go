@@ -200,11 +200,11 @@ type Position struct {
 }
 
 func (p *Position) String() string {
-	if p.X.state != PointOrOffsetStateNone && p.Y.state != PointOrOffsetStateNone {
+	if p.X.IsSet() && p.Y.IsSet() {
 		return p.X.ToString("x") + "," + p.Y.ToString("y")
 	}
 
-	if p.X.state != PointOrOffsetStateNone {
+	if p.X.IsSet() {
 		return p.X.ToString("x")
 	}
 
@@ -224,8 +224,8 @@ func (c *Crop) String() string {
 		s += "," + c.Position.String()
 	}
 
-	if c.Mode != "" {
-		s += "," + string(c.Mode)
+	if c.Mode.IsSet() {
+		s += "," + c.Mode.String()
 	}
 
 	return s
@@ -266,7 +266,8 @@ const (
 	OrientationOrientLeft                Orientation = 8
 )
 
-func (o Orientation) IsSet() bool { return o == 0 }
+func (o Orientation) IsSet() bool    { return o != 0 }
+func (o Orientation) String() string { return strconv.Itoa(int(o)) }
 
 type HexColor struct {
 	R, G, B uint8
@@ -596,8 +597,8 @@ func (o *Opts) QueryString() string {
 		args = append(args, "optimize="+o.Optimize.String())
 	}
 
-	if o.Orient != 0 {
-		args = append(args, "orient="+strconv.Itoa(int(o.Orient)))
+	if o.Orient.IsSet() {
+		args = append(args, "orient="+o.Orient.String())
 	}
 
 	if o.Pad != nil {
