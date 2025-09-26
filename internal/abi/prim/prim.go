@@ -43,6 +43,17 @@ type Wstring struct {
 	Len  Usize
 }
 
+func NewWstringFromChar8(p Pointer[Char8], n U32) Wstring {
+	return Wstring{
+		Data: (Pointer[U8])(p),
+		Len:  Usize(n),
+	}
+}
+
+func (w Wstring) String() string {
+	return unsafe.String(*(**byte)(unsafe.Pointer(&w.Data)), w.Len)
+}
+
 // ArrayU8 is a header for an array of U8.
 type ArrayU8 Wstring
 
