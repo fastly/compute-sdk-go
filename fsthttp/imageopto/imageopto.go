@@ -32,12 +32,18 @@ const (
 	FormatWebP   Format = "webp"
 )
 
+func (f Format) IsSet() bool    { return f != "" }
+func (f Format) String() string { return string(f) }
+
 type Auto string
 
 const (
 	AutoAVIF Auto = "avif"
 	AutoWebP Auto = "webp"
 )
+
+func (a Auto) IsSet() bool    { return a != "" }
+func (a Auto) String() string { return string(a) }
 
 func fmtFloat(f float64) string {
 	nearest3 := math.Round(1000.0*f) / 1000.0
@@ -60,6 +66,8 @@ type PixelsOrPercentage struct {
 	pixels  uint32
 	state   PixelsOrPercentageState
 }
+
+func (p *PixelsOrPercentage) IsSet() bool { return p.state != PixelsOrPercentageStateNone }
 
 func (p *PixelsOrPercentage) String() string {
 	switch p.state {
@@ -95,6 +103,9 @@ const (
 	CropModeSmart = "smart"
 )
 
+func (c CropMode) IsSet() bool    { return c != "" }
+func (c CropMode) String() string { return string(c) }
+
 type AreaState uint8
 
 const (
@@ -111,6 +122,8 @@ type Area struct {
 	widthHeight areaWidthHeight
 	state       AreaState
 }
+
+func (a *Area) IsSet() bool { return a.state != AreaStateNone }
 
 func NewAreaAspectRatio(w, h uint32) Area {
 	return Area{
@@ -151,6 +164,8 @@ type PointOrOffset struct {
 	offset uint32 // percentage
 	state  PointOrOffsetState
 }
+
+func (p *PointOrOffset) IsSet() bool { return p.state != PointOrOffsetStateNone }
 
 func (p *PointOrOffset) ToString(xy string) string {
 	switch p.state {
@@ -235,6 +250,9 @@ const (
 	OptimizeLevelHigh   OptimizeLevel = "high"
 )
 
+func (o OptimizeLevel) IsSet() bool    { return o != "" }
+func (o OptimizeLevel) String() string { return string(o) }
+
 type Orientation int
 
 const (
@@ -247,6 +265,8 @@ const (
 	OrientationFlipHorizontalOrientRight Orientation = 7
 	OrientationOrientLeft                Orientation = 8
 )
+
+func (o Orientation) IsSet() bool { return o == 0 }
 
 type HexColor struct {
 	R, G, B uint8
@@ -271,11 +291,6 @@ func (t *TrimColor) String() string {
 	return t.Color.String()
 }
 
-type BWMode struct {
-	state     BWModeState
-	luminance uint32
-}
-
 type BWModeState int
 
 const (
@@ -284,6 +299,13 @@ const (
 	BWModeStateAtkinson
 	BWModeStateThreshold
 )
+
+type BWMode struct {
+	state     BWModeState
+	luminance uint32
+}
+
+func (bw *BWMode) IsSet() bool { return bw.state != BWModeStateNone }
 
 func NewBWModeDefaultThreshold() BWMode {
 	return BWMode{state: BWModeStateDefaultThreshold}
@@ -326,14 +348,16 @@ type BlurMode struct {
 	percentage float64
 }
 
-func (p *BlurMode) String() string {
-	switch p.state {
+func (b *BlurMode) IsSet() bool { return b.state != BlurModeStateNone }
+
+func (b *BlurMode) String() string {
+	switch b.state {
 	case BlurModeStateNone:
 		return ""
 	case BlurModeStatePercentage:
-		return fmt.Sprintf("%vp", p.percentage)
+		return fmt.Sprintf("%vp", b.percentage)
 	case BlurModeStatePixels:
-		return fmt.Sprintf("%v", p.pixels)
+		return fmt.Sprintf("%v", b.pixels)
 	}
 
 	return "error"
@@ -374,6 +398,9 @@ const (
 	FitCrop   Fit = "crop"
 )
 
+func (f Fit) IsSet() bool    { return f != "" }
+func (f Fit) String() string { return string(f) }
+
 type Level string
 
 const (
@@ -398,11 +425,17 @@ const (
 	Level6_2 Level = "6.2"
 )
 
+func (l Level) IsSet() bool    { return l != "" }
+func (l Level) String() string { return string(l) }
+
 type Metadata string
 
 const (
 	MetadataCopyright Metadata = "copyright"
 )
+
+func (m Metadata) IsSet() bool    { return m != "" }
+func (m Metadata) String() string { return string(m) }
 
 type Profile string
 
@@ -411,6 +444,9 @@ const (
 	ProfileMain     Profile = "main"
 	ProfileHigh     Profile = "high"
 )
+
+func (p Profile) IsSet() bool    { return p != "" }
+func (p Profile) String() string { return string(p) }
 
 type ResizeAlgorithm string
 
@@ -421,6 +457,9 @@ const (
 	ResizeAlgorithmLanczos2 ResizeAlgorithm = "lanczos2"
 	ResizeAlgorithmLanczos3 ResizeAlgorithm = "lanczos3"
 )
+
+func (r ResizeAlgorithm) IsSet() bool    { return r != "" }
+func (r ResizeAlgorithm) String() string { return string(r) }
 
 type Sharpen struct {
 	Amount    uint8
@@ -437,6 +476,9 @@ type EnableOpt string
 const (
 	EnableOptUpscale EnableOpt = "upscale"
 )
+
+func (e EnableOpt) IsSet() bool    { return e != "" }
+func (e EnableOpt) String() string { return string(e) }
 
 type Opts struct {
 	Region                             Region
@@ -482,19 +524,19 @@ func (o *Opts) QueryString() string {
 		args = append(args, "region="+string(o.Region))
 	}
 
-	if o.Width.state != PixelsOrPercentageStateNone {
+	if o.Width.IsSet() {
 		args = append(args, "width="+o.Width.String())
 	}
 
-	if o.Auto != "" {
-		args = append(args, "auto="+string(o.Auto))
+	if o.Auto.IsSet() {
+		args = append(args, "auto="+o.Auto.String())
 	}
 
 	if o.BgColor != nil {
 		args = append(args, "bg-color="+encodeCommas(o.BgColor.String()))
 	}
 
-	if o.Blur.state != BlurModeStateNone {
+	if o.Blur.IsSet() {
 		args = append(args, "blur="+o.Blur.String())
 	}
 
@@ -502,7 +544,7 @@ func (o *Opts) QueryString() string {
 		args = append(args, "brightness="+strconv.Itoa(o.Brightness))
 	}
 
-	if o.Bw.state != BWModeStateNone {
+	if o.Bw.IsSet() {
 		args = append(args, "bw="+o.Bw.String())
 	}
 
@@ -522,40 +564,40 @@ func (o *Opts) QueryString() string {
 		args = append(args, "dpr="+fmt.Sprintf("%v", o.Dpr))
 	}
 
-	if o.Enable != "" {
-		args = append(args, "enable="+string(o.Enable))
+	if o.Enable.IsSet() {
+		args = append(args, "enable="+o.Enable.String())
 	}
 
-	if o.Fit != "" {
-		args = append(args, "fit="+string(o.Fit))
+	if o.Fit.IsSet() {
+		args = append(args, "fit="+o.Fit.String())
 	}
 
-	if o.Format != "" {
-		args = append(args, "format="+string(o.Format))
+	if o.Format.IsSet() {
+		args = append(args, "format="+o.Format.String())
 	}
 
 	if o.Frame != 0 {
 		args = append(args, "frame="+strconv.Itoa(int(o.Frame)))
 	}
 
-	if o.Height.state != PixelsOrPercentageStateNone {
+	if o.Height.IsSet() {
 		args = append(args, "height="+o.Height.String())
 	}
 
-	if o.Level != "" {
-		args = append(args, "level="+string(o.Level))
+	if o.Level.IsSet() {
+		args = append(args, "level="+o.Level.String())
 	}
 
-	if o.Profile != "" {
-		args = append(args, "profile="+string(o.Profile))
+	if o.Profile.IsSet() {
+		args = append(args, "profile="+o.Profile.String())
 	}
 
-	if o.Metadata != "" {
-		args = append(args, "metadata="+string(o.Metadata))
+	if o.Metadata.IsSet() {
+		args = append(args, "metadata="+o.Metadata.String())
 	}
 
-	if o.Optimize != "" {
-		args = append(args, "optimize="+string(o.Optimize))
+	if o.Optimize.IsSet() {
+		args = append(args, "optimize="+o.Optimize.String())
 	}
 
 	if o.Orient != 0 {
@@ -570,8 +612,8 @@ func (o *Opts) QueryString() string {
 		args = append(args, "precrop="+encodeCommas(o.Precrop.String()))
 	}
 
-	if o.ResizeFilter != "" {
-		args = append(args, "resize-filter="+string(o.ResizeFilter))
+	if o.ResizeFilter.IsSet() {
+		args = append(args, "resize-filter="+o.ResizeFilter.String())
 	}
 
 	if o.Sharpen != nil {
