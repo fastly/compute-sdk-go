@@ -51,7 +51,7 @@ func NewWstringFromChar8(p Pointer[Char8], n U32) Wstring {
 }
 
 func (w Wstring) String() string {
-	return unsafe.String((*byte)(unsafe.Pointer(uintptr(w.Data))), w.Len)
+	return unsafe.String(*(**byte)(unsafe.Pointer(&w.Data)), w.Len)
 }
 
 // ArrayU8 is a header for an array of U8.
