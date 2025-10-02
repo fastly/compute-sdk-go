@@ -213,6 +213,10 @@ func (r *HTTPRequest) SendAsyncStreaming(requestBody *HTTPBody, backend string) 
 	return nil, fmt.Errorf("not implemented")
 }
 
+func (r *HTTPRequest) SendToImageOpto(requestBody *HTTPBody, backend, query string) (response *HTTPResponse, responseBody *HTTPBody, err error) {
+	return nil, nil, fmt.Errorf("not implemented")
+}
+
 func (r *PendingRequest) Poll() (done bool, response *HTTPResponse, responseBody *HTTPBody, err error) {
 	return false, nil, nil, fmt.Errorf("not implemented")
 }

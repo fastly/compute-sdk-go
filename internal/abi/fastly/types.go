@@ -1732,3 +1732,85 @@ func (n *NextRequestOptions) Timeout(t time.Duration) {
 	n.mask |= nextRequestOptionsMaskTimeout
 	n.opts.timeoutMs = prim.U64(t.Milliseconds())
 }
+
+// witx:
+//
+// (typename $image_optimizer_transform_config_options
+//     (flags (@witx repr u32)
+//         $reserved
+//         $sdk_claims_opts
+//         ))
+
+type imageOptimizerTransformConfigOptionsMask uint32
+
+const (
+	imageOptimizerTransformConfigOptionsReserved      imageOptimizerTransformConfigOptionsMask = 1 << 0
+	imageOptimizerTransformConfigOptionsSDKClaimsOpts imageOptimizerTransformConfigOptionsMask = 1 << 1
+)
+
+// witx:
+//
+// (typename $image_optimizer_transform_config
+//   (record
+//     ;; sdk_claims_opts contains any Image Optimizer API parameters that were set
+//     ;; as well as the Image Optimizer region the request is meant for.
+//     (field $sdk_claims_opts (@witx pointer (@witx char8)))
+//     (field $sdk_claims_opts_len u32)
+//     ))
+
+type imageOptimizerTransformConfig struct {
+	sdkClaimsOptsPtr prim.Pointer[prim.Char8]
+	sdkClaimsOptsLen prim.U32
+}
+
+// witx:
+//
+// (typename $image_optimizer_error_tag
+//     (enum (@witx tag u32)
+//         $uninitialized
+//         $ok
+//         $error
+//         $warning
+//     )
+// )
+
+type ImageOptoError prim.U32
+
+const (
+	ImageOptoErrorUninitialized ImageOptoError = 0
+	ImageOptoErrorOK            ImageOptoError = 1
+	ImageOptoErrorError         ImageOptoError = 2
+	ImageOptoErrorWarning       ImageOptoError = 3
+)
+
+// witx:
+//
+// (typename $image_optimizer_error_detail
+//
+//	(record
+//	    (field $tag $image_optimizer_error_tag)
+//	    (field $message (@witx pointer (@witx char8)))
+//	    (field $message_len u32)
+//	)
+//
+// )
+type imageOptimizerErrorDetail struct {
+	tag         ImageOptoError
+	message     prim.Pointer[prim.Char8]
+	message_len prim.U32
+}
+
+func (ioErr *imageOptimizerErrorDetail) Error() string {
+
+	errStr := prim.NewWstringFromChar8(ioErr.message, ioErr.message_len).String()
+
+	if ioErr.tag == ImageOptoErrorError {
+		return "image opto: " + errStr
+	}
+
+	if ioErr.tag == ImageOptoErrorWarning {
+		return "image opto warning: " + errStr
+	}
+
+	return "image opto: unknown error: " + errStr
+}
