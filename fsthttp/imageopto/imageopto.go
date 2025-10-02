@@ -79,7 +79,7 @@ func (p PixelsOrPercentage) validate() error {
 	return nil
 }
 
-var rePixelsOrPercentage = regexp.MustCompile("^[0-9]+(.[0-9]+)?p?$")
+var rePixelsOrPercentage = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?p?$`)
 
 // CropMode determines cropping behavior.
 type CropMode string
@@ -196,8 +196,8 @@ func (p *Position) String() string {
 	return p.Y.String()
 }
 
-var reXPosition = regexp.MustCompile("^(x[0-9]+p?)|(offset-x[0-9]+)$")
-var reYPosition = regexp.MustCompile("^(y[0-9]+p?)|(offset-y[0-9]+)$")
+var reXPosition = regexp.MustCompile(`^(x[0-9]+(\.[0-9]+)?p?)|(offset-x[0-9]+)$`)
+var reYPosition = regexp.MustCompile(`^(y[0-9]+(\.[0-9]+)?p?)|(offset-y[0-9]+)$`)
 
 func (p *Position) validate() error {
 	if p.X != "" && !reXPosition.MatchString(string(p.X)) {
