@@ -160,7 +160,7 @@ func (area *Area) String() string {
 	case areaStateAspectRatio:
 		return fmt.Sprintf("%v:%v", area.aspect.w, area.aspect.h)
 	case areaStateWidthHeight:
-		return fmt.Sprintf("%v,%v", area.widthHeight.w.String(), area.widthHeight.h.String())
+		return fmt.Sprintf("%v,%v", area.widthHeight.w, area.widthHeight.h)
 	}
 	return "error"
 }
@@ -256,7 +256,7 @@ type Sides struct {
 }
 
 func (s *Sides) String() string {
-	return fmt.Sprintf("%v,%v,%v,%v", s.Top.String(), s.Right.String(), s.Bottom.String(), s.Left.String())
+	return fmt.Sprintf("%v,%v,%v,%v", s.Top, s.Right, s.Bottom, s.Left)
 }
 
 func (s *Sides) validate() error {
