@@ -512,7 +512,7 @@ const (
 func (f Fit) isSet() bool    { return f != "" }
 func (f Fit) String() string { return string(f) }
 
-// Level specifies a set of constraints indicating a degree of required decoder performance] for a profile.
+// Level specifies a set of constraints indicating a degree of required decoder performance for a profile.
 //
 // This option is only used when converting animated GIFs to the MP4 format and when used in
 // conjunction with the profile parameter,
