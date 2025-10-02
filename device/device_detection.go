@@ -23,6 +23,18 @@ type Device struct {
 }
 
 type deviceInfo struct {
+	UserAgent struct {
+		Name         string `json:"name"`
+		Major        string `json:"major"`
+		Minor        string `json:"minor"`
+		Patch        string `json:"patch"`
+		BotName      string `json:"bot_name"`
+		IsBot        bool   `json:"is_bot"`
+		IsDownloader bool   `json:"is_downloader"`
+		IsFeedreader bool   `json:"is_feedreader"`
+		Identified   bool   `json:"identified"`
+	} `json:"user_agent"`
+
 	Device struct {
 		Name          string `json:"name"`
 		Brand         string `json:"brand"`
@@ -139,4 +151,9 @@ func (d *Device) IsDesktop() bool {
 // sensitive.
 func (d *Device) IsTouchscreen() bool {
 	return d.info.Device.IsTouchscreen
+}
+
+// IsBot returns true if the client device is a bot
+func (d *Device) IsBot() bool {
+	return d.info.UserAgent.IsBot
 }
