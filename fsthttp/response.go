@@ -276,6 +276,8 @@ func (resp *responseWriter) Header() Header {
 	return resp.header
 }
 
+var excludeHeadersNoBody = map[string]bool{CanonicalHeaderKey("Content-Length"): true, CanonicalHeaderKey("Transfer-Encoding"): true}
+
 func (resp *responseWriter) WriteHeader(code int) {
 	if resp.wroteHeaders {
 		println("fsthttp: multiple calls to WriteHeader")
@@ -284,10 +286,25 @@ func (resp *responseWriter) WriteHeader(code int) {
 
 	resp.abiResp.SetFramingHeadersMode(resp.ManualFramingMode)
 	resp.abiResp.SetStatusCode(code)
+
+	var skip map[string]bool
+	if code == StatusEarlyHints {
+		skip = excludeHeadersNoBody
+	}
+
 	for _, key := range resp.header.Keys() {
+		// don't send body headers if we're sending early hints
+		if skip[key] {
+			continue
+		}
 		resp.abiResp.SetHeaderValues(key, resp.header.Values(key))
 	}
 	resp.abiResp.SendDownstream(resp.abiBody, true)
+
+	if code == StatusEarlyHints {
+		// For early hints, don't mark the headers as "sent" so we can send them again next time.
+		return
+	}
 
 	resp.wroteHeaders = true
 }
@@ -315,6 +332,9 @@ func (resp *responseWriter) SetManualFramingMode(mode bool) {
 }
 
 func (resp *responseWriter) Append(other io.ReadCloser) error {
+	if !resp.wroteHeaders {
+		resp.WriteHeader(200)
+	}
 	otherAbiBody, ok := other.(*fastly.HTTPBody)
 	if !ok {
 		return fmt.Errorf("non-Response Body passed to ResponseWriter.Append")
