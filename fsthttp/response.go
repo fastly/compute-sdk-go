@@ -45,7 +45,6 @@ func (resp *Response) Cookies() []*Cookie {
 
 // RemoteAddr returns the address of the server that provided the response.
 func (resp *Response) RemoteAddr() (net.Addr, error) {
-
 	var addr netaddr
 	var err error
 
@@ -219,8 +218,10 @@ type ResponseWriter interface {
 	// will not automatically add Content-Type or Content-Length headers.
 	Write(p []byte) (int, error)
 
-	// Close the response to the client. Close must be called to ensure the
-	// response has been fully written to the client.
+	// Close the response to the client. The ResponseWriter is automatically
+	// closed after the request handler finishes running, so it is not
+	// necessary to call it explicitly, but doing so indicates that the
+	// response can be fully written to the client immediately.
 	//
 	// If WriteHeader has not yet been called, Close calls WriteHeader(200)
 	// before closing the response. Once closed, a ResponseWriter is
@@ -249,6 +250,7 @@ type responseWriter struct {
 	abiResp           *fastly.HTTPResponse
 	abiBody           *fastly.HTTPBody
 	wroteHeaders      bool
+	closed            bool
 	ManualFramingMode bool
 }
 
@@ -301,6 +303,10 @@ func (resp *responseWriter) Close() error {
 	if !resp.wroteHeaders {
 		resp.WriteHeader(200)
 	}
+	if resp.closed {
+		return nil
+	}
+	resp.closed = true
 	return resp.abiBody.Close()
 }
 
