@@ -153,7 +153,47 @@ func (d *Device) IsTouchscreen() bool {
 	return d.info.Device.IsTouchscreen
 }
 
-// IsBot returns true if the client device is a bot
-func (d *Device) IsBot() bool {
+// UserAgentName returns the name of the user agent
+func (d *Device) UserAgentName() string {
+	return d.info.UserAgent.Name
+}
+
+// UserAgentMajor returns the major version of the user agent
+func (d *Device) UserAgentMajor() string {
+	return d.info.UserAgent.Major
+}
+
+// UserAgentMinor returns the minor version of the user agent
+func (d *Device) UserAgentMinor() string {
+	return d.info.UserAgent.Minor
+}
+
+// UserAgentPatch returns the patch level version of the user agent
+func (d *Device) UserAgentPatch() string {
+	return d.info.UserAgent.Patch
+}
+
+// UserAgentBotName returns the bot name (if the user agent is a bot)
+func (d *Device) UserAgentBotName() string {
+	return d.info.UserAgent.BotName
+}
+
+// UserAgentIsBot returns true if the client device is a bot
+func (d *Device) UserAgentIsBot() bool {
 	return d.info.UserAgent.IsBot
+}
+
+// UserAgentIsDownloader returns true if the client device is a downloader
+func (d *Device) IsDownloader() bool {
+	return d.info.UserAgent.IsDownloader
+}
+
+// UserAgentIsFeedreader returns true if the client device is a feed reader
+func (d *Device) IsFeedreader() bool {
+	return d.info.UserAgent.IsFeedreader
+}
+
+// UserAgentIdentified returns true if the client device was successfully identified
+func (d *Device) Identified() bool {
+	return d.info.UserAgent.Identified
 }
