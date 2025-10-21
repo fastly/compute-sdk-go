@@ -945,7 +945,11 @@ func (r *PendingRequest) Poll() (done bool, response *HTTPResponse, responseBody
 		return false, nil, nil, err
 	}
 
-	return isDone > 0, &HTTPResponse{h: respHandle}, &HTTPBody{h: bodyHandle}, nil
+	if isDone > 0 {
+		return true, &HTTPResponse{h: respHandle}, &HTTPBody{h: bodyHandle}, nil
+	} else {
+		return false, nil, nil, nil
+	}
 }
 
 // witx:
