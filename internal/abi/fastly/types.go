@@ -134,7 +134,7 @@ func (s FastlyStatus) toError() error {
 	}
 }
 
-func (s FastlyStatus) toSendError(d sendErrorDetail) error {
+func (s FastlyStatus) toSendError(d SendErrorDetail) error {
 	if s == FastlyStatusOK {
 		return nil
 	}
@@ -173,6 +173,12 @@ func (e FastlyError) Error() string {
 	}
 
 	return "Fastly error: " + e.Status.String()
+}
+
+// Unwrap returns the Detail error, allowing errors.Is() and errors.As() to
+// traverse into the wrapped error.
+func (e FastlyError) Unwrap() error {
+	return e.Detail
 }
 
 func (e FastlyError) getStatus() FastlyStatus {
@@ -678,7 +684,6 @@ const (
 )
 
 func (e KVError) Error() string {
-
 	switch e {
 
 	case KVErrorUninitialized:
@@ -1300,7 +1305,9 @@ const (
 //	    (field $dns_error_info_code u16)
 //	    (field $tls_alert_id u8)
 //	    ))
-type sendErrorDetail struct {
+
+// SendErrorDetail contains detailed error information from backend send operations.
+type SendErrorDetail struct {
 	tag              sendErrorDetailTag
 	mask             sendErrorDetailMask
 	dnsErrorRCode    prim.U16
@@ -1308,13 +1315,40 @@ type sendErrorDetail struct {
 	tlsAlertID       prim.U8
 }
 
-func newSendErrorDetail() sendErrorDetail {
-	return sendErrorDetail{
+func newSendErrorDetail() SendErrorDetail {
+	return SendErrorDetail{
 		mask: sendErrorDetailMaskDNSErrorRCode | sendErrorDetailMaskDNSErrorInfo | sendErrorDetailMaskTLSAlertID,
 	}
 }
 
-func (d sendErrorDetail) valid() bool {
+// Sentinel send errors for use with errors.Is().
+var (
+	SendErrorDNSTimeout                        = SendErrorDetail{tag: sendErrorDetailTagDNSTimeout}
+	SendErrorDNSError                          = SendErrorDetail{tag: sendErrorDetailTagDNSError}
+	SendErrorDestinationNotFound               = SendErrorDetail{tag: sendErrorDetailTagDestinationNotFound}
+	SendErrorDestinationUnavailable            = SendErrorDetail{tag: sendErrorDetailTagDestinationUnavailable}
+	SendErrorDestinationIPUnroutable           = SendErrorDetail{tag: sendErrorDetailTagDestinationIPUnroutable}
+	SendErrorConnectionRefused                 = SendErrorDetail{tag: sendErrorDetailTagConnectionRefused}
+	SendErrorConnectionTerminated              = SendErrorDetail{tag: sendErrorDetailTagConnectionTerminated}
+	SendErrorConnectionTimeout                 = SendErrorDetail{tag: sendErrorDetailTagConnectionTimeout}
+	SendErrorConnectionLimitReached            = SendErrorDetail{tag: sendErrorDetailTagConnectionLimitReached}
+	SendErrorTLSCertificateError               = SendErrorDetail{tag: sendErrorDetailTagTLSCertificateError}
+	SendErrorTLSConfigurationError             = SendErrorDetail{tag: sendErrorDetailTagTLSConfigurationError}
+	SendErrorTLSAlertReceived                  = SendErrorDetail{tag: sendErrorDetailTagTLSAlertReceived}
+	SendErrorTLSProtocolError                  = SendErrorDetail{tag: sendErrorDetailTagTLSProtocolError}
+	SendErrorHTTPIncompleteResponse            = SendErrorDetail{tag: sendErrorDetailTagHTTPIncompleteResponse}
+	SendErrorHTTPResponseHeaderSectionTooLarge = SendErrorDetail{tag: sendErrorDetailTagHTTPResponseHeaderSectionTooLarge}
+	SendErrorHTTPResponseBodyTooLarge          = SendErrorDetail{tag: sendErrorDetailTagHTTPResponseBodyTooLarge}
+	SendErrorHTTPResponseTimeout               = SendErrorDetail{tag: sendErrorDetailTagHTTPResponseTimeout}
+	SendErrorHTTPResponseStatusInvalid         = SendErrorDetail{tag: sendErrorDetailTagHTTPResponseStatusInvalid}
+	SendErrorHTTPUpgradeFailed                 = SendErrorDetail{tag: sendErrorDetailTagHTTPUpgradeFailed}
+	SendErrorHTTPProtocolError                 = SendErrorDetail{tag: sendErrorDetailTagHTTPProtocolError}
+	SendErrorHTTPRequestCacheKeyInvalid        = SendErrorDetail{tag: sendErrorDetailTagHTTPRequestCacheKeyInvalid}
+	SendErrorHTTPRequestURIInvalid             = SendErrorDetail{tag: sendErrorDetailTagHTTPRequestURIInvalid}
+	SendErrorInternalError                     = SendErrorDetail{tag: sendErrorDetailTagInternalError}
+)
+
+func (d SendErrorDetail) valid() bool {
 	switch d.tag {
 	case sendErrorDetailTagUninitialized:
 		// Not enough information to convert to an error.  In this case,
@@ -1330,11 +1364,57 @@ func (d sendErrorDetail) valid() bool {
 	return true
 }
 
-func (d sendErrorDetail) Error() string {
+// Is implements error comparison for use with errors.Is().
+// This allows sentinel errors to be compared against SendErrorDetail values.
+func (d SendErrorDetail) Is(target error) bool {
+	if t, ok := target.(SendErrorDetail); ok {
+		return d.tag == t.tag
+	}
+	return false
+}
+
+// DNSErrorRCode returns the DNS response code for DNS errors.
+// DNS response codes are defined [by IANA].
+// Common values include:
+//   - 0: No error
+//   - 1: Format error
+//   - 2: Server failure
+//   - 3: Non-existent domain
+//   - 4: Not implemented
+//   - 5: Refused
+//
+// [by IANA]: https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-6
+func (d SendErrorDetail) DNSErrorRCode() uint16 {
+	return uint16(d.dnsErrorRCode)
+}
+
+// DNSErrorInfoCode returns additional DNS error information for DNS errors.
+// DNS info codes are defined [by IANA].
+//
+// [by IANA]: https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#extended-dns-error-codes
+func (d SendErrorDetail) DNSErrorInfoCode() uint16 {
+	return uint16(d.dnsErrorInfoCode)
+}
+
+// TLSAlertID returns the TLS alert identifier for TLS errors.
+// TLS alert IDs are defined [by IANA].
+// Use TLSAlertDescription() for a human-readable description.
+//
+// [by IANA]: https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-6
+func (d SendErrorDetail) TLSAlertID() uint8 {
+	return uint8(d.tlsAlertID)
+}
+
+// TLSAlertDescription returns a human-readable description of the TLS alert.
+func (d SendErrorDetail) TLSAlertDescription() string {
+	return tlsAlertString(d.tlsAlertID)
+}
+
+func (d SendErrorDetail) Error() string {
 	return "send error: " + d.String()
 }
 
-func (d sendErrorDetail) String() string {
+func (d SendErrorDetail) String() string {
 	switch d.tag {
 	case sendErrorDetailTagDNSTimeout:
 		return "DNS timeout"
@@ -1585,8 +1665,10 @@ const (
 	httpCacheLookupOptionsFlagOverrideKey httpCacheLookupOptionsMask = 1 << 1
 )
 
-type httpCacheDurationNs prim.U64
-type httpCacheObjectLength prim.U64
+type (
+	httpCacheDurationNs   prim.U64
+	httpCacheObjectLength prim.U64
+)
 
 type httpCacheWriteOptions struct {
 	// The maximum age of the response before it is considered stale, in nanoseconds.
@@ -1801,7 +1883,6 @@ type imageOptimizerErrorDetail struct {
 }
 
 func (ioErr *imageOptimizerErrorDetail) Error() string {
-
 	errStr := prim.NewWstringFromChar8(ioErr.message, ioErr.message_len).String()
 
 	if ioErr.tag == ImageOptoErrorError {
