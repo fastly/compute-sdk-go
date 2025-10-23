@@ -6,14 +6,14 @@ import "github.com/fastly/compute-sdk-go/internal/abi/fastly"
 
 // SendError provides detailed information about backend request failures.
 //
-// Use errors.Is() with the sentinel error variables to check for specific error types.
+// Use errors.Is() with the sentinel error variables to check for specific error values.
 // Use errors.As() to extract the SendError and access detailed error information if needed.
 //
 // Example usage:
 //
 //	resp, err := req.Send(ctx, "backend")
 //	if err != nil {
-//	    // Check for specific error types using errors.Is()
+//	    // Check for specific error values using errors.Is()
 //	    if errors.Is(err, fsthttp.ErrConnectionTimeout) {
 //	        log.Println("connection timed out")
 //	        return
@@ -40,7 +40,7 @@ import "github.com/fastly/compute-sdk-go/internal/abi/fastly"
 type SendError = fastly.SendErrorDetail
 
 // Sentinel errors for backend request failures.
-// Use these with errors.Is() to check for specific error types.
+// Use these with errors.Is() to check for specific error values.
 var (
 	// ErrDNSTimeout indicates the system encountered a timeout when trying to
 	// find an IP address for the backend hostname.
