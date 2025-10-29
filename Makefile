@@ -74,6 +74,9 @@ test-%-tinygo:   	   TINYGO_TARGET := ./targets/fastly-compute-wasip1.json
 test-e2e-tinygo: 	   TINYGO_TARGET := ./targets/fastly-compute-wasip1-serve.json
 build-examples-tinygo: TINYGO_TARGET ?= ./targets/fastly-compute-wasip1.json
 
+# Run e2e tests sequentially to avoid port conflicts:
+test-e2e-%: GO_TEST_FLAGS += -p 1
+
 # Allow `test -exec` and tinygo's emulator target to find `serve.sh`:
 test-e2e-%: export PATH := $(PWD)/end_to_end_tests:$(PATH)
 

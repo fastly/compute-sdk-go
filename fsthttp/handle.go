@@ -54,6 +54,12 @@ type ServeManyOptions struct {
 
 	// MaxRequests is the maximum number of requests to serve for a single instance
 	MaxRequests int
+
+	// Continue is a function that determines whether to continue
+	// serving requests after the other conditions have been checked.
+	// If Continue returns false, ServeMany will exit.  If Continue is
+	// nil or returns true, ServeMany will continue.
+	Continue func() bool
 }
 
 // ServeMany allows a single Compute instance to handle multiple requests.
@@ -75,6 +81,10 @@ func ServeMany(h HandlerFunc, serveOpts *ServeManyOptions) {
 		}
 
 		if serveOpts.MaxLifetime != 0 && time.Since(start) > serveOpts.MaxLifetime {
+			break
+		}
+
+		if serveOpts.Continue != nil && !serveOpts.Continue() {
 			break
 		}
 
