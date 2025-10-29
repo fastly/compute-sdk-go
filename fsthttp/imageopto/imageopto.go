@@ -634,10 +634,10 @@ const (
 func (e EnableOpt) isSet() bool    { return e != "" }
 func (e EnableOpt) String() string { return string(e) }
 
-// Opts contains options that correspond to the public ImageOptimzation API.
+// Options contains options that correspond to the public ImageOptimzation API.
 //
 // For more details, see https://www.fastly.com/documentation/reference/io/
-type Opts struct {
+type Options struct {
 	// Region indicates where image transformations will occur. Must be set.
 	//
 	// The chosen region should be close to your origin.
@@ -742,7 +742,7 @@ type Opts struct {
 	PreserveQueryStringOnOriginRequest bool
 }
 
-func (o *Opts) validateParams() error {
+func (o *Options) validateParams() error {
 
 	if !o.Region.isSet() {
 		return errors.New("imageopto: region is not set")
@@ -845,7 +845,7 @@ func (o *Opts) validateParams() error {
 	return nil
 }
 
-func (o *Opts) QueryString() (string, error) {
+func (o *Options) QueryString() (string, error) {
 	if err := o.validateParams(); err != nil {
 		return "", err
 	}

@@ -117,7 +117,7 @@ type Request struct {
 	RequestID string
 
 	// ImageOptimizerOptions control the image optimizer request.
-	ImageOptimizerOptions *imageopto.Opts
+	ImageOptimizerOptions *imageopto.Options
 
 	sent bool // a request may only be sent once
 
