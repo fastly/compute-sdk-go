@@ -1242,34 +1242,34 @@ func (b *BackendConfigOptions) TCPKeepaliveTime(t time.Duration) {
 //	        ;;; the handshake or afterwards.
 //	        $tls_protocol_error
 //	        ))
-type sendErrorDetailTag prim.U32
+type SendErrorDetailTag prim.U32
 
 const (
-	sendErrorDetailTagUninitialized                     sendErrorDetailTag = 0
-	sendErrorDetailTagOK                                sendErrorDetailTag = 1
-	sendErrorDetailTagDNSTimeout                        sendErrorDetailTag = 2
-	sendErrorDetailTagDNSError                          sendErrorDetailTag = 3
-	sendErrorDetailTagDestinationNotFound               sendErrorDetailTag = 4
-	sendErrorDetailTagDestinationUnavailable            sendErrorDetailTag = 5
-	sendErrorDetailTagDestinationIPUnroutable           sendErrorDetailTag = 6
-	sendErrorDetailTagConnectionRefused                 sendErrorDetailTag = 7
-	sendErrorDetailTagConnectionTerminated              sendErrorDetailTag = 8
-	sendErrorDetailTagConnectionTimeout                 sendErrorDetailTag = 9
-	sendErrorDetailTagConnectionLimitReached            sendErrorDetailTag = 10
-	sendErrorDetailTagTLSCertificateError               sendErrorDetailTag = 11
-	sendErrorDetailTagTLSConfigurationError             sendErrorDetailTag = 12
-	sendErrorDetailTagHTTPIncompleteResponse            sendErrorDetailTag = 13
-	sendErrorDetailTagHTTPResponseHeaderSectionTooLarge sendErrorDetailTag = 14
-	sendErrorDetailTagHTTPResponseBodyTooLarge          sendErrorDetailTag = 15
-	sendErrorDetailTagHTTPResponseTimeout               sendErrorDetailTag = 16
-	sendErrorDetailTagHTTPResponseStatusInvalid         sendErrorDetailTag = 17
-	sendErrorDetailTagHTTPUpgradeFailed                 sendErrorDetailTag = 18
-	sendErrorDetailTagHTTPProtocolError                 sendErrorDetailTag = 19
-	sendErrorDetailTagHTTPRequestCacheKeyInvalid        sendErrorDetailTag = 20
-	sendErrorDetailTagHTTPRequestURIInvalid             sendErrorDetailTag = 21
-	sendErrorDetailTagInternalError                     sendErrorDetailTag = 22
-	sendErrorDetailTagTLSAlertReceived                  sendErrorDetailTag = 23
-	sendErrorDetailTagTLSProtocolError                  sendErrorDetailTag = 24
+	SendErrorDetailTagUninitialized                     SendErrorDetailTag = 0
+	SendErrorDetailTagOK                                SendErrorDetailTag = 1
+	SendErrorDetailTagDNSTimeout                        SendErrorDetailTag = 2
+	SendErrorDetailTagDNSError                          SendErrorDetailTag = 3
+	SendErrorDetailTagDestinationNotFound               SendErrorDetailTag = 4
+	SendErrorDetailTagDestinationUnavailable            SendErrorDetailTag = 5
+	SendErrorDetailTagDestinationIPUnroutable           SendErrorDetailTag = 6
+	SendErrorDetailTagConnectionRefused                 SendErrorDetailTag = 7
+	SendErrorDetailTagConnectionTerminated              SendErrorDetailTag = 8
+	SendErrorDetailTagConnectionTimeout                 SendErrorDetailTag = 9
+	SendErrorDetailTagConnectionLimitReached            SendErrorDetailTag = 10
+	SendErrorDetailTagTLSCertificateError               SendErrorDetailTag = 11
+	SendErrorDetailTagTLSConfigurationError             SendErrorDetailTag = 12
+	SendErrorDetailTagHTTPIncompleteResponse            SendErrorDetailTag = 13
+	SendErrorDetailTagHTTPResponseHeaderSectionTooLarge SendErrorDetailTag = 14
+	SendErrorDetailTagHTTPResponseBodyTooLarge          SendErrorDetailTag = 15
+	SendErrorDetailTagHTTPResponseTimeout               SendErrorDetailTag = 16
+	SendErrorDetailTagHTTPResponseStatusInvalid         SendErrorDetailTag = 17
+	SendErrorDetailTagHTTPUpgradeFailed                 SendErrorDetailTag = 18
+	SendErrorDetailTagHTTPProtocolError                 SendErrorDetailTag = 19
+	SendErrorDetailTagHTTPRequestCacheKeyInvalid        SendErrorDetailTag = 20
+	SendErrorDetailTagHTTPRequestURIInvalid             SendErrorDetailTag = 21
+	SendErrorDetailTagInternalError                     SendErrorDetailTag = 22
+	SendErrorDetailTagTLSAlertReceived                  SendErrorDetailTag = 23
+	SendErrorDetailTagTLSProtocolError                  SendErrorDetailTag = 24
 )
 
 // witx:
@@ -1308,7 +1308,7 @@ const (
 
 // SendErrorDetail contains detailed error information from backend send operations.
 type SendErrorDetail struct {
-	tag              sendErrorDetailTag
+	Tag              SendErrorDetailTag
 	mask             sendErrorDetailMask
 	dnsErrorRCode    prim.U16
 	dnsErrorInfoCode prim.U16
@@ -1321,56 +1321,25 @@ func newSendErrorDetail() SendErrorDetail {
 	}
 }
 
-// Sentinel send errors for use with errors.Is().
-var (
-	SendErrorDNSTimeout                        = SendErrorDetail{tag: sendErrorDetailTagDNSTimeout}
-	SendErrorDNSError                          = SendErrorDetail{tag: sendErrorDetailTagDNSError}
-	SendErrorDestinationNotFound               = SendErrorDetail{tag: sendErrorDetailTagDestinationNotFound}
-	SendErrorDestinationUnavailable            = SendErrorDetail{tag: sendErrorDetailTagDestinationUnavailable}
-	SendErrorDestinationIPUnroutable           = SendErrorDetail{tag: sendErrorDetailTagDestinationIPUnroutable}
-	SendErrorConnectionRefused                 = SendErrorDetail{tag: sendErrorDetailTagConnectionRefused}
-	SendErrorConnectionTerminated              = SendErrorDetail{tag: sendErrorDetailTagConnectionTerminated}
-	SendErrorConnectionTimeout                 = SendErrorDetail{tag: sendErrorDetailTagConnectionTimeout}
-	SendErrorConnectionLimitReached            = SendErrorDetail{tag: sendErrorDetailTagConnectionLimitReached}
-	SendErrorTLSCertificateError               = SendErrorDetail{tag: sendErrorDetailTagTLSCertificateError}
-	SendErrorTLSConfigurationError             = SendErrorDetail{tag: sendErrorDetailTagTLSConfigurationError}
-	SendErrorTLSAlertReceived                  = SendErrorDetail{tag: sendErrorDetailTagTLSAlertReceived}
-	SendErrorTLSProtocolError                  = SendErrorDetail{tag: sendErrorDetailTagTLSProtocolError}
-	SendErrorHTTPIncompleteResponse            = SendErrorDetail{tag: sendErrorDetailTagHTTPIncompleteResponse}
-	SendErrorHTTPResponseHeaderSectionTooLarge = SendErrorDetail{tag: sendErrorDetailTagHTTPResponseHeaderSectionTooLarge}
-	SendErrorHTTPResponseBodyTooLarge          = SendErrorDetail{tag: sendErrorDetailTagHTTPResponseBodyTooLarge}
-	SendErrorHTTPResponseTimeout               = SendErrorDetail{tag: sendErrorDetailTagHTTPResponseTimeout}
-	SendErrorHTTPResponseStatusInvalid         = SendErrorDetail{tag: sendErrorDetailTagHTTPResponseStatusInvalid}
-	SendErrorHTTPUpgradeFailed                 = SendErrorDetail{tag: sendErrorDetailTagHTTPUpgradeFailed}
-	SendErrorHTTPProtocolError                 = SendErrorDetail{tag: sendErrorDetailTagHTTPProtocolError}
-	SendErrorHTTPRequestCacheKeyInvalid        = SendErrorDetail{tag: sendErrorDetailTagHTTPRequestCacheKeyInvalid}
-	SendErrorHTTPRequestURIInvalid             = SendErrorDetail{tag: sendErrorDetailTagHTTPRequestURIInvalid}
-	SendErrorInternalError                     = SendErrorDetail{tag: sendErrorDetailTagInternalError}
-)
+// Cause returns the specific cause of the backend request failure.
+func (d SendErrorDetail) Cause() SendErrorDetailTag {
+	return d.Tag
+}
 
 func (d SendErrorDetail) valid() bool {
-	switch d.tag {
-	case sendErrorDetailTagUninitialized:
+	switch d.Tag {
+	case SendErrorDetailTagUninitialized:
 		// Not enough information to convert to an error.  In this case,
 		// the caller should use the FastlyStatus as the basis for the
 		// error instead.
 		return false
 
-	case sendErrorDetailTagOK:
+	case SendErrorDetailTagOK:
 		// No error
 		return false
 	}
 
 	return true
-}
-
-// Is implements error comparison for use with errors.Is().
-// This allows sentinel errors to be compared against SendErrorDetail values.
-func (d SendErrorDetail) Is(target error) bool {
-	if t, ok := target.(SendErrorDetail); ok {
-		return d.tag == t.tag
-	}
-	return false
 }
 
 // DNSErrorRCode returns the DNS response code for DNS errors.
@@ -1415,61 +1384,61 @@ func (d SendErrorDetail) Error() string {
 }
 
 func (d SendErrorDetail) String() string {
-	switch d.tag {
-	case sendErrorDetailTagDNSTimeout:
+	switch d.Tag {
+	case SendErrorDetailTagDNSTimeout:
 		return "DNS timeout"
-	case sendErrorDetailTagDNSError:
+	case SendErrorDetailTagDNSError:
 		return fmt.Sprintf("DNS error (rcode=%d, info_code=%d)", d.dnsErrorRCode, d.dnsErrorInfoCode)
-	case sendErrorDetailTagDestinationNotFound:
+	case SendErrorDetailTagDestinationNotFound:
 		return "destination not found"
-	case sendErrorDetailTagDestinationUnavailable:
+	case SendErrorDetailTagDestinationUnavailable:
 		return "destination unavailable"
-	case sendErrorDetailTagDestinationIPUnroutable:
+	case SendErrorDetailTagDestinationIPUnroutable:
 		return "destination IP unroutable"
-	case sendErrorDetailTagConnectionRefused:
+	case SendErrorDetailTagConnectionRefused:
 		return "connection refused"
-	case sendErrorDetailTagConnectionTerminated:
+	case SendErrorDetailTagConnectionTerminated:
 		return "connection terminated"
-	case sendErrorDetailTagConnectionTimeout:
+	case SendErrorDetailTagConnectionTimeout:
 		return "connection timeout"
-	case sendErrorDetailTagConnectionLimitReached:
+	case SendErrorDetailTagConnectionLimitReached:
 		return "connection limit reached"
-	case sendErrorDetailTagTLSCertificateError:
+	case SendErrorDetailTagTLSCertificateError:
 		return "TLS certificate error"
-	case sendErrorDetailTagTLSConfigurationError:
+	case SendErrorDetailTagTLSConfigurationError:
 		return "TLS configuration error"
-	case sendErrorDetailTagHTTPIncompleteResponse:
+	case SendErrorDetailTagHTTPIncompleteResponse:
 		return "incomplete HTTP response"
-	case sendErrorDetailTagHTTPResponseHeaderSectionTooLarge:
+	case SendErrorDetailTagHTTPResponseHeaderSectionTooLarge:
 		return "HTTP response header section too large"
-	case sendErrorDetailTagHTTPResponseBodyTooLarge:
+	case SendErrorDetailTagHTTPResponseBodyTooLarge:
 		return "HTTP response body too large"
-	case sendErrorDetailTagHTTPResponseTimeout:
+	case SendErrorDetailTagHTTPResponseTimeout:
 		return "HTTP response timeout"
-	case sendErrorDetailTagHTTPResponseStatusInvalid:
+	case SendErrorDetailTagHTTPResponseStatusInvalid:
 		return "HTTP response status invalid"
-	case sendErrorDetailTagHTTPUpgradeFailed:
+	case SendErrorDetailTagHTTPUpgradeFailed:
 		return "HTTP upgrade failed"
-	case sendErrorDetailTagHTTPProtocolError:
+	case SendErrorDetailTagHTTPProtocolError:
 		return "HTTP protocol error"
-	case sendErrorDetailTagHTTPRequestCacheKeyInvalid:
+	case SendErrorDetailTagHTTPRequestCacheKeyInvalid:
 		return "HTTP request cache key invalid"
-	case sendErrorDetailTagHTTPRequestURIInvalid:
+	case SendErrorDetailTagHTTPRequestURIInvalid:
 		return "HTTP request URI invalid"
-	case sendErrorDetailTagInternalError:
+	case SendErrorDetailTagInternalError:
 		return "internal error"
-	case sendErrorDetailTagTLSAlertReceived:
+	case SendErrorDetailTagTLSAlertReceived:
 		return fmt.Sprintf("TLS alert received (%s)", tlsAlertString(d.tlsAlertID))
-	case sendErrorDetailTagTLSProtocolError:
+	case SendErrorDetailTagTLSProtocolError:
 		return "TLS protocol error"
 
-	case sendErrorDetailTagUninitialized:
-		panic("should not be reached: sendErrorDetailTagUninitialized")
-	case sendErrorDetailTagOK:
-		panic("should not be reached: sendErrorDetailTagOK")
+	case SendErrorDetailTagUninitialized:
+		panic("should not be reached: SendErrorDetailTagUninitialized")
+	case SendErrorDetailTagOK:
+		panic("should not be reached: SendErrorDetailTagOK")
 
 	default:
-		return fmt.Sprintf("unknown error (%d)", d.tag)
+		return fmt.Sprintf("unknown error (%d)", d.Tag)
 	}
 }
 
