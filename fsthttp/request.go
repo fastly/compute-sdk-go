@@ -116,7 +116,8 @@ type Request struct {
 	// RequestID is the current Fastly request ID
 	RequestID string
 
-	ImageOptimizerOpts *imageopto.Opts
+	// ImageOptimizerOptions control the image optimizer request.
+	ImageOptimizerOptions *imageopto.Opts
 
 	sent bool // a request may only be sent once
 
@@ -545,9 +546,9 @@ var guestCacheSWRPending sync.WaitGroup
 func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Response, error) {
 	// use guest cache
 
-	if req.ImageOptimizerOpts != nil {
+	if req.ImageOptimizerOptions != nil {
 		// Send this request through the Image Optimizer infrastructure
-		query, err := req.ImageOptimizerOpts.QueryString()
+		query, err := req.ImageOptimizerOptions.QueryString()
 		if err != nil {
 			return nil, err
 		}
