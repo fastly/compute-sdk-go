@@ -1,0 +1,15 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://www.fastly.com/documentation/reference/compute/fastly-toml
+
+authors = []
+description = ""
+language = "go"
+manifest_version = 3
+name = "serve-many test"
+service_id = ""
+
+[scripts]
+    build = "GOARCH=wasm GOOS=wasip1 go build -tags fastlyinternaldebug -o bin/main.wasm ."
+
+[local_server.backends.self]
+    url = "http://127.0.0.1:23456/"

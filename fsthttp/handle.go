@@ -21,14 +21,14 @@ func Serve(h Handler) {
 		panic(fmt.Errorf("get client handles: %w", err))
 	}
 
-	serve(h, abireq, abibody)
+	serve(context.Background(), h, abireq, abibody)
 
 	// wait for any stale-while-revalidate goroutines to complete.
 	guestCacheSWRPending.Wait()
 }
 
-func serve(h Handler, abireq *fastly.HTTPRequest, abibody *fastly.HTTPBody) {
-	ctx, cancel := context.WithCancel(context.Background())
+func serve(ctx context.Context, h Handler, abireq *fastly.HTTPRequest, abibody *fastly.HTTPBody) {
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	clientRequest, err := newClientRequest(abireq, abibody)
@@ -60,11 +60,13 @@ type ServeManyOptions struct {
 func ServeMany(h HandlerFunc, serveOpts *ServeManyOptions) {
 	start := time.Now()
 
+	ctx := context.WithValue(context.Background(), serveManyOptionsKey{}, serveOpts)
+
 	abireq, abibody, err := fastly.BodyDownstreamGet()
 	if err != nil {
 		panic(fmt.Errorf("get client handles: %w", err))
 	}
-	serve(h, abireq, abibody)
+	serve(ctx, h, abireq, abibody)
 
 	// Serve the rest
 	var requests int
@@ -96,7 +98,7 @@ func ServeMany(h HandlerFunc, serveOpts *ServeManyOptions) {
 			panic(fmt.Errorf("get client handles: %w", err))
 		}
 
-		serve(h, abireq, abibody)
+		serve(ctx, h, abireq, abibody)
 	}
 
 	// wait for any stale-while-revalidate goroutines to complete.
@@ -121,4 +123,17 @@ type HandlerFunc func(ctx context.Context, w ResponseWriter, r *Request)
 // ServeHTTP implements Handler by calling f(ctx, w, r).
 func (f HandlerFunc) ServeHTTP(ctx context.Context, w ResponseWriter, r *Request) {
 	f(ctx, w, r)
+}
+
+type serveManyOptionsKey struct{}
+
+// ServeManyOptionsFromContext retrieves the [ServeManyOptions] value
+// passed into [ServeMany].  It will return nil if [Serve] or
+// [ServeFunc] were used.
+func ServeManyOptionsFromContext(ctx context.Context) *ServeManyOptions {
+	opts, ok := ctx.Value(serveManyOptionsKey{}).(*ServeManyOptions)
+	if !ok {
+		return nil
+	}
+	return opts
 }
