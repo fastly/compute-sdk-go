@@ -1,3 +1,4 @@
+// Deprecated: Use fsthttp.Request.Handoff* methods instead.
 package handoff
 
 import "github.com/fastly/compute-sdk-go/internal/abi/fastly"

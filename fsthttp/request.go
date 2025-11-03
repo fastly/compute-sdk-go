@@ -1087,6 +1087,30 @@ type DecompressResponseOptions struct {
 	Gzip bool
 }
 
+// HandoffWebsocket passes the WebSocket directly to a backend.
+//
+// This can only be used on services that have the WebSockets feature
+// enabled and on requests that are valid WebSocket requests.  The sending
+// completes in the background.
+//
+// Once this method has been called, no other response can be sent to this
+// request, and the application can exit without affecting the send.
+func (r *Request) HandoffWebsocket(backend string) error {
+	return r.downstream.req.HandoffWebsocket(backend)
+}
+
+// HandoffFanout passes the request through the Fanout GRIP proxy and on to
+// a backend.
+//
+// This can only be used on services that have the Fanout feature enabled.
+//
+// The sending completes in the background. Once this method has been
+// called, no other response can be sent to this request, and the
+// application can exit without affecting the send.
+func (r *Request) HandoffFanout(backend string) error {
+	return r.downstream.req.HandoffWebsocket(backend)
+}
+
 // nopCloser is functionally the same as io.NopCloser, except that we
 // can get to the underlying io.Reader.
 type nopCloser struct {
