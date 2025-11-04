@@ -76,7 +76,7 @@ func ServeMany(h HandlerFunc, serveOpts *ServeManyOptions) {
 	var requests int
 	for {
 		requests++
-		if serveOpts.MaxRequests != 0 && requests > serveOpts.MaxRequests {
+		if serveOpts.MaxRequests != 0 && requests >= serveOpts.MaxRequests {
 			break
 		}
 
