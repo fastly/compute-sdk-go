@@ -20,7 +20,9 @@ func TestDownstreamRequest(t *testing.T) {
 	// Viceroy constructs a simple GET http://example.com request with
 	// the remote address being 127.0.0.1, so that's what we check for
 	// here.
+	handlerRun := false
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
+		handlerRun = true
 		if r.Method != "GET" {
 			t.Errorf("Method = %s, want GET", r.Method)
 			return
@@ -44,6 +46,9 @@ func TestDownstreamRequest(t *testing.T) {
 			return
 		}
 	})
+	if !handlerRun {
+		t.Errorf("handler was not run")
+	}
 }
 
 func TestDownstreamResponse(t *testing.T) {
