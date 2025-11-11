@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
@@ -25,7 +24,12 @@ func main() {
 			}
 		}
 
-		sessionID, requestID := os.Getenv("FASTLY_TRACE_ID"), r.RequestID
+		meta, err := r.FastlyMeta()
+		if err != nil {
+			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			return
+		}
+		sessionID, requestID := meta.SessionID, meta.RequestID
 		fmt.Printf("Session ID: %s, Request ID: %s\n", sessionID, requestID)
 
 		w.Header().Set("Content-Type", "text/plain")

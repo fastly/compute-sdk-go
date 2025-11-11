@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -113,9 +114,6 @@ type Request struct {
 	// discarded.
 	ManualFramingMode bool
 
-	// RequestID is the current Fastly request ID
-	RequestID string
-
 	// ImageOptimizerOptions control the image optimizer request.
 	ImageOptimizerOptions *imageopto.Options
 
@@ -174,11 +172,6 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 	proto, major, minor, err := abiReq.GetVersion()
 	if err != nil {
 		return nil, fmt.Errorf("get protocol version: %w", err)
-	}
-
-	reqID, err := abiReq.DownstreamRequestID()
-	if err != nil {
-		return nil, fmt.Errorf("get request id: %w", err)
 	}
 
 	header := NewHeader()
@@ -252,7 +245,6 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		RemoteAddr: remoteAddr.String(),
 		ServerAddr: serverAddr.String(),
 		TLSInfo:    tlsInfo,
-		RequestID:  reqID,
 		downstream: reqAbi{req: abiReq, body: abiReqBody},
 	}, nil
 }
@@ -371,8 +363,15 @@ func (req *Request) FastlyMeta() (*FastlyMeta, error) {
 	}
 
 	var err error
-
 	var fastlyMeta FastlyMeta
+
+	fastlyMeta.SessionID = os.Getenv("FASTLY_TRACE_ID")
+
+	fastlyMeta.RequestID, err = req.downstream.req.DownstreamRequestID()
+	if err != nil {
+		return nil, fmt.Errorf("get request ID: %w", err)
+	}
+
 	fastlyMeta.H2, err = req.downstream.req.DownstreamH2Fingerprint()
 	if err = ignoreNoneError(err); err != nil {
 		return nil, fmt.Errorf("get H2 fingerprint: %w", err)
@@ -1076,6 +1075,12 @@ type TLSClientCertificateInfo struct {
 
 // FastlyMeta holds various Fastly-specific metadata for a request.
 type FastlyMeta struct {
+	// SessionID is the unique identifier for the session handling the request.
+	SessionID string
+
+	// RequestID is the unique identifier for the request.
+	RequestID string
+
 	// H2 is the HTTP/2 fingerprint of a client request if available
 	H2 []byte
 
