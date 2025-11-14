@@ -16,14 +16,35 @@ import (
 // (module $fastly_http_req
 
 // witx:
+
+// (@interface func (export "redirect_to_websocket_proxy_v2")
 //
-// (@interface func (export "redirect_to_websocket_proxy")
-//
+//	(param $h $request_handle)
 //	(param $backend_name string)
 //	(result $err (expected (error $fastly_status)))
 //
 // )
 //
+//go:wasmimport fastly_http_req redirect_to_websocket_proxy_v2
+//go:noescape
+func fastlyHTTPReqRedirectToWebsocketProxyV2(
+	r requestHandle,
+	backendData prim.Pointer[prim.U8], backendLen prim.Usize,
+) FastlyStatus
+
+func (r *HTTPRequest) HandoffWebsocket(backend string) error {
+	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
+
+	if err := fastlyHTTPReqRedirectToWebsocketProxyV2(
+		r.h,
+		backendBuffer.Data, backendBuffer.Len,
+	).toError(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //go:wasmimport fastly_http_req redirect_to_websocket_proxy
 //go:noescape
 func fastlyHTTPReqRedirectToWebsocketProxy(
@@ -44,13 +65,34 @@ func HandoffWebsocket(backend string) error {
 
 // witx:
 //
-// (@interface func (export "redirect_to_grip_proxy")
+// (@interface func (export "redirect_to_grip_proxy_v2")
 //
+//	(param $h $request_handle)
 //	(param $backend_name string)
 //	(result $err (expected (error $fastly_status)))
 //
 // )
 //
+//go:wasmimport fastly_http_req redirect_to_grip_proxy_v2
+//go:noescape
+func fastlyHTTPReqRedirectToGripProxyV2(
+	r requestHandle,
+	backendData prim.Pointer[prim.U8], backendLen prim.Usize,
+) FastlyStatus
+
+func (r *HTTPRequest) HandoffFanout(backend string) error {
+	backendBuffer := prim.NewReadBufferFromString(backend).Wstring()
+
+	if err := fastlyHTTPReqRedirectToGripProxyV2(
+		r.h,
+		backendBuffer.Data, backendBuffer.Len,
+	).toError(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //go:wasmimport fastly_http_req redirect_to_grip_proxy
 //go:noescape
 func fastlyHTTPReqRedirectToGripProxy(

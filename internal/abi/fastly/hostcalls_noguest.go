@@ -233,6 +233,14 @@ func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
 	return fmt.Errorf("not implemented")
 }
 
+func (r *HTTPRequest) HandoffWebsocket(backend string) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) HandoffFanout(backend string) error {
+	return fmt.Errorf("not implemented")
+}
+
 type HTTPRequestPromise struct{}
 
 func DownstreamNextRequest(opts *NextRequestOptions) (*HTTPRequestPromise, error) {
