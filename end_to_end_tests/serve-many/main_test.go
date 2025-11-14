@@ -9,8 +9,8 @@ import (
 	"github.com/fastly/compute-sdk-go/fsthttp"
 )
 
-func TestSessionReuse(t *testing.T) {
-	// First request.  Session ID and request ID should match.
+func TestSandboxReuse(t *testing.T) {
+	// First request. Sandbox ID and request ID should match.
 	req, err := fsthttp.NewRequest("GET", "http://anyplace.horse", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -21,44 +21,44 @@ func TestSessionReuse(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	sessionID, requestID := resp.Header.Get("Session-ID"), resp.Header.Get("Request-ID")
+	sandboxID, requestID := resp.Header.Get("Sandbox-ID"), resp.Header.Get("Request-ID")
 
-	if sessionID == "" || requestID == "" {
-		t.Fatalf("Session-ID and/or Request-ID are empty: %s, %s", sessionID, requestID)
+	if sandboxID == "" || requestID == "" {
+		t.Fatalf("Sandbox-ID and/or Request-ID are empty: %s, %s", sandboxID, requestID)
 	}
-	if sessionID != requestID {
-		t.Errorf("sessionID = %s, requestID = %s; expected them to match", sessionID, requestID)
+	if sandboxID != requestID {
+		t.Errorf("sandboxID = %s, requestID = %s; expected them to match", sandboxID, requestID)
 	}
-	prevSessionID := sessionID
+	prevSandboxID := sandboxID
 
-	// Second request.  This should reuse the session, so the session ID
-	// should match the previous session ID and the request ID should
+	// Second request.  This should reuse the sandbox, so the sandbox ID
+	// should match the previous sandbox ID and the request ID should
 	// not match.
 	//
 	// We also set a header to tell the server to not allow any more
-	// requests on this session.
+	// requests on this sandbox.
 	req, err = fsthttp.NewRequest("GET", "http://anyplace.horse", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.Header.Set("Close-Session", "1")
+	req.Header.Set("Fresh-Sandbox", "1")
 	resp, err = req.Send(context.Background(), "self")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer resp.Body.Close()
 
-	sessionID, requestID = resp.Header.Get("Session-ID"), resp.Header.Get("Request-ID")
+	sandboxID, requestID = resp.Header.Get("Sandbox-ID"), resp.Header.Get("Request-ID")
 
-	if sessionID != prevSessionID {
-		t.Errorf("sessionID = %s, previous sessionID = %s; expected them to match", sessionID, sessionID)
+	if sandboxID != prevSandboxID {
+		t.Errorf("sandboxID = %s, previous sandboxID = %s; expected them to match", sandboxID, sandboxID)
 	}
-	if sessionID == requestID {
-		t.Errorf("sessionID = %s, requestID = %s; expected them to differ", sessionID, requestID)
+	if sandboxID == requestID {
+		t.Errorf("sandboxID = %s, requestID = %s; expected them to differ", sandboxID, requestID)
 	}
-	prevSessionID = sessionID
+	prevSandboxID = sandboxID
 
-	// Third request, we should have a new session ID and it should match the request ID
+	// Third request, we should have a new sandbox ID and it should match the request ID
 	req, err = fsthttp.NewRequest("GET", "http://anyplace.horse", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -69,12 +69,12 @@ func TestSessionReuse(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	sessionID, requestID = resp.Header.Get("Session-ID"), resp.Header.Get("Request-ID")
+	sandboxID, requestID = resp.Header.Get("Sandbox-ID"), resp.Header.Get("Request-ID")
 
-	if sessionID == prevSessionID {
-		t.Errorf("sessionID = %s, previous sessionID = %s; expected them to differ", sessionID, sessionID)
+	if sandboxID == prevSandboxID {
+		t.Errorf("sandboxID = %s, previous sandboxID = %s; expected them to differ", sandboxID, sandboxID)
 	}
-	if sessionID != requestID {
-		t.Errorf("sessionID = %s, requestID = %s; expected them to match", sessionID, requestID)
+	if sandboxID != requestID {
+		t.Errorf("sandboxID = %s, requestID = %s; expected them to match", sandboxID, requestID)
 	}
 }

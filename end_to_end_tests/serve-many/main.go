@@ -18,7 +18,7 @@ func main() {
 	}
 
 	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		if r.Header.Get("Close-Session") == "1" {
+		if r.Header.Get("Fresh-Sandbox") == "1" {
 			opts.Continue = func() bool {
 				return false
 			}
@@ -29,11 +29,11 @@ func main() {
 			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
 			return
 		}
-		sessionID, requestID := meta.SessionID, meta.RequestID
-		fmt.Printf("Session ID: %s, Request ID: %s\n", sessionID, requestID)
+		sandboxID, requestID := meta.SandboxID, meta.RequestID
+		fmt.Printf("Sandbox ID: %s, Request ID: %s\n", sandboxID, requestID)
 
 		w.Header().Set("Content-Type", "text/plain")
-		w.Header().Set("Session-ID", sessionID)
+		w.Header().Set("Sandbox-ID", sandboxID)
 		w.Header().Set("Request-ID", requestID)
 		w.Write([]byte("OK"))
 	}

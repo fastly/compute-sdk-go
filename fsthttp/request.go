@@ -365,7 +365,7 @@ func (req *Request) FastlyMeta() (*FastlyMeta, error) {
 	var err error
 	var fastlyMeta FastlyMeta
 
-	fastlyMeta.SessionID = os.Getenv("FASTLY_TRACE_ID")
+	fastlyMeta.SandboxID = os.Getenv("FASTLY_TRACE_ID")
 
 	fastlyMeta.RequestID, err = req.downstream.req.DownstreamRequestID()
 	if err != nil {
@@ -1075,8 +1075,8 @@ type TLSClientCertificateInfo struct {
 
 // FastlyMeta holds various Fastly-specific metadata for a request.
 type FastlyMeta struct {
-	// SessionID is the unique identifier for the session handling the request.
-	SessionID string
+	// SandboxID is the unique identifier for the sandbox handling the request.
+	SandboxID string
 
 	// RequestID is the unique identifier for the request.
 	RequestID string

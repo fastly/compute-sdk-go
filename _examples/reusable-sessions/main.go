@@ -11,15 +11,15 @@ import (
 )
 
 func main() {
-	var requests int
+	var requestCount int
 	fsthttp.ServeMany(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		requests++
+		requestCount++
 		meta, err := r.FastlyMeta()
 		if err != nil {
 			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
 			return
 		}
-		fmt.Fprintf(w, "Request %v, Hello, %s (%q, %q)!\n", requests, r.RemoteAddr, meta.SessionID, meta.RequestID)
+		fmt.Fprintf(w, "Request %v, Hello, %s (sandbox: %q, request: %q)!\n", requestCount, r.RemoteAddr, meta.SandboxID, meta.RequestID)
 	}, &fsthttp.ServeManyOptions{
 		NextTimeout: 1 * time.Second,
 		MaxRequests: 100,
