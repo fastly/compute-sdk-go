@@ -22,11 +22,11 @@ import (
 func fastlyGetVCPUMs(prim.Pointer[prim.U64]) FastlyStatus
 
 // Return the number of milliseconds spent on the CPU for the current
-// session.
+// sandbox.
 //
 // Because compute guests can run on a variety of different platforms,
-// you should not necessarily expect these values to converge across
-// different sessions. Instead, we strongly recommend using this value
+// you should not necessarily expect these raw values to converge across
+// different executions. Instead, we strongly recommend using this value
 // to look at the relative cost of various operations in your code base,
 // by taking the time before and after a particular operation and then
 // dividing this by the total amount of vCPU time your program takes.
