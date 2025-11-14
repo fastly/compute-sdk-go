@@ -21,13 +21,13 @@ func Serve(h Handler) {
 		panic(fmt.Errorf("get client handles: %w", err))
 	}
 
-	serve(h, abireq, abibody)
+	serve(h, abireq, abibody, 1)
 
 	// wait for any stale-while-revalidate goroutines to complete.
 	guestCacheSWRPending.Wait()
 }
 
-func serve(h Handler, abireq *fastly.HTTPRequest, abibody *fastly.HTTPBody) {
+func serve(h Handler, abireq *fastly.HTTPRequest, abibody *fastly.HTTPBody, sandboxRequests int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -35,6 +35,8 @@ func serve(h Handler, abireq *fastly.HTTPRequest, abibody *fastly.HTTPBody) {
 	if err != nil {
 		panic(fmt.Errorf("create client Request: %w", err))
 	}
+	clientRequest.sandboxRequests = sandboxRequests
+
 	clientResponseWriter, err := newResponseWriter()
 	if err != nil {
 		panic(fmt.Errorf("create client ResponseWriter: %w", err))
@@ -65,18 +67,18 @@ type ServeManyOptions struct {
 // ServeMany allows a single Compute instance to handle multiple requests.
 func ServeMany(h HandlerFunc, serveOpts *ServeManyOptions) {
 	start := time.Now()
+	requestCount := 1
 
 	abireq, abibody, err := fastly.BodyDownstreamGet()
 	if err != nil {
 		panic(fmt.Errorf("get client handles: %w", err))
 	}
-	serve(h, abireq, abibody)
+	serve(h, abireq, abibody, requestCount)
 
 	// Serve the rest
-	var requests int
 	for {
-		requests++
-		if serveOpts.MaxRequests != 0 && requests >= serveOpts.MaxRequests {
+		requestCount++
+		if serveOpts.MaxRequests != 0 && requestCount > serveOpts.MaxRequests {
 			break
 		}
 
@@ -106,7 +108,7 @@ func ServeMany(h HandlerFunc, serveOpts *ServeManyOptions) {
 			panic(fmt.Errorf("get client handles: %w", err))
 		}
 
-		serve(h, abireq, abibody)
+		serve(h, abireq, abibody, requestCount)
 	}
 
 	// wait for any stale-while-revalidate goroutines to complete.

@@ -35,6 +35,7 @@ func main() {
 		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Set("Sandbox-ID", sandboxID)
 		w.Header().Set("Request-ID", requestID)
+		w.Header().Set("Sandbox-Requests", fmt.Sprintf("%d", meta.SandboxRequests))
 		w.Write([]byte("OK"))
 	}
 

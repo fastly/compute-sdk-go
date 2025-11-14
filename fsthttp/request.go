@@ -121,6 +121,8 @@ type Request struct {
 
 	abi        reqAbi
 	downstream reqAbi
+
+	sandboxRequests int
 }
 
 type reqAbi struct {
@@ -363,9 +365,11 @@ func (req *Request) FastlyMeta() (*FastlyMeta, error) {
 	}
 
 	var err error
-	var fastlyMeta FastlyMeta
 
-	fastlyMeta.SandboxID = os.Getenv("FASTLY_TRACE_ID")
+	fastlyMeta := &FastlyMeta{
+		SandboxID:       os.Getenv("FASTLY_TRACE_ID"),
+		SandboxRequests: req.sandboxRequests,
+	}
 
 	fastlyMeta.RequestID, err = req.downstream.req.DownstreamRequestID()
 	if err != nil {
@@ -392,7 +396,7 @@ func (req *Request) FastlyMeta() (*FastlyMeta, error) {
 		return nil, fmt.Errorf("get fastly key is valid: %w", err)
 	}
 
-	req.fastlyMeta = &fastlyMeta
+	req.fastlyMeta = fastlyMeta
 
 	return req.fastlyMeta, nil
 }
@@ -1093,6 +1097,11 @@ type FastlyMeta struct {
 	// FastlyKeyIsValid is true if the request contains a valid Fastly API token.
 	// This is for services to restrict authenticating PURGE requests for the readthrough cache.
 	FastlyKeyIsValid bool
+
+	// SandboxRequests is the number of requests handled by the sandbox so far.
+	// For example, if this is were 3, it means that this is the 3rd request handled by the sandbox.
+	// This will be zero if this is not a client request.
+	SandboxRequests int
 }
 
 // DecompressResponseOptions control the auto decompress response behaviour.

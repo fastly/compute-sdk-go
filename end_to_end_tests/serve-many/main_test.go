@@ -22,12 +22,16 @@ func TestSandboxReuse(t *testing.T) {
 	defer resp.Body.Close()
 
 	sandboxID, requestID := resp.Header.Get("Sandbox-ID"), resp.Header.Get("Request-ID")
+	sandboxRequests := resp.Header.Get("Sandbox-Requests")
 
 	if sandboxID == "" || requestID == "" {
 		t.Fatalf("Sandbox-ID and/or Request-ID are empty: %s, %s", sandboxID, requestID)
 	}
 	if sandboxID != requestID {
 		t.Errorf("sandboxID = %s, requestID = %s; expected them to match", sandboxID, requestID)
+	}
+	if sandboxRequests != "1" {
+		t.Errorf("sandboxRequests = %s; expected 1", sandboxRequests)
 	}
 	prevSandboxID := sandboxID
 
@@ -49,12 +53,16 @@ func TestSandboxReuse(t *testing.T) {
 	defer resp.Body.Close()
 
 	sandboxID, requestID = resp.Header.Get("Sandbox-ID"), resp.Header.Get("Request-ID")
+	sandboxRequests = resp.Header.Get("Sandbox-Requests")
 
 	if sandboxID != prevSandboxID {
 		t.Errorf("sandboxID = %s, previous sandboxID = %s; expected them to match", sandboxID, sandboxID)
 	}
 	if sandboxID == requestID {
 		t.Errorf("sandboxID = %s, requestID = %s; expected them to differ", sandboxID, requestID)
+	}
+	if sandboxRequests != "2" {
+		t.Errorf("sandboxRequests = %s; expected 2", sandboxRequests)
 	}
 	prevSandboxID = sandboxID
 
@@ -70,11 +78,15 @@ func TestSandboxReuse(t *testing.T) {
 	defer resp.Body.Close()
 
 	sandboxID, requestID = resp.Header.Get("Sandbox-ID"), resp.Header.Get("Request-ID")
+	sandboxRequests = resp.Header.Get("Sandbox-Requests")
 
 	if sandboxID == prevSandboxID {
 		t.Errorf("sandboxID = %s, previous sandboxID = %s; expected them to differ", sandboxID, sandboxID)
 	}
 	if sandboxID != requestID {
 		t.Errorf("sandboxID = %s, requestID = %s; expected them to match", sandboxID, requestID)
+	}
+	if sandboxRequests != "1" {
+		t.Errorf("sandboxRequests = %s; expected 1", sandboxRequests)
 	}
 }
