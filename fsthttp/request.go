@@ -425,6 +425,15 @@ func (req *Request) Send(ctx context.Context, backend string) (*Response, error)
 		}
 	}
 
+	if req.ImageOptimizerOptions != nil {
+		response, err := req.sendToImageOpto(ctx, backend)
+		if err != nil {
+			return nil, fmt.Errorf("send to image optimizer: %w", err)
+		}
+
+		return response, nil
+	}
+
 	if ok, err := req.shouldUseGuestCaching(); err != nil {
 		// can't determine if we should use guest cache or host cache
 		return nil, err
@@ -541,31 +550,31 @@ func pendingToABIResponse(ctx context.Context, errc chan error, abiPending *fast
 	}
 }
 
+func (req *Request) sendToImageOpto(ctx context.Context, backend string) (*Response, error) {
+	// Send this request through the Image Optimizer infrastructure
+	query, err := req.ImageOptimizerOptions.QueryString()
+	if err != nil {
+		return nil, err
+	}
+
+	abiResp, abiBody, err := req.abi.req.SendToImageOpto(req.abi.body, backend, query)
+	if err != nil {
+		return nil, err
+
+	}
+
+	resp, err := newResponse(req, backend, abiResp, abiBody)
+	if err != nil {
+		return nil, fmt.Errorf("construct response: %w", err)
+	}
+
+	return resp, nil
+}
+
 var guestCacheSWRPending sync.WaitGroup
 
 func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Response, error) {
 	// use guest cache
-
-	if req.ImageOptimizerOptions != nil {
-		// Send this request through the Image Optimizer infrastructure
-		query, err := req.ImageOptimizerOptions.QueryString()
-		if err != nil {
-			return nil, err
-		}
-
-		abiResp, abiBody, err := req.abi.req.SendToImageOpto(req.abi.body, backend, query)
-		if err != nil {
-			return nil, err
-
-		}
-
-		resp, err := newResponse(req, backend, abiResp, abiBody)
-		if err != nil {
-			return nil, fmt.Errorf("construct response: %w", err)
-		}
-
-		return resp, nil
-	}
 
 	if ok, err := fastly.HTTPCacheIsRequestCacheable(req.abi.req); err != nil {
 		return nil, fmt.Errorf("request not cacheable: %v", err)
@@ -800,6 +809,11 @@ func (req *Request) shouldUseGuestCaching() (bool, error) {
 
 	if req.Method == "PURGE" {
 		// no caching for PURGE
+		return false, nil
+	}
+
+	if req.ImageOptimizerOptions != nil {
+		// request should go through imageopto
 		return false, nil
 	}
 
