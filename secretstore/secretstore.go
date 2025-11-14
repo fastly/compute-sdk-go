@@ -115,7 +115,7 @@ func (s *Secret) Handle() *fastly.Secret {
 // This function is provided as a way to use data that should be secret,
 // but is being obtained by some other means than a Fastly Secret Store.
 // Secret values created this way are plaintext only, and are not shared
-// with other sessions.  This should only be used in situations in which
+// via a Store.  This should only be used in situations in which
 // an API requires a [Secret], but you cannot (for whatever reason) use
 // a [Store] to store them.
 //

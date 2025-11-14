@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
@@ -19,17 +18,22 @@ func main() {
 	}
 
 	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		if r.Header.Get("Close-Session") == "1" {
+		if r.Header.Get("Fresh-Sandbox") == "1" {
 			opts.Continue = func() bool {
 				return false
 			}
 		}
 
-		sessionID, requestID := os.Getenv("FASTLY_TRACE_ID"), r.RequestID
-		fmt.Printf("Session ID: %s, Request ID: %s\n", sessionID, requestID)
+		meta, err := r.FastlyMeta()
+		if err != nil {
+			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			return
+		}
+		sandboxID, requestID := meta.SandboxID, meta.RequestID
+		fmt.Printf("Sandbox ID: %s, Request ID: %s\n", sandboxID, requestID)
 
 		w.Header().Set("Content-Type", "text/plain")
-		w.Header().Set("Session-ID", sessionID)
+		w.Header().Set("Sandbox-ID", sandboxID)
 		w.Header().Set("Request-ID", requestID)
 		w.Write([]byte("OK"))
 	}
