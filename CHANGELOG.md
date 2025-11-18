@@ -1,5 +1,17 @@
 ## Unreleased
 
+## 1.6.0 (2025-11-17)
+
+- fsthttp,interal,x: Add v2 versions of Handoff Websocket and Fanout (#210)
+- fsthttp: support sending StatusEarlyHints (#201)
+- fsthttp: expose SendError in the fsthttp package (#205, #207)
+- device: expose UserAgent fields
+- fsthttp: add support for image optimization
+- fsthttp: add more downstream info hostcalls
+- all: Deprecate remaining Limits, make all buffers adaptive
+- fsthttp: warn if WriteHeader is called multiple times
+- fsthttp: add support for reusable sandboxes
+
 ## 1.5.0 (2025-08-14)
 
 - fsthttp: override old values in header.Apply()
