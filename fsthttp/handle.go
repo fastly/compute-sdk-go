@@ -43,6 +43,12 @@ func serve(h Handler, abireq *fastly.HTTPRequest, abibody *fastly.HTTPBody, sand
 	}
 
 	h.ServeHTTP(ctx, clientResponseWriter, clientRequest)
+
+	// If we were unable to send the response due to an error, panic and hope we sent a 500.
+	if clientResponseWriter.sendErr != nil {
+		panic(fmt.Errorf("send response downstream: %w", clientResponseWriter.sendErr))
+	}
+
 	clientResponseWriter.Close()
 }
 

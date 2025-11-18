@@ -62,3 +62,26 @@ func doLoopbackRequest(t *testing.T, req *fsthttp.Request) *fsthttp.Response {
 	}
 	return resp
 }
+
+func Test1xxStatusCode(t *testing.T) {
+	req, err := fsthttp.NewRequest("GET", "http://anyplace.horse?status_code=101", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := req.Send(context.Background(), "self")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if got, want := resp.StatusCode, 500; got != want {
+		// Unlike Compute, Viceroy returns a 101 status code until
+		// https://github.com/fastly/Viceroy/pull/557 lands, probably in
+		// v0.16.1.
+		if got == 101 {
+			t.Logf("StatusCode = %d, want: %d; accepting until Viceroy is fixed", got, want)
+		} else {
+			t.Errorf("StatusCode = %d, want: %d", got, want)
+		}
+	}
+}

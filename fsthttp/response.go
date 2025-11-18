@@ -209,7 +209,11 @@ type ResponseWriter interface {
 	// headers collected by Header. If WriteHeader is not called explicitly,
 	// the first call to Write or Close will trigger an implicit call to
 	// WriteHeader with a code of 200. After the first call to WriteHeader,
-	// subsequent calls have no effect.
+	// subsequent calls will print a warning but have no effect.
+	//
+	// 1xx status codes other than 103 (Early Hints) are not permitted and will
+	// result in an ErrInvalidStatusCode error when calling Write, Close, or
+	// Append, and clients will receive a 500 (Internal Server Error) response.
 	WriteHeader(code int)
 
 	// Write the data to the connection as part of an HTTP reply.
@@ -253,6 +257,7 @@ type responseWriter struct {
 	wroteHeaders      bool
 	closed            bool
 	ManualFramingMode bool
+	sendErr           error
 }
 
 func newResponseWriter() (*responseWriter, error) {
@@ -300,7 +305,17 @@ func (resp *responseWriter) WriteHeader(code int) {
 		}
 		resp.abiResp.SetHeaderValues(key, resp.header.Values(key))
 	}
-	resp.abiResp.SendDownstream(resp.abiBody, true)
+
+	// WriteHeader is infallible, so if we're unable to create the downstream response capture the
+	// error and return it on Write, Append, and Close calls.  serve() will panic on this error and
+	// ensure that a 500 error is sent to the client.
+	resp.sendErr = resp.abiResp.SendDownstream(resp.abiBody, true)
+	if resp.sendErr != nil {
+		// FastlyStatusInval is returned if an invalid status code (1xx except 103 Early Hints) is used.
+		if status, ok := fastly.IsFastlyError(resp.sendErr); ok && status == fastly.FastlyStatusInval {
+			resp.sendErr = ErrInvalidStatusCode
+		}
+	}
 
 	if code == StatusEarlyHints {
 		// For early hints, don't mark the headers as "sent" so we can send them again next time.
@@ -310,10 +325,18 @@ func (resp *responseWriter) WriteHeader(code int) {
 	resp.wroteHeaders = true
 }
 
-// ErrClosed is returned when attempting to write to a ResponseWriter whose network connection has been closed.
-var ErrClosed = errors.New("connection has been closed")
+var (
+	// ErrClosed is returned when attempting to write to a ResponseWriter whose network connection has been closed.
+	ErrClosed = errors.New("connection has been closed")
+
+	// ErrInvalidStatusCode is returned when attempting to write a resposne with an invalid HTTP status code.
+	ErrInvalidStatusCode = errors.New("invalid HTTP status code")
+)
 
 func (resp *responseWriter) Write(p []byte) (int, error) {
+	if resp.sendErr != nil {
+		return 0, resp.sendErr
+	}
 	if !resp.wroteHeaders {
 		resp.WriteHeader(200)
 	}
@@ -325,6 +348,9 @@ func (resp *responseWriter) Write(p []byte) (int, error) {
 }
 
 func (resp *responseWriter) Close() error {
+	if resp.sendErr != nil {
+		return resp.sendErr
+	}
 	if !resp.wroteHeaders {
 		resp.WriteHeader(200)
 	}
@@ -340,6 +366,9 @@ func (resp *responseWriter) SetManualFramingMode(mode bool) {
 }
 
 func (resp *responseWriter) Append(other io.ReadCloser) error {
+	if resp.sendErr != nil {
+		return resp.sendErr
+	}
 	if !resp.wroteHeaders {
 		resp.WriteHeader(200)
 	}

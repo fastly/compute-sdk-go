@@ -2218,9 +2218,7 @@ func fastlyHTTPRespHeaderValuesSet(
 	valuesData prim.Pointer[prim.U8], valuesLen prim.Usize, // multiple values separated by \0
 ) FastlyStatus
 
-// SetHeaderValues sets the provided header(s) on the response.
-//
-// TODO(pb): does this overwrite any existing name headers?
+// SetHeaderValues sets the provided header(s) on the response.  This replaces any existing values for this header.
 func (r *HTTPResponse) SetHeaderValues(name string, values []string) error {
 	var buf bytes.Buffer
 	for _, value := range values {
