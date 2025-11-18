@@ -3,6 +3,7 @@
 package fsthttp
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -309,11 +310,18 @@ func (resp *responseWriter) WriteHeader(code int) {
 	resp.wroteHeaders = true
 }
 
+// ErrClosed is returned when attempting to write to a ResponseWriter whose network connection has been closed.
+var ErrClosed = errors.New("connection has been closed")
+
 func (resp *responseWriter) Write(p []byte) (int, error) {
 	if !resp.wroteHeaders {
 		resp.WriteHeader(200)
 	}
-	return resp.abiBody.Write(p)
+	n, err := resp.abiBody.Write(p)
+	if status, ok := fastly.IsFastlyError(err); ok && status == fastly.FastlyStatusBadf {
+		err = ErrClosed
+	}
+	return n, err
 }
 
 func (resp *responseWriter) Close() error {
