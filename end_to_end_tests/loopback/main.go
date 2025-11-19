@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
@@ -13,6 +14,15 @@ import (
 
 func main() {
 	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
+		statusCode := 200
+		if c := r.URL.Query().Get("status_code"); c != "" {
+			var err error
+			statusCode, err = strconv.Atoi(c)
+			if err != nil {
+				panic(err)
+			}
+		}
+
 		// Verify that a bunch of function calls work, then return OK.
 		fmt.Println("Proto =", r.Proto)
 		fmt.Println("-- Headers --")
@@ -47,6 +57,7 @@ func main() {
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Set("X-Test-Header", "present")
+		w.WriteHeader(statusCode)
 		w.Write([]byte("OK"))
 	}
 	fsthttp.ServeFunc(handler)
