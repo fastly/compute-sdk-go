@@ -1,5 +1,11 @@
 ## Unreleased
 
+## 1.6.1 (2025-11-20)
+
+- fsthttp: fix panic when calling certain methods on non-client requests; fix HandoffFanout (#220)
+- fsthttp: handle invalid 1xx status codes in client responses (#218)
+- fsthttp: translate badf errors on responseWriter write to a new ErrClosed (#217)
+
 ## 1.6.0 (2025-11-17)
 
 - fsthttp,interal,x: Add v2 versions of Handoff Websocket and Fanout (#210)
