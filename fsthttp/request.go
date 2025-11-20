@@ -371,29 +371,31 @@ func (req *Request) FastlyMeta() (*FastlyMeta, error) {
 		SandboxRequests: req.sandboxRequests,
 	}
 
-	fastlyMeta.RequestID, err = req.downstream.req.DownstreamRequestID()
-	if err != nil {
-		return nil, fmt.Errorf("get request ID: %w", err)
-	}
+	if req.downstream.req != nil {
+		fastlyMeta.RequestID, err = req.downstream.req.DownstreamRequestID()
+		if err != nil {
+			return nil, fmt.Errorf("get request ID: %w", err)
+		}
 
-	fastlyMeta.H2, err = req.downstream.req.DownstreamH2Fingerprint()
-	if err = ignoreNoneError(err); err != nil {
-		return nil, fmt.Errorf("get H2 fingerprint: %w", err)
-	}
+		fastlyMeta.H2, err = req.downstream.req.DownstreamH2Fingerprint()
+		if err = ignoreNoneError(err); err != nil {
+			return nil, fmt.Errorf("get H2 fingerprint: %w", err)
+		}
 
-	fastlyMeta.OH, err = req.downstream.req.DownstreamOHFingerprint()
-	if err = ignoreNoneError(err); err != nil {
-		return nil, fmt.Errorf("get OH fingerprint: %w", err)
-	}
+		fastlyMeta.OH, err = req.downstream.req.DownstreamOHFingerprint()
+		if err = ignoreNoneError(err); err != nil {
+			return nil, fmt.Errorf("get OH fingerprint: %w", err)
+		}
 
-	fastlyMeta.DDOSDetected, err = req.downstream.req.DownstreamDDOSDetected()
-	if err != nil {
-		return nil, fmt.Errorf("get ddos detected: %w", err)
-	}
+		fastlyMeta.DDOSDetected, err = req.downstream.req.DownstreamDDOSDetected()
+		if err != nil {
+			return nil, fmt.Errorf("get ddos detected: %w", err)
+		}
 
-	fastlyMeta.FastlyKeyIsValid, err = req.downstream.req.DownstreamFastlyKeyIsValid()
-	if err != nil {
-		return nil, fmt.Errorf("get fastly key is valid: %w", err)
+		fastlyMeta.FastlyKeyIsValid, err = req.downstream.req.DownstreamFastlyKeyIsValid()
+		if err != nil {
+			return nil, fmt.Errorf("get fastly key is valid: %w", err)
+		}
 	}
 
 	req.fastlyMeta = fastlyMeta
@@ -563,7 +565,6 @@ func (req *Request) sendToImageOpto(ctx context.Context, backend string) (*Respo
 	abiResp, abiBody, err := req.abi.req.SendToImageOpto(req.abi.body, backend, query)
 	if err != nil {
 		return nil, err
-
 	}
 
 	resp, err := newResponse(req, backend, abiResp, abiBody)
@@ -1053,15 +1054,17 @@ func (req *Request) TLSClientCertificateInfo() (*TLSClientCertificateInfo, error
 	var err error
 	var cert TLSClientCertificateInfo
 
-	cert.RawClientCertificate, err = req.downstream.req.DownstreamTLSRawClientCertificate()
-	if err = ignoreNoneError(err); err != nil {
-		return nil, fmt.Errorf("get TLS raw client certificate: %w", err)
-	}
+	if req.downstream.req != nil {
+		cert.RawClientCertificate, err = req.downstream.req.DownstreamTLSRawClientCertificate()
+		if err = ignoreNoneError(err); err != nil {
+			return nil, fmt.Errorf("get TLS raw client certificate: %w", err)
+		}
 
-	if cert.RawClientCertificate != nil {
-		cert.ClientCertIsVerified, err = req.downstream.req.DownstreamTLSClientCertVerifyResult()
-		if err != nil {
-			return nil, fmt.Errorf("get TLS client certificate verify: %w", err)
+		if cert.RawClientCertificate != nil {
+			cert.ClientCertIsVerified, err = req.downstream.req.DownstreamTLSClientCertVerifyResult()
+			if err != nil {
+				return nil, fmt.Errorf("get TLS client certificate verify: %w", err)
+			}
 		}
 	}
 
@@ -1115,6 +1118,8 @@ type DecompressResponseOptions struct {
 	Gzip bool
 }
 
+var ErrHandoffNotSupported = errors.New("handoff not supported on this request")
+
 // HandoffWebsocket passes the WebSocket directly to a backend.
 //
 // This can only be used on services that have the WebSockets feature
@@ -1124,6 +1129,9 @@ type DecompressResponseOptions struct {
 // Once this method has been called, no other response can be sent to this
 // request, and the application can exit without affecting the send.
 func (r *Request) HandoffWebsocket(backend string) error {
+	if r.downstream.req == nil {
+		return ErrHandoffNotSupported
+	}
 	return r.downstream.req.HandoffWebsocket(backend)
 }
 
@@ -1136,7 +1144,10 @@ func (r *Request) HandoffWebsocket(backend string) error {
 // called, no other response can be sent to this request, and the
 // application can exit without affecting the send.
 func (r *Request) HandoffFanout(backend string) error {
-	return r.downstream.req.HandoffWebsocket(backend)
+	if r.downstream.req == nil {
+		return ErrHandoffNotSupported
+	}
+	return r.downstream.req.HandoffFanout(backend)
 }
 
 // nopCloser is functionally the same as io.NopCloser, except that we

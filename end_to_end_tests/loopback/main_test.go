@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -84,4 +85,75 @@ func Test1xxStatusCode(t *testing.T) {
 			t.Errorf("StatusCode = %d, want: %d", got, want)
 		}
 	}
+}
+
+// Validate that accessors that (mostly) don't make sense against
+// backend requests return sane values.
+func TestBackendRequest(t *testing.T) {
+	t.Run("FastlyMeta", func(t *testing.T) {
+		req, err := fsthttp.NewRequest("GET", "http://anyplace.horse", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// We should get a mostly-empty FastlyMeta for backend requests.
+		meta, err := req.FastlyMeta()
+		if err != nil {
+			t.Fatalf("FastlyMeta: %v", err)
+		}
+		if meta == nil {
+			t.Fatal("FastlyMeta() returned nil")
+		}
+
+		if got, want := meta.SandboxID, os.Getenv("FASTLY_TRACE_ID"); got != want {
+			t.Errorf("FastlyMeta.SandboxID = %q, want: %q", got, want)
+		}
+		if got, want := meta.RequestID, ""; got != want {
+			t.Errorf("FastlyMeta.RequestID = %q, want: %q", got, want)
+		}
+		if got, want := meta.SandboxRequests, 0; got != want {
+			t.Errorf("FastlyMeta.SandboxRequests = %d, want: %d", got, want)
+		}
+	})
+
+	t.Run("TLSClientCertificateInfo", func(t *testing.T) {
+		req, err := fsthttp.NewRequest("GET", "http://anyplace.horse", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ti, err := req.TLSClientCertificateInfo()
+		if err != nil {
+			t.Fatalf("TLSClientCertificateInfo: %v", err)
+		}
+		if ti == nil {
+			t.Fatal("TLSClientCertificateInfo() returned nil")
+		}
+
+		if got, want := len(ti.RawClientCertificate), 0; got != want {
+			t.Errorf("len(TLSClientCertificateInfo.RawClientCertificate) = %d, want: %d", got, want)
+		}
+	})
+
+	t.Run("HandoffWebsocket", func(t *testing.T) {
+		req, err := fsthttp.NewRequest("GET", "http://anyplace.horse", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got, want := req.HandoffWebsocket("self"), fsthttp.ErrHandoffNotSupported; got != want {
+			t.Errorf("HandoffWebsocket() = %v, want: %v", got, want)
+		}
+	})
+
+	t.Run("HandoffFanout", func(t *testing.T) {
+		req, err := fsthttp.NewRequest("GET", "http://anyplace.horse", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got, want := req.HandoffFanout("self"), fsthttp.ErrHandoffNotSupported; got != want {
+			t.Errorf("HandoffFanout() = %v, want: %v", got, want)
+		}
+	})
 }
