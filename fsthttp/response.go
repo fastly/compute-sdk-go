@@ -309,7 +309,9 @@ func (resp *responseWriter) WriteHeader(code int) {
 	// WriteHeader is infallible, so if we're unable to create the downstream response capture the
 	// error and return it on Write, Append, and Close calls.  serve() will panic on this error and
 	// ensure that a 500 error is sent to the client.
-	resp.sendErr = resp.abiResp.SendDownstream(resp.abiBody, true)
+	// EarlyHints are buffered and sent all-at-once so we can stream later.  Other status codes immediately start a streaming response.
+	stream := code != StatusEarlyHints
+	resp.sendErr = resp.abiResp.SendDownstream(resp.abiBody, stream)
 	if resp.sendErr != nil {
 		// FastlyStatusInval is returned if an invalid status code (1xx except 103 Early Hints) is used.
 		if status, ok := fastly.IsFastlyError(resp.sendErr); ok && status == fastly.FastlyStatusInval {
