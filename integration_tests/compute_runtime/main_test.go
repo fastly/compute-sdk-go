@@ -4,48 +4,59 @@
 package main
 
 import (
-  "testing"
-  "time"
+	"testing"
+	"time"
 
-  "github.com/fastly/compute-sdk-go/compute"
+	"github.com/fastly/compute-sdk-go/compute"
 )
 
 func TestGetVcpuMs(t *testing.T) {
-  start, err := compute.GetVCPUTime()
-  if err != nil {
-    t.Errorf("Couldn't get starting vcpu time")
-  }
+	start, err := compute.GetVCPUTime()
+	if err != nil {
+		t.Errorf("Couldn't get starting vcpu time")
+	}
 
-  time.Sleep(1 * time.Second)
+	time.Sleep(1 * time.Second)
 
-  end, err := compute.GetVCPUTime()
-  if err != nil {
-    t.Errorf("Couldn't get ending vcpu time")
-  }
+	end, err := compute.GetVCPUTime()
+	if err != nil {
+		t.Errorf("Couldn't get ending vcpu time")
+	}
 
-  if end - start > (200 * time.Millisecond) {
-    t.Errorf("Sleeping shouldn't count as vcpu time!")
-  }
+	if end-start > (200 * time.Millisecond) {
+		t.Errorf("Sleeping shouldn't count as vcpu time!")
+	}
 
-  now, err := compute.GetVCPUTime()
-  if err != nil {
-    t.Errorf("Couldn't get starting vcpu time (part 2)")
-  }
+	now, err := compute.GetVCPUTime()
+	if err != nil {
+		t.Errorf("Couldn't get starting vcpu time (part 2)")
+	}
 
-  var counter uint64
+	var counter uint64
 
-  counter = 0
-  next := now
-  for now == next {
-    new_next, err := compute.GetVCPUTime()
-    if err != nil {
-      t.Errorf("Couldn't get part 2's recheck of vcpu time")
-    }
-    next = new_next
-    counter += 1
-  }
+	counter = 0
+	next := now
+	for now == next {
+		new_next, err := compute.GetVCPUTime()
+		if err != nil {
+			t.Errorf("Couldn't get part 2's recheck of vcpu time")
+		}
+		next = new_next
+		counter += 1
+	}
 
-  if counter == 0 {
-    t.Errorf("It should take at least one loop to advance vcpu time")
-  }
+	if counter == 0 {
+		t.Errorf("It should take at least one loop to advance vcpu time")
+	}
+}
+
+func TestGetHeapMiB(t *testing.T) {
+	mib, err := compute.GetHeapMiB()
+	if err != nil {
+		t.Errorf("Couldn't get heap mib")
+	}
+
+	if mib == 0 {
+		t.Errorf("Heap mib should be non-zero")
+	}
 }
