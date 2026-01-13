@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
@@ -284,6 +285,8 @@ func (resp *responseWriter) Header() Header {
 
 var excludeHeadersNoBody = map[string]bool{CanonicalHeaderKey("Content-Length"): true, CanonicalHeaderKey("Transfer-Encoding"): true}
 
+var headerNewlineToSpace = strings.NewReplacer("\n", " ", "\r", " ")
+
 func (resp *responseWriter) WriteHeader(code int) {
 	if resp.wroteHeaders {
 		println("fsthttp: multiple calls to WriteHeader")
@@ -303,7 +306,14 @@ func (resp *responseWriter) WriteHeader(code int) {
 		if skip[key] {
 			continue
 		}
-		resp.abiResp.SetHeaderValues(key, resp.header.Values(key))
+		values := resp.header.Values(key)
+		cleaned := make([]string, len(values))
+		for i, v := range values {
+			cleaned[i] = headerNewlineToSpace.Replace(v)
+		}
+		if err := resp.abiResp.SetHeaderValues(key, cleaned); err != nil {
+			println("fsthttp: error setting header values for key", key, ":", err)
+		}
 	}
 
 	// WriteHeader is infallible, so if we're unable to create the downstream response capture the
