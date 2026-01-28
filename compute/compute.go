@@ -25,7 +25,6 @@ import (
 // platforms, and useful in doing A/B testing.
 func GetVCPUTime() (time.Duration, error) {
 	milliseconds, err := fastly.GetVCPUMilliseconds()
-
 	if err != nil {
 		return 0, err
 	}
@@ -33,4 +32,19 @@ func GetVCPUTime() (time.Duration, error) {
 	result := time.Duration(milliseconds) * time.Millisecond
 
 	return result, nil
+}
+
+// Get the current dynamic memory usage of this sandbox, rounded up to
+// the nearest mebibyte (2^20 bytes).
+//
+// The memory accounted includes the Wasm linear memory (i.e. heap
+// memory), as well as some memory used by the hosting environment; for
+// instance, HTTP bodies that have been read from a TCP connection, but
+// not read by the Wasm program. As such, this function provides only a
+// snapshot in time: the memory usage can change without any action from
+// the Wasm program. It can also change across runs, as the Compute
+// platform's memory usage changes. Consider the returned value with
+// these possibilities in mind.
+func GetHeapMiB() (uint32, error) {
+	return fastly.GetHeapMiB()
 }

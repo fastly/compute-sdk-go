@@ -641,6 +641,10 @@ func GetVCPUMilliseconds() (uint64, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
+func GetHeapMiB() (uint32, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
 type ACLHandle struct{}
 
 func OpenACL(name string) (*ACLHandle, error) {
@@ -747,7 +751,6 @@ func HTTPCacheGetSuggestedBackendRequest(h *HTTPCacheHandle) (*HTTPRequest, erro
 
 func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPCacheWriteOptions, error) {
 	return nil, fmt.Errorf("not implemented")
-
 }
 
 func HTTPCachePrepareResponseForStorage(h *HTTPCacheHandle, r *HTTPResponse) (HTTPCacheStorageAction, *HTTPResponse, error) {

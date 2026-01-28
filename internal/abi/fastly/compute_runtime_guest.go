@@ -1,7 +1,7 @@
 //go:build wasip1 && !nofastlyhostcalls
 
 // Copyright 2024 Fastly, Inc.
-//
+
 package fastly
 
 import (
@@ -21,25 +21,38 @@ import (
 //go:noescape
 func fastlyGetVCPUMs(prim.Pointer[prim.U64]) FastlyStatus
 
-// Return the number of milliseconds spent on the CPU for the current
-// sandbox.
-//
-// Because compute guests can run on a variety of different platforms,
-// you should not necessarily expect these raw values to converge across
-// different executions. Instead, we strongly recommend using this value
-// to look at the relative cost of various operations in your code base,
-// by taking the time before and after a particular operation and then
-// dividing this by the total amount of vCPU time your program takes.
-// The resulting percentage should be relatively stable across different
-// platforms, and useful in doing A/B testing.
+// GetVCPUMilliseconds returns the number of milliseconds spent on the
+// CPU for the current sandbox.
 func GetVCPUMilliseconds() (uint64, error) {
 	var milliseconds prim.U64
 
-	err := fastlyGetVCPUMs(prim.ToPointer(&milliseconds)).toError()
-
-	if err != nil {
+	if err := fastlyGetVCPUMs(prim.ToPointer(&milliseconds)).toError(); err != nil {
 		return 0, err
 	}
 
 	return uint64(milliseconds), nil
+}
+
+// witx:
+//
+//	(module $fastly_compute_runtime
+//	  (@interface func (export "get_heap_mib")
+//	    (result $err (expected $memory_mib (error $fastly_status)))
+//	  )
+//	)
+//
+//go:wasmimport fastly_compute_runtime get_heap_mib
+//go:noescape
+func fastlyGetHeapMiB(prim.Pointer[prim.U32]) FastlyStatus
+
+// GetHeapMiB returns the current memory usage of the sandbox in
+// mebibytes.
+func GetHeapMiB() (uint32, error) {
+	var mib prim.U32
+
+	if err := fastlyGetHeapMiB(prim.ToPointer(&mib)).toError(); err != nil {
+		return 0, err
+	}
+
+	return uint32(mib), nil
 }
