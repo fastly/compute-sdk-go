@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -1148,6 +1149,54 @@ func (r *Request) HandoffFanout(backend string) error {
 		return ErrHandoffNotSupported
 	}
 	return r.downstream.req.HandoffFanout(backend)
+}
+
+type InspectOptions struct {
+	Corp       string
+	Workspace  string
+	OverrideIP string
+}
+
+// {"waf_response":200,"redirect_url":"","tags":[],"verdict":"allow","decision_ms":0}
+
+type InspectResponse struct {
+	WafResponse int      `json:"waf_response"`
+	RedirectURL string   `json:"redirect_url"`
+	Tags        []string `json:"tags"`
+	Verdict     string   `json:"verdict"`
+	DecisionMs  int      `json:"decision_ms"`
+}
+
+func (r *Request) Inspect(opts *InspectOptions) (*InspectResponse, error) {
+
+	var info fastly.InspectInfo
+
+	if opts != nil {
+		if opts.Corp != "" {
+			info.Corp(opts.Corp)
+		}
+
+		if opts.Workspace != "" {
+			info.Workspace(opts.Workspace)
+		}
+
+		if opts.OverrideIP != "" {
+			info.OverrideClientIP(opts.OverrideIP)
+		}
+	}
+
+	b, err := r.downstream.req.Inspect(&info, r.downstream.body)
+	if err != nil {
+		return nil, err
+	}
+
+	var response InspectResponse
+
+	if err := json.Unmarshal(b, &response); err != nil {
+		return nil, err
+	}
+
+	return &response, nil
 }
 
 // nopCloser is functionally the same as io.NopCloser, except that we

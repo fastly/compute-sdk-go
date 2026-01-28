@@ -1784,6 +1784,74 @@ func (n *NextRequestOptions) Timeout(t time.Duration) {
 	n.opts.timeoutMs = prim.U64(t.Milliseconds())
 }
 
+type InspectInfo struct {
+	mask inspectInfoMask
+	opts inspectInfoOpts
+}
+
+func (o *InspectInfo) Corp(v string) {
+	o.mask |= inspectInfoFlagCorp
+	buf := prim.NewReadBufferFromString(v)
+	o.opts.corpPtr = prim.ToPointer(buf.Char8Pointer())
+	o.opts.corpLen = prim.U32(buf.Len())
+}
+
+func (o *InspectInfo) Workspace(v string) {
+	o.mask |= inspectInfoFlagWorkspace
+	buf := prim.NewReadBufferFromString(v)
+	o.opts.workspacePtr = prim.ToPointer(buf.Char8Pointer())
+	o.opts.workspaceLen = prim.U32(buf.Len())
+}
+
+func (o *InspectInfo) OverrideClientIP(v string) {
+	o.mask |= inspectInfoFlagOverrideClientIP
+	buf := prim.NewReadBufferFromString(v)
+	o.opts.overrideClientIPPtr = prim.ToPointer(buf.Char8Pointer())
+	o.opts.overrideClientIPLen = prim.U32(buf.Len())
+}
+
+// witx:
+//
+// (typename $inspect_info_mask
+//     (flags (@witx repr u32)
+//         $reserved
+//         $corp
+//         $workspace
+//         $override_client_ip
+//     )
+// )
+
+type inspectInfoMask uint32
+
+const (
+	inspectInfoFlagReserved         inspectInfoMask = 1 << 0
+	inspectInfoFlagCorp             inspectInfoMask = 1 << 1
+	inspectInfoFlagWorkspace        inspectInfoMask = 1 << 2
+	inspectInfoFlagOverrideClientIP inspectInfoMask = 1 << 3
+)
+
+// witx:
+//
+// (typename $inspect_info
+//    (record
+//        (field $corp (@witx pointer (@witx char8)))
+//        (field $corp_len u32)
+//        (field $workspace (@witx pointer (@witx char8)))
+//        (field $workspace_len u32)
+//        (field $override_client_ip_ptr (@witx pointer u8))
+//        (field $override_client_ip_len u32)
+//    )
+//)
+
+type inspectInfoOpts struct {
+	corpPtr             prim.Pointer[prim.Char8]
+	corpLen             prim.U32
+	workspacePtr        prim.Pointer[prim.Char8]
+	workspaceLen        prim.U32
+	overrideClientIPPtr prim.Pointer[prim.Char8]
+	overrideClientIPLen prim.U32
+}
+
 // witx:
 //
 // (typename $image_optimizer_transform_config_options
