@@ -119,6 +119,25 @@ type HTTPRequest struct {
 
 // witx:
 //
+//	(@interface func (export "close")
+//	    (param $h $request_handle)
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_req close
+//go:noescape
+func fastlyHTTPReqClose(
+	req requestHandle,
+) FastlyStatus
+
+func (r *HTTPRequest) Close() error {
+	return fastlyHTTPReqClose(
+		r.h,
+	).toError()
+}
+
+// witx:
+//
 //	(@interface func (export "body_downstream_get")
 //	  (result $err $fastly_status)
 //	  (result $req $request_handle)
@@ -2060,6 +2079,25 @@ func NewHTTPResponse() (*HTTPResponse, error) {
 	}
 
 	return &HTTPResponse{h: respHandle}, nil
+}
+
+// witx:
+//
+//	(@interface func (export "close")
+//	    (param $h $response_handle)
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_resp close
+//go:noescape
+func fastlyHTTPRespClose(
+	req responseHandle,
+) FastlyStatus
+
+func (r *HTTPResponse) Close() error {
+	return fastlyHTTPRespClose(
+		r.h,
+	).toError()
 }
 
 // witx:
