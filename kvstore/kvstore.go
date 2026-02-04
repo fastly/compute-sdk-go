@@ -137,7 +137,42 @@ func (s *Store) Lookup(key string) (*Entry, error) {
 
 // Insert adds a key to the associated KV store.
 func (s *Store) Insert(key string, value io.Reader) error {
-	h, err := s.kvstore.Insert(key, value, nil)
+	return s.InsertWithConfig(key, value, nil)
+}
+
+type InsertMode = fastly.KVInsertMode
+
+const (
+	InsertModeOverwrite = fastly.KVInsertModeOverwrite
+	InsertModeAdd       = fastly.KVInsertModeAdd
+	InsertModeAppend    = fastly.KVInsertModeAppend
+	InsertModePrepent   = fastly.KVInsertModePrepend
+)
+
+type InsertConfig struct {
+	Mode            InsertMode
+	BackgroundFetch bool
+	Metadata        []byte
+	TTLSec          uint32
+}
+
+// Insert adds a key to the associated KV store.
+func (s *Store) InsertWithConfig(key string, value io.Reader, config *InsertConfig) error {
+	var abiConf fastly.KVInsertConfig
+	if config != nil {
+		abiConf.Mode(config.Mode)
+		if config.BackgroundFetch {
+			abiConf.BackgroundFetch()
+		}
+		if config.Metadata != nil {
+			abiConf.Metadata(config.Metadata)
+		}
+		if config.TTLSec != 0 {
+			abiConf.TTLSec(config.TTLSec)
+		}
+	}
+
+	h, err := s.kvstore.Insert(key, value, &abiConf)
 	if err != nil {
 		return mapFastlyErr(err)
 	}
