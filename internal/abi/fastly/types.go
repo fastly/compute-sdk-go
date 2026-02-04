@@ -611,13 +611,13 @@ const (
 //	       $append
 //	       $prepend))
 
-type kvInsertMode prim.U32
+type KVInsertMode prim.U32
 
 const (
-	kvInsertModeOverwrite kvInsertMode = 0
-	kvInsertModeAdd       kvInsertMode = 1
-	kvInsertModeAppend    kvInsertMode = 2
-	kvInsertModePrepend   kvInsertMode = 3
+	KVInsertModeOverwrite KVInsertMode = 0
+	KVInsertModeAdd       KVInsertMode = 1
+	KVInsertModeAppend    KVInsertMode = 2
+	KVInsertModePrepend   KVInsertMode = 3
 )
 
 // witx:
@@ -632,12 +632,42 @@ const (
 //	    ))
 
 type kvInsertConfig struct {
-	Mode              kvInsertMode
+	mode              KVInsertMode
 	_                 prim.U32
-	Metadata          prim.Pointer[prim.Char8]
-	MetadataLen       prim.U32
-	TTLSec            prim.U32
-	IfGenerationMatch prim.U64
+	metadataPtr       prim.Pointer[prim.Char8]
+	metadataLen       prim.U32
+	ttlSec            prim.U32
+	ifGenerationMatch prim.U64
+}
+
+type KVInsertConfig struct {
+	mask kvInsertConfigMask
+	opts kvInsertConfig
+}
+
+func (c *KVInsertConfig) Mode(mode KVInsertMode) {
+	c.opts.mode = mode
+}
+
+func (c *KVInsertConfig) BackgroundFetch() {
+	c.mask |= kvInsertConfigFlagBackgroundFetch
+}
+
+func (c *KVInsertConfig) Metadata(meta []byte) {
+	c.mask |= kvInsertConfigFlagMetadata
+	buf := prim.NewReadBufferFromBytes(meta)
+	c.opts.metadataPtr = prim.ToPointer(buf.Char8Pointer())
+	c.opts.metadataLen = prim.U32(buf.Len())
+}
+
+func (c *KVInsertConfig) TTLSec(seconds uint32) {
+	c.mask |= kvInsertConfigFlagTTLSec
+	c.opts.ttlSec = prim.U32(seconds)
+}
+
+func (c *KVInsertConfig) IfGenerationMatch(generation uint64) {
+	c.mask |= kvInsertConfigFlagIfGenerationMatch
+	c.opts.ifGenerationMatch = prim.U64(generation)
 }
 
 const kvstoreMetadataMaxBufLen = 2000

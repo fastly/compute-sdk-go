@@ -203,7 +203,7 @@ func fastlyKVStoreInsert(
 ) FastlyStatus
 
 // Insert returns a handle to a pending key/value pair insertion.
-func (k *KVStore) Insert(key string, value io.Reader) (kvstoreInsertHandle, error) {
+func (k *KVStore) Insert(key string, value io.Reader, config *KVInsertConfig) (kvstoreInsertHandle, error) {
 	body, err := NewHTTPBody()
 	if err != nil {
 		return 0, err
@@ -213,10 +213,11 @@ func (k *KVStore) Insert(key string, value io.Reader) (kvstoreInsertHandle, erro
 		return 0, err
 	}
 
-	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
+	if config == nil {
+		config = &KVInsertConfig{}
+	}
 
-	var mask kvInsertConfigMask
-	var config kvInsertConfig
+	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
 
 	var insertHandle kvstoreInsertHandle = invalidKVInsertHandle
 
@@ -224,8 +225,8 @@ func (k *KVStore) Insert(key string, value io.Reader) (kvstoreInsertHandle, erro
 		k.h,
 		keyBuffer.Data, keyBuffer.Len,
 		body.h,
-		mask,
-		prim.ToPointer(&config),
+		config.mask,
+		prim.ToPointer(&config.opts),
 		prim.ToPointer(&insertHandle),
 	).toError(); err != nil {
 		return 0, err

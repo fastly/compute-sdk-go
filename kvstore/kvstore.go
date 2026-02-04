@@ -137,7 +137,7 @@ func (s *Store) Lookup(key string) (*Entry, error) {
 
 // Insert adds a key to the associated KV store.
 func (s *Store) Insert(key string, value io.Reader) error {
-	h, err := s.kvstore.Insert(key, value)
+	h, err := s.kvstore.Insert(key, value, nil)
 	if err != nil {
 		return mapFastlyErr(err)
 	}
