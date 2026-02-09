@@ -732,9 +732,9 @@ func (c *KVListConfig) Mode(mode KVListMode) {
 	c.opts.mode = mode
 }
 
-func (c *KVListConfig) Cursor(cursor []byte) {
+func (c *KVListConfig) Cursor(cursor string) {
 	c.mask |= kvListConfigFlagCursor
-	buf := prim.NewReadBufferFromBytes(cursor)
+	buf := prim.NewReadBufferFromString(cursor)
 	c.opts.cursorPtr = prim.ToPointer(buf.Char8Pointer())
 	c.opts.cursorLen = prim.U32(buf.Len())
 }
@@ -744,9 +744,9 @@ func (c *KVListConfig) Limit(limit uint32) {
 	c.opts.limit = prim.U32(limit)
 }
 
-func (c *KVListConfig) Prefix(cursor []byte) {
+func (c *KVListConfig) Prefix(cursor string) {
 	c.mask |= kvListConfigFlagPrefix
-	buf := prim.NewReadBufferFromBytes(cursor)
+	buf := prim.NewReadBufferFromString(cursor)
 	c.opts.prefixPtr = prim.ToPointer(buf.Char8Pointer())
 	c.opts.prefixLen = prim.U32(buf.Len())
 }

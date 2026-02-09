@@ -9,6 +9,7 @@
 package kvstore
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -196,6 +197,162 @@ func (s *Store) Delete(key string) error {
 		return mapFastlyErr(err)
 	}
 	return nil
+}
+
+type ListConsistency = fastly.KVListMode
+
+const (
+	ListModeStrong   = fastly.KVListModeStrong
+	ListModeEventual = fastly.KVListModeEventual
+)
+
+var consistencyStrings = [...]string{
+	ListModeStrong:   "strong",
+	ListModeEventual: "eventual",
+}
+
+func consistencyString(m ListConsistency) string {
+	if int(m) < len(consistencyStrings) {
+		return consistencyStrings[m]
+	}
+	return "unknown"
+}
+
+func consistencyMode(m string) ListConsistency {
+	switch m {
+	case "strong":
+		return ListModeStrong
+	case "eventual":
+		return ListModeEventual
+	}
+	return ListModeStrong
+}
+
+// ListConfig holds the option for the List operation.
+type ListConfig struct {
+	// Mode is the consistency for the list operation
+
+	Mode ListConsistency
+
+	// Limit is the number of results per page.
+	Limit uint32
+
+	// Prefix is the key prefix to list.
+	Prefix string
+
+	// Cursor is the internal list operation cursor.
+	Cursor string
+}
+
+// ListIter is an iterator over pages of List results.
+type ListIter struct {
+	kvstore *fastly.KVStore
+	page    ListPage
+	err     error
+}
+
+// Err returns any error encountered during the iteration.
+func (it *ListIter) Err() error {
+	return it.err
+}
+
+// Next advances the list iterator to the next page of results.  Returns false when the iteration is complete.
+func (it *ListIter) Next() bool {
+	if it.err != nil {
+		return false
+	}
+
+	if it.page.Meta.NextCursor == "" && len(it.page.Data) != 0 {
+		// end of ieration
+		return false
+	}
+
+	var abiConf fastly.KVListConfig
+
+	if it.page.Meta.Mode != "" {
+		abiConf.Mode(consistencyMode(it.page.Meta.Mode))
+	}
+	if it.page.Meta.Limit != 0 {
+		abiConf.Limit(it.page.Meta.Limit)
+	}
+	if it.page.Meta.Prefix != "" {
+		abiConf.Prefix(it.page.Meta.Prefix)
+	}
+	if it.page.Meta.NextCursor != "" {
+		abiConf.Cursor(it.page.Meta.NextCursor)
+	}
+
+	h, err := it.kvstore.List(&abiConf)
+	if err != nil {
+		it.err = mapFastlyErr(err)
+		return false
+	}
+
+	body, err := it.kvstore.ListWait(h)
+	if err != nil {
+		it.err = mapFastlyErr(err)
+		return false
+	}
+
+	buf, err := io.ReadAll(body)
+	if err != nil {
+		it.err = err
+		return false
+	}
+
+	var p ListPage
+	if err := json.Unmarshal(buf, &p); err != nil {
+		it.err = err
+		return false
+	}
+
+	if len(p.Data) == 0 {
+		return false
+	}
+
+	it.page = p
+
+	return true
+}
+
+type ListPage struct {
+	// Data is the list of keys returned for this page.
+	Data []string `json:"data"`
+
+	// Meta is the metadata assocaited with this page of results.
+	Meta ListMetadata `json:"meta"`
+}
+
+// Page returns the current page of results.
+func (it *ListIter) Page() ListPage {
+	return it.page
+}
+
+// ListMetadata is the metadata for a particular page of list results.[
+type ListMetadata struct {
+	Limit      uint32 `json:"limit"`
+	NextCursor string `json:"next_cursor"`
+	Prefix     string `json:"prefix"`
+	Mode       string `json:"mode"`
+}
+
+// List returns an iterator over pages of keys matching
+func (s *Store) List(config *ListConfig) *ListIter {
+	if config == nil {
+		config = &ListConfig{}
+	}
+
+	return &ListIter{
+		kvstore: s.kvstore,
+		page: ListPage{
+			Meta: ListMetadata{
+				Limit:      config.Limit,
+				NextCursor: config.Cursor,
+				Prefix:     config.Prefix,
+				Mode:       consistencyString(config.Mode),
+			},
+		},
+	}
 }
 
 var kvErrToErr = [...]error{

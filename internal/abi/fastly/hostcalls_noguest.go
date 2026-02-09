@@ -451,6 +451,14 @@ func (o *KVStore) DeleteWait(h kvstoreDeleteHandle) error {
 	return fmt.Errorf("not implemented")
 }
 
+func (kv *KVStore) List(config *KVListConfig) (kvstoreListHandle, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func (kv *KVStore) ListWait(listH kvstoreListHandle) (*HTTPBody, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 type (
 	SecretStore struct{}
 	Secret      struct{}

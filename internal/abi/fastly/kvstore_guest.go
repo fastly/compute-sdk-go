@@ -10,23 +10,6 @@ import (
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
 )
 
-//
-//          (@interface func (export "list")
-//              (param $store $kv_store_handle)
-//              (param $list_config_mask $kv_list_config_options)
-//              (param $list_configuration (@witx pointer $kv_list_config))
-//              (param $handle_out (@witx pointer $kv_store_list_handle))
-//              (result $err (expected (error $fastly_status)))
-//          )
-//
-//          (@interface func (export "list_wait")
-//              (param $handle $kv_store_list_handle)
-//              (param $body_handle_out (@witx pointer $body_handle))
-//              (param $kv_error_out (@witx pointer $kv_error))
-//              (result $err (expected (error $fastly_status)))
-//          )
-//      )
-
 //   (module $fastly_object_store
 //	   (@interface func (export "open")
 //	     (param $name string)
@@ -351,4 +334,80 @@ func (kv *KVStore) DeleteWait(deleteH kvstoreDeleteHandle) error {
 	}
 
 	return nil
+}
+
+// witx:
+//
+//    (@interface func (export "list")
+//        (param $store $kv_store_handle)
+//        (param $list_config_mask $kv_list_config_options)
+//        (param $list_configuration (@witx pointer $kv_list_config))
+//        (param $handle_out (@witx pointer $kv_store_list_handle))
+//        (result $err (expected (error $fastly_status)))
+//    )
+
+//go:wasmimport fastly_kv_store list
+//go:noescape
+func fastlyKVStoreList(
+	h kvstoreHandle,
+	mask kvListConfigMask,
+	config prim.Pointer[kvListConfig],
+	listHandle prim.Pointer[kvstoreListHandle],
+) FastlyStatus
+
+func (kv *KVStore) List(config *KVListConfig) (kvstoreListHandle, error) {
+	var listHandle kvstoreListHandle = invalidKVListHandle
+
+	if err := fastlyKVStoreList(
+		kv.h,
+		config.mask,
+		prim.ToPointer(&config.opts),
+		prim.ToPointer(&listHandle),
+	).toError(); err != nil {
+		return 0, err
+	}
+
+	if listHandle == invalidKVListHandle {
+		return 0, FastlyStatusError.toError()
+	}
+
+	return listHandle, nil
+}
+
+// witx:
+//
+//	(@interface func (export "list_wait")
+//	    (param $handle $kv_store_list_handle)
+//	    (param $body_handle_out (@witx pointer $body_handle))
+//	    (param $kv_error_out (@witx pointer $kv_error))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_kv_store list_wait
+//go:noescape
+func fastlyKVStoreListWait(
+	h kvstoreListHandle,
+	body prim.Pointer[bodyHandle],
+	kvErr prim.Pointer[KVError],
+) FastlyStatus
+
+// ListWait completes the pending list operation for the given handle
+func (kv *KVStore) ListWait(listH kvstoreListHandle) (*HTTPBody, error) {
+	var kvErr KVError = KVErrorUninitialized
+
+	var b = invalidBodyHandle
+
+	if err := fastlyKVStoreListWait(
+		listH,
+		prim.ToPointer(&b),
+		prim.ToPointer(&kvErr),
+	).toError(); err != nil {
+		return nil, err
+	}
+
+	if kvErr != KVErrorOK {
+		return nil, kvErr
+	}
+
+	return &HTTPBody{h: b}, nil
 }
