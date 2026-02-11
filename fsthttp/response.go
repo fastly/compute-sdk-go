@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/textproto"
 	"strconv"
 	"strings"
 
@@ -259,6 +260,7 @@ type responseWriter struct {
 	closed            bool
 	ManualFramingMode bool
 	sendErr           error
+	trailers          []string
 }
 
 func newResponseWriter() (*responseWriter, error) {
@@ -283,7 +285,7 @@ func (resp *responseWriter) Header() Header {
 	return resp.header
 }
 
-var excludeHeadersNoBody = map[string]bool{CanonicalHeaderKey("Content-Length"): true, CanonicalHeaderKey("Transfer-Encoding"): true}
+var excludeHeadersNoBody = map[string]bool{CanonicalHeaderKey("Content-Length"): true, CanonicalHeaderKey("Transfer-Encoding"): true, CanonicalHeaderKey("Trailer"): true}
 
 var headerNewlineToSpace = strings.NewReplacer("\n", " ", "\r", " ")
 
@@ -329,12 +331,27 @@ func (resp *responseWriter) WriteHeader(code int) {
 		}
 	}
 
+	// Store list of trailers for later.
+	resp.trailers = parseTrailers(resp.header.Values("Trailer"))
+
 	if code == StatusEarlyHints {
 		// For early hints, don't mark the headers as "sent" so we can send them again next time.
 		return
 	}
 
 	resp.wroteHeaders = true
+}
+
+func parseTrailers(trailers []string) []string {
+	var result []string
+	for _, v := range trailers {
+		for _, s := range strings.Split(v, ",") {
+			if h := textproto.TrimString(s); h != "" {
+				result = append(result, h)
+			}
+		}
+	}
+	return result
 }
 
 var (
@@ -370,6 +387,16 @@ func (resp *responseWriter) Close() error {
 		return nil
 	}
 	resp.closed = true
+
+	for _, h := range resp.trailers {
+		v := resp.header.Values(h)
+		if len(v) > 0 {
+			if err := resp.abiBody.TrailerAppend(h, v[0]); err != nil {
+				println("error during trailer append: ", err.Error())
+			}
+		}
+	}
+
 	return resp.abiBody.Close()
 }
 

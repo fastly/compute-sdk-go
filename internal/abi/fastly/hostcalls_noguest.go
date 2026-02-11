@@ -47,6 +47,10 @@ func (b *HTTPBody) Length() (uint64, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
+func (b *HTTPBody) TrailerAppend(name, value string) error {
+	return fmt.Errorf("not implemented")
+}
+
 type LogEndpoint struct{}
 
 func GetLogEndpoint(name string) (*LogEndpoint, error) {

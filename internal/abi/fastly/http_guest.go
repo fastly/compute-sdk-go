@@ -2031,6 +2031,67 @@ func (b *HTTPBody) Length() (uint64, error) {
 
 // witx:
 //
+//	(@interface func (export "trailer_append")
+//	    (param $h $body_handle)
+//	    (param $name (list u8))
+//	    (param $value (list u8))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_body trailer_append
+//go:noescape
+func fastlyHTTPBodyTrailerAppend(
+	h bodyHandle,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	valuesData prim.Pointer[prim.U8], valuesLen prim.Usize, // multiple values separated by \0
+) FastlyStatus
+
+// TrailerAppend appends a name/value pair as an HTTP Trailer
+func (r *HTTPBody) TrailerAppend(name string, value string) error {
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+	valueBuffer := prim.NewReadBufferFromString(value).ArrayU8()
+
+	return fastlyHTTPBodyTrailerAppend(
+		r.h,
+		nameBuffer.Data, nameBuffer.Len,
+		valueBuffer.Data, valueBuffer.Len,
+	).toError()
+}
+
+/*
+   (@interface func (export "trailer_names_get")
+       (param $h $body_handle)
+       (param $buf (@witx pointer (@witx char8)))
+       (param $buf_len (@witx usize))
+       (param $cursor $multi_value_cursor)
+       (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
+       (param $nwritten_out (@witx pointer (@witx usize)))
+       (result $err (expected (error $fastly_status)))
+   )
+
+   (@interface func (export "trailer_value_get")
+       (param $h $body_handle)
+       (param $name (list u8))
+       (param $value (@witx pointer (@witx char8)))
+       (param $value_max_len (@witx usize))
+       (param $nwritten_out (@witx pointer (@witx usize)))
+       (result $err (expected (error $fastly_status)))
+   )
+
+   (@interface func (export "trailer_values_get")
+       (param $h $body_handle)
+       (param $name (list u8))
+       (param $buf (@witx pointer (@witx char8)))
+       (param $buf_len (@witx usize))
+       (param $cursor $multi_value_cursor)
+       (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
+       (param $nwritten_out (@witx pointer (@witx usize)))
+       (result $err (expected (error $fastly_status)))
+   )
+*/
+
+// witx:
+//
 //	(module $fastly_http_resp
 //	   (@interface func (export "new")
 //	     (result $err $fastly_status)
