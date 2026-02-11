@@ -43,7 +43,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - go-version: ${{ needs.go-version.outputs.latest-version }}
+          # tinygo doesn't support 1.26 yet
+          - go-version: '1.25'
             tinygo-version: ${{ needs.go-version.outputs.tinygo-latest-version }}
           - go-version: ${{ needs.go-version.outputs.mod-version }}
             tinygo-version: ${{ needs.go-version.outputs.tinygo-mod-version }}
