@@ -147,7 +147,7 @@ const (
 	InsertModeOverwrite = fastly.KVInsertModeOverwrite
 	InsertModeAdd       = fastly.KVInsertModeAdd
 	InsertModeAppend    = fastly.KVInsertModeAppend
-	InsertModePrepent   = fastly.KVInsertModePrepend
+	InsertModePrepend   = fastly.KVInsertModePrepend
 )
 
 type InsertConfig struct {
@@ -263,7 +263,7 @@ func (it *ListIter) Next() bool {
 	}
 
 	if it.page.Meta.NextCursor == "" && len(it.page.Data) != 0 {
-		// end of ieration
+		// end of iteration
 		return false
 	}
 
