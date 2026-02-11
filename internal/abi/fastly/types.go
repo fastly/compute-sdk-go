@@ -611,13 +611,13 @@ const (
 //	       $append
 //	       $prepend))
 
-type kvInsertMode prim.U32
+type KVInsertMode prim.U32
 
 const (
-	kvInsertModeOverwrite kvInsertMode = 0
-	kvInsertModeAdd       kvInsertMode = 1
-	kvInsertModeAppend    kvInsertMode = 2
-	kvInsertModePrepend   kvInsertMode = 3
+	KVInsertModeOverwrite KVInsertMode = 0
+	KVInsertModeAdd       KVInsertMode = 1
+	KVInsertModeAppend    KVInsertMode = 2
+	KVInsertModePrepend   KVInsertMode = 3
 )
 
 // witx:
@@ -632,12 +632,123 @@ const (
 //	    ))
 
 type kvInsertConfig struct {
-	Mode              kvInsertMode
+	mode              KVInsertMode
 	_                 prim.U32
-	Metadata          prim.Pointer[prim.Char8]
-	MetadataLen       prim.U32
-	TTLSec            prim.U32
-	IfGenerationMatch prim.U64
+	metadataPtr       prim.Pointer[prim.Char8]
+	metadataLen       prim.U32
+	ttlSec            prim.U32
+	ifGenerationMatch prim.U64
+}
+
+type KVInsertConfig struct {
+	mask kvInsertConfigMask
+	opts kvInsertConfig
+}
+
+func (c *KVInsertConfig) Mode(mode KVInsertMode) {
+	c.opts.mode = mode
+}
+
+func (c *KVInsertConfig) BackgroundFetch() {
+	c.mask |= kvInsertConfigFlagBackgroundFetch
+}
+
+func (c *KVInsertConfig) Metadata(meta []byte) {
+	c.mask |= kvInsertConfigFlagMetadata
+	buf := prim.NewReadBufferFromBytes(meta)
+	c.opts.metadataPtr = prim.ToPointer(buf.Char8Pointer())
+	c.opts.metadataLen = prim.U32(buf.Len())
+}
+
+func (c *KVInsertConfig) TTLSec(seconds uint32) {
+	c.mask |= kvInsertConfigFlagTTLSec
+	c.opts.ttlSec = prim.U32(seconds)
+}
+
+func (c *KVInsertConfig) IfGenerationMatch(generation uint64) {
+	c.mask |= kvInsertConfigFlagIfGenerationMatch
+	c.opts.ifGenerationMatch = prim.U64(generation)
+}
+
+// witx:
+// (typename $kv_list_config_options
+//     (flags (@witx repr u32)
+//       $reserved
+//       $cursor
+//       $limit
+//       $prefix
+//       ))
+
+type kvListConfigMask prim.U32
+
+const (
+	kvListConfigFlagReserved kvListConfigMask = (1 << 0)
+	kvListConfigFlagCursor   kvListConfigMask = (1 << 1)
+	kvListConfigFlagLimit    kvListConfigMask = (1 << 2)
+	kvListConfigFlagPrefix   kvListConfigMask = (1 << 3)
+)
+
+// witx:
+//
+// (typename $kv_list_mode
+//    (enum (@witx tag u32)
+//       $strong
+//       $eventual))
+
+type KVListMode prim.U32
+
+const (
+	KVListModeStrong   KVListMode = 0
+	KVListModeEventual KVListMode = 1
+)
+
+// witx:
+//
+// (typename $kv_list_config
+//   (record
+//     (field $mode $kv_list_mode)
+//     (field $cursor (@witx pointer (@witx char8)))
+//     (field $cursor_len u32)
+//     (field $limit u32)
+//     (field $prefix (@witx pointer (@witx char8)))
+//     (field $prefix_len u32)
+//     ))
+
+type kvListConfig struct {
+	mode      KVListMode
+	cursorPtr prim.Pointer[prim.Char8]
+	cursorLen prim.U32
+	limit     prim.U32
+	prefixPtr prim.Pointer[prim.Char8]
+	prefixLen prim.U32
+}
+
+type KVListConfig struct {
+	mask kvListConfigMask
+	opts kvListConfig
+}
+
+func (c *KVListConfig) Mode(mode KVListMode) {
+	c.opts.mode = mode
+}
+
+func (c *KVListConfig) Cursor(cursor string) {
+	c.mask |= kvListConfigFlagCursor
+	buf := prim.NewReadBufferFromString(cursor)
+	c.opts.cursorPtr = prim.ToPointer(buf.Char8Pointer())
+	c.opts.cursorLen = prim.U32(buf.Len())
+}
+
+func (c *KVListConfig) Limit(limit uint32) {
+	c.mask |= kvListConfigFlagLimit
+	c.opts.limit = prim.U32(limit)
+}
+
+func (c *KVListConfig) Prefix(cursor string) {
+	c.mask |= kvListConfigFlagPrefix
+	buf := prim.NewReadBufferFromString(cursor)
+	c.opts.prefixPtr = prim.ToPointer(buf.Char8Pointer())
+	c.opts.prefixLen = prim.U32(buf.Len())
 }
 
 const kvstoreMetadataMaxBufLen = 2000
