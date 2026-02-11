@@ -251,6 +251,17 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 	}, nil
 }
 
+// Close releases the request resources if it is not going to be passed to Send.
+func (req *Request) Close() error {
+	if err := req.abi.req.Close(); err != nil {
+		return err
+	}
+	if err := req.abi.body.Close(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // SetBody sets the [Request]'s body to the provided [io.Reader]. Prefer
 // using this method over setting the Body field directly, as it enables
 // optimizations in the runtime.

@@ -40,6 +40,14 @@ type Response struct {
 	}
 }
 
+// Close releases the response resources if the response will be discarded without being used.
+func (resp *Response) Close() error {
+	if err := resp.abi.resp.Close(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Cookies parses and returns the cookies set in the Set-Cookie headers.
 func (resp *Response) Cookies() []*Cookie {
 	return readSetCookies(resp.Header)

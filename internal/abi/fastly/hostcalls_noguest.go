@@ -63,6 +63,10 @@ func BodyDownstreamGet() (*HTTPRequest, *HTTPBody, error) {
 	return nil, nil, fmt.Errorf("not implemented")
 }
 
+func (r *HTTPRequest) Close() error {
+	return fmt.Errorf("not implemented")
+}
+
 func (r *HTTPRequest) SetCacheOverride(options CacheOverrideOptions) error {
 	return fmt.Errorf("not implemented")
 }
@@ -327,6 +331,10 @@ type HTTPResponse struct{}
 
 func NewHTTPResponse() (*HTTPResponse, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPResponse) Close() error {
+	return fmt.Errorf("not implemented")
 }
 
 func (r *HTTPResponse) GetHeaderNames() *Values {
