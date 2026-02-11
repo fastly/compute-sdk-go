@@ -5,7 +5,7 @@
 package main
 
 import (
-	"reflect"
+	"maps"
 	"sort"
 	"strconv"
 	"strings"
@@ -99,7 +99,7 @@ func TestKVStore(t *testing.T) {
 		t.Error("Expected list keys count wrong: want", len(wantListKeys), "got", len(gotListKeys))
 	}
 
-	if !reflect.DeepEqual(wantListKeys, gotListKeys) {
+	if !maps.Equal(wantListKeys, gotListKeys) {
 		t.Errorf("Expected got/want keys mismatch: want=%v, got=%v", mapKeys(wantListKeys), mapKeys(gotListKeys))
 	}
 }
