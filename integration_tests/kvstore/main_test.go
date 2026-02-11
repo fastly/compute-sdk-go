@@ -74,7 +74,7 @@ func TestKVStore(t *testing.T) {
 	}
 
 	// iterate over the keys
-	it := store.List(&kvstore.ListConfig{Mode: kvstore.ListModeEventual, Limit: 20, Prefix: "20"})
+	it := store.List(&kvstore.ListConfig{Mode: kvstore.ListConsistencyEventual, Limit: 20, Prefix: "20"})
 	gotListKeys := make(map[string]bool)
 	var pageCount int
 	var keysCount int

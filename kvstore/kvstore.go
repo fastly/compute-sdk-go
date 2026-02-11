@@ -202,13 +202,13 @@ func (s *Store) Delete(key string) error {
 type ListConsistency = fastly.KVListMode
 
 const (
-	ListModeStrong   = fastly.KVListModeStrong
-	ListModeEventual = fastly.KVListModeEventual
+	ListConsistencyStrong   = fastly.KVListModeStrong
+	ListConsistencyEventual = fastly.KVListModeEventual
 )
 
 var consistencyStrings = [...]string{
-	ListModeStrong:   "strong",
-	ListModeEventual: "eventual",
+	ListConsistencyStrong:   "strong",
+	ListConsistencyEventual: "eventual",
 }
 
 func consistencyString(m ListConsistency) string {
@@ -221,11 +221,11 @@ func consistencyString(m ListConsistency) string {
 func consistencyMode(m string) ListConsistency {
 	switch m {
 	case "strong":
-		return ListModeStrong
+		return ListConsistencyStrong
 	case "eventual":
-		return ListModeEventual
+		return ListConsistencyEventual
 	}
-	return ListModeStrong
+	return ListConsistencyStrong
 }
 
 // ListConfig holds the option for the List operation.
