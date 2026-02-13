@@ -34,6 +34,8 @@ type Response struct {
 	// Body of the response.
 	Body io.ReadCloser
 
+	trailers Header
+
 	cacheResponse cacheResponse
 
 	abi struct {
@@ -62,6 +64,44 @@ func (resp *Response) RemoteAddr() (net.Addr, error) {
 	}
 
 	return &addr, nil
+}
+
+var ErrTrailersNotReady = errors.New("trailers not available")
+
+func (resp *Response) Trailers() (Header, error) {
+	if resp.trailers != nil {
+		return resp.trailers, nil
+	}
+
+	// This might happen if the Body field is replaced before Trailers is called.
+	abiBody, ok := resp.Body.(*fastly.HTTPBody)
+	if !ok {
+		return nil, fmt.Errorf("Response.Body is not an HTTP Response Body")
+	}
+
+	trailers := NewHeader()
+
+	keys := abiBody.GetTrailerNames()
+	for keys.Next() {
+		k := string(keys.Bytes())
+		vals := abiBody.GetTrailerValues(k)
+		for vals.Next() {
+			v := string(vals.Bytes())
+			trailers.Add(k, v)
+		}
+		if err := vals.Err(); err != nil {
+			return nil, fmt.Errorf("read trailer key %q: %w", k, err)
+		}
+	}
+	if err := keys.Err(); err != nil {
+		if e, ok := fastly.IsFastlyError(err); ok && e == fastly.FastlyStatusAgain {
+			return nil, ErrTrailersNotReady
+		}
+		return nil, fmt.Errorf("read trailer keys: %w", err)
+	}
+
+	resp.trailers = trailers
+	return resp.trailers, nil
 }
 
 type netaddr struct {
@@ -415,6 +455,5 @@ func (resp *responseWriter) Append(other io.ReadCloser) error {
 	if !ok {
 		return fmt.Errorf("non-Response Body passed to ResponseWriter.Append")
 	}
-	resp.abiBody.Append(otherAbiBody)
-	return nil
+	return resp.abiBody.Append(otherAbiBody)
 }
