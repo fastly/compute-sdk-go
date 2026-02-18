@@ -13,10 +13,6 @@ import (
 	"time"
 )
 
-func ParseUserAgent(userAgent string) (family, major, minor, patch string, err error) {
-	return "", "", "", "", fmt.Errorf("not implemented")
-}
-
 type HTTPBody struct{}
 
 func (b *HTTPBody) Append(other *HTTPBody) error {
