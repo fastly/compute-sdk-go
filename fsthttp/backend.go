@@ -61,6 +61,7 @@ const (
 // BackendOption is a builder for the configuration of a dynamic backend.
 type BackendOptions struct {
 	abiOpts fastly.BackendConfigOptions
+	err     []error
 }
 
 // Backend is a fastly backend
@@ -228,6 +229,18 @@ func NewBackendOptions() *BackendOptions {
 	return &BackendOptions{}
 }
 
+const (
+	maxBackendTimeout = (1 << 32) * time.Millisecond
+)
+
+type backendValidationError struct {
+	field, reason string
+}
+
+func (b *backendValidationError) Error() string {
+	return "backend config validation error: field " + b.field + ": " + b.reason
+}
+
 // HostOverride sets the HTTP Host header on connections to this backend.
 func (b *BackendOptions) HostOverride(host string) *BackendOptions {
 	b.abiOpts.HostOverride(host)
@@ -236,18 +249,30 @@ func (b *BackendOptions) HostOverride(host string) *BackendOptions {
 
 // ConnectTimeout sets the maximum duration to wait for a connection to this backend to be established.
 func (b *BackendOptions) ConnectTimeout(t time.Duration) *BackendOptions {
+	if t > maxBackendTimeout {
+		b.err = append(b.err, &backendValidationError{field: "ConnectTimeout", reason: "too large"})
+		return b
+	}
 	b.abiOpts.ConnectTimeout(t)
 	return b
 }
 
 // FirstByteTimeout sets the maximum duration to wait for the server response to begin after a TCP connection is established and the request has been sent.
 func (b *BackendOptions) FirstByteTimeout(t time.Duration) *BackendOptions {
+	if t > maxBackendTimeout {
+		b.err = append(b.err, &backendValidationError{field: "FirstByteTimeout", reason: "too large"})
+		return b
+	}
 	b.abiOpts.FirstByteTimeout(t)
 	return b
 }
 
 // BetweenBytesTimeout sets the maximum duration that Fastly will wait while receiving no data on a download from a backend.
 func (b *BackendOptions) BetweenBytesTimeout(t time.Duration) *BackendOptions {
+	if t > maxBackendTimeout {
+		b.err = append(b.err, &backendValidationError{field: "BetweenBytesTimeout", reason: "too large"})
+		return b
+	}
 	b.abiOpts.BetweenBytesTimeout(t)
 	return b
 }
@@ -288,6 +313,10 @@ func (b *BackendOptions) SSLMaxVersion(max TLSVersion) *BackendOptions {
 //
 // If CertHostname is not provided (default), the server certificate's hostname can have any value.
 func (b *BackendOptions) CertHostname(host string) *BackendOptions {
+	if host == "" {
+		b.err = append(b.err, &backendValidationError{"CertHostname", "field cannot be blank"})
+		return b
+	}
 	b.abiOpts.UseSSL(true)
 	b.abiOpts.CertHostname(host)
 	return b
@@ -298,6 +327,10 @@ func (b *BackendOptions) CertHostname(host string) *BackendOptions {
 //
 // If CACert is not provided (default), the backend's certificate is validated using a set of public root CAs.
 func (b *BackendOptions) CACert(cert string) *BackendOptions {
+	if cert == "" {
+		b.err = append(b.err, &backendValidationError{"CACert", "field cannot be blank"})
+		return b
+	}
 	b.abiOpts.UseSSL(true)
 	b.abiOpts.CACert(cert)
 	return b
@@ -306,6 +339,10 @@ func (b *BackendOptions) CACert(cert string) *BackendOptions {
 // Ciphers sets the list of OpenSSL ciphers to support for connections to this origin.
 // Setting this will enable SSL for the connection as a side effect.
 func (b *BackendOptions) Ciphers(ciphers string) *BackendOptions {
+	if ciphers == "" {
+		b.err = append(b.err, &backendValidationError{"Ciphers", "field cannot be blank"})
+		return b
+	}
 	b.abiOpts.UseSSL(true)
 	b.abiOpts.Ciphers(ciphers)
 	return b
@@ -314,6 +351,10 @@ func (b *BackendOptions) Ciphers(ciphers string) *BackendOptions {
 // SNIHostname sets the SNI hostname to use on connections to this backend.
 // Setting this will enable SSL for the connection as a side effect.
 func (b *BackendOptions) SNIHostname(host string) *BackendOptions {
+	if host == "" {
+		b.err = append(b.err, &backendValidationError{"SNIHostname", "field cannot be blank"})
+		return b
+	}
 	b.abiOpts.UseSSL(true)
 	b.abiOpts.SNIHostname(host)
 	return b
@@ -322,6 +363,10 @@ func (b *BackendOptions) SNIHostname(host string) *BackendOptions {
 // ClientCertificate sets the client certificate to be provided to the server as part of the SSL handshake.
 // Setting this will enable SSL for the connection as a side effect.
 func (b *BackendOptions) ClientCertificate(certificate string, key secretstore.Secret) *BackendOptions {
+	if certificate == "" {
+		b.err = append(b.err, &backendValidationError{"ClientCertificate", "field cannot be blank"})
+		return b
+	}
 	b.abiOpts.UseSSL(true)
 	b.abiOpts.ClientCert(certificate, key.Handle())
 	return b
@@ -340,8 +385,12 @@ func (b *BackendOptions) PoolConnections(poolingOn bool) *BackendOptions {
 
 // HTTPKeepaliveTime configures how long to allow HTTP connections to remain
 // idle in a connection pool before it should be considered closed.
-func (b *BackendOptions) HTTPKeepaliveTime(time time.Duration) *BackendOptions {
-	b.abiOpts.HTTPKeepaliveTime(time)
+func (b *BackendOptions) HTTPKeepaliveTime(t time.Duration) *BackendOptions {
+	if t > maxBackendTimeout {
+		b.err = append(b.err, &backendValidationError{field: "HTTPKeepaliveTime", reason: "too large"})
+		return b
+	}
+	b.abiOpts.HTTPKeepaliveTime(t)
 	return b
 }
 
@@ -362,9 +411,7 @@ func (b *BackendOptions) TCPKeepaliveInterval(interval time.Duration) *BackendOp
 	if interval < time.Second {
 		interval = time.Second
 	}
-
 	b.abiOpts.TCPKeepaliveInterval(interval)
-
 	return b
 }
 
@@ -380,6 +427,10 @@ func (b *BackendOptions) TCPKeepaliveProbes(count uint32) *BackendOptions {
 // starting to send keepalive probes. Setting this value implicitly enables
 // TCP keepalives.
 func (b *BackendOptions) TCPKeepaliveTime(interval time.Duration) *BackendOptions {
+	if interval > maxBackendTimeout {
+		b.err = append(b.err, &backendValidationError{field: "HTTPKeepaliveTime", reason: "too large"})
+		return b
+	}
 	b.abiOpts.TCPKeepaliveTime(interval)
 	return b
 }
@@ -398,6 +449,11 @@ func RegisterDynamicBackend(name string, target string, options *BackendOptions)
 	} else {
 		abiOpts = &fastly.BackendConfigOptions{}
 	}
+
+	if len(options.err) > 0 {
+		return nil, errors.Join(options.err...)
+	}
+
 	err := fastly.RegisterDynamicBackend(name, target, abiOpts)
 	if err != nil {
 		status, ok := fastly.IsFastlyError(err)
