@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/textproto"
 	"strconv"
 	"strings"
 
@@ -32,6 +33,8 @@ type Response struct {
 
 	// Body of the response.
 	Body io.ReadCloser
+
+	trailers Header
 
 	cacheResponse cacheResponse
 
@@ -69,6 +72,44 @@ func (resp *Response) RemoteAddr() (net.Addr, error) {
 	}
 
 	return &addr, nil
+}
+
+var ErrTrailersNotReady = errors.New("trailers not available")
+
+func (resp *Response) Trailers() (Header, error) {
+	if resp.trailers != nil {
+		return resp.trailers, nil
+	}
+
+	// This might happen if the Body field is replaced before Trailers is called.
+	abiBody, ok := resp.Body.(*fastly.HTTPBody)
+	if !ok {
+		return nil, fmt.Errorf("Response.Body is not an HTTP Response Body")
+	}
+
+	trailers := NewHeader()
+
+	keys := abiBody.GetTrailerNames()
+	for keys.Next() {
+		k := string(keys.Bytes())
+		vals := abiBody.GetTrailerValues(k)
+		for vals.Next() {
+			v := string(vals.Bytes())
+			trailers.Add(k, v)
+		}
+		if err := vals.Err(); err != nil {
+			return nil, fmt.Errorf("read trailer key %q: %w", k, err)
+		}
+	}
+	if err := keys.Err(); err != nil {
+		if e, ok := fastly.IsFastlyError(err); ok && e == fastly.FastlyStatusAgain {
+			return nil, ErrTrailersNotReady
+		}
+		return nil, fmt.Errorf("read trailer keys: %w", err)
+	}
+
+	resp.trailers = trailers
+	return resp.trailers, nil
 }
 
 type netaddr struct {
@@ -267,6 +308,7 @@ type responseWriter struct {
 	closed            bool
 	ManualFramingMode bool
 	sendErr           error
+	trailers          []string
 }
 
 func newResponseWriter() (*responseWriter, error) {
@@ -291,7 +333,7 @@ func (resp *responseWriter) Header() Header {
 	return resp.header
 }
 
-var excludeHeadersNoBody = map[string]bool{CanonicalHeaderKey("Content-Length"): true, CanonicalHeaderKey("Transfer-Encoding"): true}
+var excludeHeadersNoBody = map[string]bool{CanonicalHeaderKey("Content-Length"): true, CanonicalHeaderKey("Transfer-Encoding"): true, CanonicalHeaderKey("Trailer"): true}
 
 var headerNewlineToSpace = strings.NewReplacer("\n", " ", "\r", " ")
 
@@ -337,12 +379,27 @@ func (resp *responseWriter) WriteHeader(code int) {
 		}
 	}
 
+	// Store list of trailers for later.
+	resp.trailers = parseTrailers(resp.header.Values("Trailer"))
+
 	if code == StatusEarlyHints {
 		// For early hints, don't mark the headers as "sent" so we can send them again next time.
 		return
 	}
 
 	resp.wroteHeaders = true
+}
+
+func parseTrailers(trailers []string) []string {
+	var result []string
+	for _, v := range trailers {
+		for _, s := range strings.Split(v, ",") {
+			if h := textproto.TrimString(s); h != "" {
+				result = append(result, h)
+			}
+		}
+	}
+	return result
 }
 
 var (
@@ -378,6 +435,16 @@ func (resp *responseWriter) Close() error {
 		return nil
 	}
 	resp.closed = true
+
+	for _, h := range resp.trailers {
+		v := resp.header.Values(h)
+		if len(v) > 0 {
+			if err := resp.abiBody.TrailerAppend(h, v[0]); err != nil {
+				println("error during trailer append: ", err.Error())
+			}
+		}
+	}
+
 	return resp.abiBody.Close()
 }
 
@@ -396,6 +463,5 @@ func (resp *responseWriter) Append(other io.ReadCloser) error {
 	if !ok {
 		return fmt.Errorf("non-Response Body passed to ResponseWriter.Append")
 	}
-	resp.abiBody.Append(otherAbiBody)
-	return nil
+	return resp.abiBody.Append(otherAbiBody)
 }
