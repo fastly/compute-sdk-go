@@ -199,6 +199,10 @@ func (r *HTTPRequest) SendV3(requestBody *HTTPBody, backend string) (response *H
 	return nil, nil, fmt.Errorf("not implemented")
 }
 
+func (r *HTTPRequest) Inspect(info *InspectInfo, b *HTTPBody) ([]byte, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 type PendingRequest struct{}
 
 func (r *HTTPRequest) SendAsync(requestBody *HTTPBody, backend string) (*PendingRequest, error) {
