@@ -992,6 +992,8 @@ const (
 	CacheLookupStateUsable             CacheLookupState = 0b0000_0010 // $usable
 	CacheLookupStateStale              CacheLookupState = 0b0000_0100 // $stale
 	CacheLookupStateMustInsertOrUpdate CacheLookupState = 0b0000_1000 // $must_insert_or_update
+	CacheLookupStateUsableIfError      CacheLookupState = 0b0001_0000 // $usable_if_error
+	CacheLookupStateCollapseError      CacheLookupState = 0b0010_0000 // $collapse_error
 )
 
 // witx:
@@ -1795,6 +1797,12 @@ type httpCacheWriteOptions struct {
 	// body have enough information to synthesize a `content-length` even before the complete
 	// body is inserted to the cache.
 	length httpCacheObjectLength
+
+	// The maximum duration after `max_age` during which the response may be delivered stale
+	// if synchronous revalidation produces an error.
+	//
+	// If this field is not set, the default value is zero.
+	staleIfErrorNs httpCacheDurationNs
 }
 
 type httpCacheWriteOptionsMask prim.U32
@@ -1807,6 +1815,7 @@ const (
 	httpCacheWriteOptionsFlagSurrogateKeys        httpCacheWriteOptionsMask = 1 << 4
 	httpCacheWriteOptionsFlagLength               httpCacheWriteOptionsMask = 1 << 5
 	httpCacheWriteOptionsFlagSensitiveData        httpCacheWriteOptionsMask = 1 << 6
+	httpCacheWriteOptionsFlagStaleIfError         httpCacheWriteOptionsMask = 1 << 7
 )
 
 // shielding.witx
