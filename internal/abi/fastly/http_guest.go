@@ -1605,6 +1605,41 @@ func (r *HTTPRequest) DownstreamTLSClientHello() ([]byte, error) {
 
 // witx:
 //
+//	(@interface func (export "downstream_tls_client_servername")
+//	    (param $req $request_handle)
+//	    (param $tls_sni_out (@witx pointer (@witx char8)))
+//	    (param $tls_sni_max_len (@witx usize))
+//	    (param $nwritten_out (@witx pointer (@witx usize)))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_tls_client_servername
+//go:noescape
+func fastlyHTTPReqDownstreamTLSClientServername(
+	req requestHandle,
+	sniOut prim.Pointer[prim.Char8],
+	sniMaxLen prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// DownstreamTLSClientServername returns the Client Servername sent by the client.
+func (r *HTTPRequest) DownstreamTLSClientServername() (string, error) {
+	value, err := withAdaptiveBuffer(DefaultLargeBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPReqDownstreamTLSClientServername(
+			r.h,
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+	})
+	if err != nil {
+		return "", err
+	}
+	return value.ToString(), nil
+}
+
+// witx:
+//
 //	(@interface func (export "downstream_tls_raw_client_certificate")
 //	    (param $req $request_handle)
 //	    (param $raw_client_cert_out (@witx pointer (@witx char8)))

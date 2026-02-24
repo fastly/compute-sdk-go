@@ -87,6 +87,10 @@ func (r *HTTPRequest) DownstreamTLSClientHello() ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
+func (r *HTTPRequest) DownstreamTLSClientServername() (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
 func (r *HTTPRequest) DownstreamTLSJA3MD5() ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }

@@ -216,6 +216,11 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 			return nil, fmt.Errorf("get TLS client hello: %w", err)
 		}
 
+		tlsInfo.ClientSNI, err = abiReq.DownstreamTLSClientServername()
+		if err != nil {
+			return nil, fmt.Errorf("get TLS client servername: %w", err)
+		}
+
 		tlsInfo.CipherOpenSSLName, err = abiReq.DownstreamTLSCipherOpenSSLName()
 		if err != nil {
 			return nil, fmt.Errorf("get TLS cipher name: %w", err)
@@ -1042,6 +1047,9 @@ type TLSInfo struct {
 	// ClientHello contains raw bytes sent by the client in the TLS ClientHello
 	// message. See RFC 5246 for details.
 	ClientHello []byte
+
+	// ClientSNI contains the raw Server Name Indication (SNI) the client sent in the ClientHello TLS record.
+	ClientSNI string
 
 	// CipherOpenSSLName contains the cipher suite used to secure the client TLS
 	// connection. The value returned will be consistent with the OpenSSL name
