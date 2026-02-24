@@ -729,6 +729,10 @@ func (o *HTTPCacheWriteOptions) SetSensitiveData(sensitive bool) {}
 
 func (o *HTTPCacheWriteOptions) SensitiveData() bool { return false }
 
+func (o *HTTPCacheWriteOptions) SetStaleIfErrorNs(staleIfErrorNs uint64) {}
+
+func (o *HTTPCacheWriteOptions) StaleIfErrorNs() (uint64, bool) { return 0, false }
+
 func HTTPCacheTransactionInsert(h *HTTPCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPBody, error) {
 	return nil, fmt.Errorf("not implemented")
 }
@@ -743,6 +747,10 @@ func HTTPCacheTransactionUpdate(h *HTTPCacheHandle, resp *HTTPResponse, opts *HT
 
 func HTTPCacheTransactionUpdateAndReturnFresh(h *HTTPCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPCacheHandle, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheTransactionChooseStale(h *HTTPCacheHandle) error {
+	return fmt.Errorf("not implemented")
 }
 
 func HTTPCacheTransactionRecordNotCacheable(h *HTTPCacheHandle, opts *HTTPCacheWriteOptions) error {
@@ -786,6 +794,10 @@ func HTTPCacheGetMaxAgeNs(h *HTTPCacheHandle) (httpCacheDurationNs, error) {
 }
 
 func HTTPCacheGetStaleWhileRevalidateNs(h *HTTPCacheHandle) (httpCacheDurationNs, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func HTTPCacheGetStaleIfErrorNs(h *HTTPCacheHandle) (httpCacheDurationNs, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 

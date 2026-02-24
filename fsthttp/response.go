@@ -194,7 +194,16 @@ func (resp *Response) StaleWhileRevalidate() (uint32, bool) {
 		return 0, false
 	}
 
-	return resp.cacheResponse.cacheWriteOptions.stale, true
+	return resp.cacheResponse.cacheWriteOptions.staleRevalidate, true
+}
+
+// StaleIfError returns the time in seconds for which a cached item delivered stale if synchronous revalidation produces an error.
+func (resp *Response) StaleIfError() (uint32, bool) {
+	if resp.wasWrittenToCache() {
+		return 0, false
+	}
+
+	return resp.cacheResponse.cacheWriteOptions.staleError, true
 }
 
 // Vary returns the set of request headers for which the response may vary.

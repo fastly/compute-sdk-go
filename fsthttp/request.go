@@ -992,6 +992,12 @@ type CacheOptions struct {
 	// bypass the cache.
 	StaleWhileRevalidate uint32
 
+	// The maximum duration after `max_age` during which the response may be delivered stale
+	// if synchronous revalidation produces an error.
+	//
+	// If this field is not set, the default value is zero.
+	StaleIfError uint32
+
 	// SurrogateKey represents an explicit surrogate key for the request, which
 	// will be added to any `Surrogate-Key` response headers received from the
 	// backend. If nonempty, the request will not be forced to bypass the cache.
