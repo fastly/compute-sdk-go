@@ -1832,6 +1832,51 @@ func (r *HTTPRequest) DownstreamFastlyKeyIsValid() (bool, error) {
 	return valid.b, nil
 }
 
+// witx:
+//
+//	;;; Hostcall for Fastly Compute guests to inspect request HTTP traffic
+//	;;; using the NGWAF lookaside service.
+//	(@interface func (export "inspect")
+//	    (param $req $request_handle)
+//	    (param $body $body_handle)
+//	    (param $insp_info_mask $inspect_info_mask)
+//	    (param $insp_info (@witx pointer $inspect_info))
+//	    (param $buf (@witx pointer (@witx char8)))
+//	    (param $buf_len (@witx usize))
+//	    (result $err (expected $num_bytes (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_req inspect
+//go:noescape
+func fastlyHTTPReqInspect(
+	req requestHandle,
+	b bodyHandle,
+	mask inspectInfoMask,
+	opts prim.Pointer[inspectInfoOpts],
+	buf prim.Pointer[prim.Char8],
+	bufLen prim.Usize,
+	nWritten prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// Inspect HTTP traffic with NGWAF
+func (r *HTTPRequest) Inspect(info *InspectInfo, b *HTTPBody) ([]byte, error) {
+
+	value, err := withAdaptiveBuffer(DefaultMediumBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPReqInspect(
+			r.h,
+			b.h,
+			info.mask,
+			prim.ToPointer(&info.opts),
+			prim.ToPointer(buf.Char8Pointer()), buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return value.AsBytes(), nil
+}
+
 // (module $fastly_http_body
 
 // HTTPBody represents the body of an HTTP request or response.
