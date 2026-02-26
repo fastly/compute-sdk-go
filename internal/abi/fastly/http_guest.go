@@ -2085,6 +2085,173 @@ func (b *HTTPBody) Length() (uint64, error) {
 
 // witx:
 //
+//	(@interface func (export "trailer_append")
+//	    (param $h $body_handle)
+//	    (param $name (list u8))
+//	    (param $value (list u8))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_body trailer_append
+//go:noescape
+func fastlyHTTPBodyTrailerAppend(
+	h bodyHandle,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	valuesData prim.Pointer[prim.U8], valuesLen prim.Usize, // multiple values separated by \0
+) FastlyStatus
+
+// TrailerAppend appends a name/value pair as an HTTP Trailer
+func (r *HTTPBody) TrailerAppend(name string, value string) error {
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+	valueBuffer := prim.NewReadBufferFromString(value).ArrayU8()
+
+	return fastlyHTTPBodyTrailerAppend(
+		r.h,
+		nameBuffer.Data, nameBuffer.Len,
+		valueBuffer.Data, valueBuffer.Len,
+	).toError()
+}
+
+// witx:
+//
+//	(@interface func (export "trailer_names_get")
+//	    (param $h $body_handle)
+//	    (param $buf (@witx pointer (@witx char8)))
+//	    (param $buf_len (@witx usize))
+//	    (param $cursor $multi_value_cursor)
+//	    (param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
+//	    (param $nwritten_out (@witx pointer (@witx usize)))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_body trailer_names_get
+//go:noescape
+func fastlyHTTPBodyTrailerNamesGet(
+	h bodyHandle,
+	buf prim.Pointer[prim.Char8],
+	bufLen prim.Usize,
+	cursor multiValueCursor,
+	endingCursorOut prim.Pointer[multiValueCursorResult],
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// GetTrailerNames returns an iterator that yields the names of each trailer of
+// the request.
+func (r *HTTPBody) GetTrailerNames() *Values {
+	adapter := func(
+		buf *prim.Char8,
+		bufLen prim.Usize,
+		cursor multiValueCursor,
+		endingCursorOut *multiValueCursorResult,
+		nwrittenOut *prim.Usize,
+	) FastlyStatus {
+		return fastlyHTTPBodyTrailerNamesGet(
+			r.h,
+			prim.ToPointer(buf), bufLen,
+			cursor,
+			prim.ToPointer(endingCursorOut),
+			prim.ToPointer(nwrittenOut),
+		)
+	}
+
+	return newValues(adapter, DefaultMediumBufLen) // Large enough to get most header names in a single call.
+}
+
+// witx:
+//
+//	(@interface func (export "trailer_value_get")
+//	    (param $h $body_handle)
+//	    (param $name (list u8))
+//	    (param $value (@witx pointer (@witx char8)))
+//	    (param $value_max_len (@witx usize))
+//	    (param $nwritten_out (@witx pointer (@witx usize)))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_body trailer_value_get
+//go:noescape
+func fastlyHTTPBodyTrailerValueGet(
+	h bodyHandle,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	value prim.Pointer[prim.Char8],
+	valueMaxLen prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// GetTrailerValue returns the first trailer value of the given trailer name on the
+// request, if any.
+func (r *HTTPBody) GetTrailerValue(name string) (string, error) {
+	// Most header keys are short: e.g. "Host", "Content-Type", "User-Agent", etc.
+	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPBodyTrailerValueGet(
+			r.h,
+			nameBuffer.Data, nameBuffer.Len,
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+	})
+	if err != nil {
+		return "", err
+	}
+	return value.ToString(), nil
+}
+
+// witx:
+//
+// (@interface func (export "trailer_values_get")
+//
+//	(param $h $body_handle)
+//	(param $name (list u8))
+//	(param $buf (@witx pointer (@witx char8)))
+//	(param $buf_len (@witx usize))
+//	(param $cursor $multi_value_cursor)
+//	(param $ending_cursor_out (@witx pointer $multi_value_cursor_result))
+//	(param $nwritten_out (@witx pointer (@witx usize)))
+//	(result $err (expected (error $fastly_status)))
+//
+// )
+//
+//go:wasmimport fastly_http_body trailer_values_get
+//go:noescape
+func fastlyHTTPBodyTrailerValuesGet(
+	h bodyHandle,
+	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
+	buf prim.Pointer[prim.Char8],
+	bufLen prim.Usize,
+	cursor multiValueCursor,
+	endingCursorOut prim.Pointer[multiValueCursorResult],
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// GetTrailerValues returns an iterator that yields the values for the named
+// header that are of the request.
+func (r *HTTPBody) GetTrailerValues(name string) *Values {
+	adapter := func(
+		buf *prim.Char8,
+		bufLen prim.Usize,
+		cursor multiValueCursor,
+		endingCursorOut *multiValueCursorResult,
+		nwrittenOut *prim.Usize,
+	) FastlyStatus {
+		nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
+
+		return fastlyHTTPBodyTrailerValuesGet(
+			r.h,
+			nameBuffer.Data, nameBuffer.Len,
+			prim.ToPointer(buf), bufLen,
+			cursor,
+			prim.ToPointer(endingCursorOut),
+			prim.ToPointer(nwrittenOut),
+		)
+	}
+
+	return newValues(adapter, DefaultLargeBufLen) // Large enough to get most header values in a single call.
+}
+
+// witx:
+//
 //	(module $fastly_http_resp
 //	   (@interface func (export "new")
 //	     (result $err $fastly_status)
