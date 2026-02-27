@@ -996,6 +996,10 @@ const (
 	CacheLookupStateCollapseError      CacheLookupState = 0b0010_0000 // $collapse_error
 )
 
+func (c CacheLookupState) Has(m CacheLookupState) bool {
+	return (c & m) == m
+}
+
 // witx:
 //
 //	(typename $purge_options_mask
@@ -1383,6 +1387,7 @@ const (
 	SendErrorDetailTagInternalError                     SendErrorDetailTag = 22
 	SendErrorDetailTagTLSAlertReceived                  SendErrorDetailTag = 23
 	SendErrorDetailTagTLSProtocolError                  SendErrorDetailTag = 24
+	SendErrorDetailTagH2Error                           SendErrorDetailTag = 25
 )
 
 // witx:
@@ -1406,6 +1411,7 @@ const (
 	sendErrorDetailMaskDNSErrorRCode = 1 << 1 // $dns_error_rcode
 	sendErrorDetailMaskDNSErrorInfo  = 1 << 2 // $dns_error_info_code
 	sendErrorDetailMaskTLSAlertID    = 1 << 3 // $tls_alert_id
+	sendErrorDetailMaskH2Error       = 1 << 4 // $h2_error
 )
 
 // witx:
@@ -1544,7 +1550,8 @@ func (d SendErrorDetail) String() string {
 		return fmt.Sprintf("TLS alert received (%s)", tlsAlertString(d.tlsAlertID))
 	case SendErrorDetailTagTLSProtocolError:
 		return "TLS protocol error"
-
+	case SendErrorDetailTagH2Error:
+		return "HTTP/2 error"
 	case SendErrorDetailTagUninitialized:
 		panic("should not be reached: SendErrorDetailTagUninitialized")
 	case SendErrorDetailTagOK:

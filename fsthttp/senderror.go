@@ -2,7 +2,11 @@
 
 package fsthttp
 
-import "github.com/fastly/compute-sdk-go/internal/abi/fastly"
+import (
+	"errors"
+
+	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
+)
 
 // SendError provides detailed information about backend request failures.
 //
@@ -130,4 +134,8 @@ const (
 	// SendErrorInternalError indicates the system encountered an unexpected internal
 	// error.
 	SendErrorInternalError = fastly.SendErrorDetailTagInternalError
+)
+
+var (
+	ErrRequestCollapse = errors.New("error during request collapse")
 )

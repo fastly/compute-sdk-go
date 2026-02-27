@@ -36,6 +36,10 @@ type Response struct {
 
 	trailers Header
 
+	// If this response was served from the cache *and* the response was stale-if-error,
+	// this is the error from the revalidation attempt.
+	maskedError error
+
 	cacheResponse cacheResponse
 
 	abi struct {
@@ -111,6 +115,12 @@ func (resp *Response) Trailers() (Header, error) {
 
 	resp.trailers = trailers
 	return resp.trailers, nil
+}
+
+// If this response was served from the cache *and* the response was stale-if-error,
+// this is the error from the revalidation attempt.
+func (r *Response) MaskedError() error {
+	return r.maskedError
 }
 
 type netaddr struct {
