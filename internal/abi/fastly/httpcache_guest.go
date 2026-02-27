@@ -115,6 +115,15 @@ func (o *HTTPCacheWriteOptions) SensitiveData() bool {
 	return o.mask&httpCacheWriteOptionsFlagLength == httpCacheWriteOptionsFlagLength
 }
 
+func (o *HTTPCacheWriteOptions) SetStaleIfErrorNs(staleNs uint64) {
+	o.opts.staleIfErrorNs = httpCacheDurationNs(staleNs)
+	o.mask |= httpCacheWriteOptionsFlagStaleIfError
+}
+
+func (o *HTTPCacheWriteOptions) StaleIfErrorNs() (uint64, bool) {
+	return uint64(o.opts.staleIfErrorNs), o.mask&httpCacheWriteOptionsFlagStaleIfError == httpCacheWriteOptionsFlagStaleIfError
+}
+
 func (o *HTTPCacheWriteOptions) FillConfigMask() {
 	o.mask = 0 |
 		httpCacheWriteOptionsFlagReserved |
@@ -123,7 +132,8 @@ func (o *HTTPCacheWriteOptions) FillConfigMask() {
 		httpCacheWriteOptionsFlagStaleWhileRevalidate |
 		httpCacheWriteOptionsFlagSurrogateKeys |
 		httpCacheWriteOptionsFlagLength |
-		httpCacheWriteOptionsFlagSensitiveData
+		httpCacheWriteOptionsFlagSensitiveData |
+		httpCacheWriteOptionsFlagStaleIfError
 }
 
 // (module $fastly_http_cache
@@ -425,6 +435,42 @@ func HTTPCacheTransactionUpdateAndReturnFresh(h *HTTPCacheHandle, resp *HTTPResp
 	}
 
 	return &HTTPCacheHandle{h: newh}, nil
+}
+
+// witx:
+//
+//	;;; Fulfill an obligation to provide a response to the cache by selecting a stale-if-error response.
+//	;;;
+//	;;; A guest that is obligated to insert/update the cache may not be able to produce an acceptable
+//	;;; response (e.g. unreachable backend, 5xx response). If the cache contains a response in the
+//	;;; stale-if-error period, the guest may prefer to use that response rather than returning an error.
+//	;;;
+//	;;; `transaction_choose_stale` is an alternative to `transaction_update_and_return_fresh` or
+//	;;; `transaction_insert_and_stream_back`. Like those methods, it completes a request collapse,
+//	;;; providing the stale response to all collapsed transactions; and, after calling
+//	;;; `transaction_choose_stale`, the cache handle provides the (stale) response to send to the client.
+//	;;;
+//	;;; However, `transaction_choose_stale` does not change the cached state. The next lookup will again
+//	;;; collapse and/or get an obligation to revalidate.
+//	(@interface func (export "transaction_choose_stale")
+//	    (param $handle $http_cache_handle)
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_cache transaction_chose_stale
+//go:noescape
+func fastlyHTTPCacheTransactionChooseStale(
+	h httpCacheHandle,
+) FastlyStatus
+
+func HTTPCacheTransactionChooseStale(h *HTTPCacheHandle) error {
+	if err := fastlyHTTPCacheTransactionChooseStale(
+		h.h,
+	).toError(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // witx:
@@ -859,6 +905,35 @@ func HTTPCacheGetStaleWhileRevalidateNs(h *HTTPCacheHandle) (httpCacheDurationNs
 	var d httpCacheDurationNs
 
 	if err := fastlyHTTPCacheGetStaleWhileRevalidateNs(
+		h.h,
+		prim.ToPointer(&d),
+	).toError(); err != nil {
+		return 0, err
+	}
+
+	return d, nil
+}
+
+// witx:
+//
+//	;;; Get the configured stale-if-error period of the found response in nanoseconds,
+//	;;; returning the `$none` error if there was no response found.
+//	(@interface func (export "get_stale_if_error_ns")
+//	    (param $handle $http_cache_handle)
+//	    (result $err (expected $cache_duration_ns (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_cache get_stale_if_error_ns
+//go:noescape
+func fastlyHTTPCacheGetStaleIfErrorNs(
+	h httpCacheHandle,
+	d prim.Pointer[httpCacheDurationNs],
+) FastlyStatus
+
+func HTTPCacheGetStaleIfErrorNs(h *HTTPCacheHandle) (httpCacheDurationNs, error) {
+	var d httpCacheDurationNs
+
+	if err := fastlyHTTPCacheGetStaleIfErrorNs(
 		h.h,
 		prim.ToPointer(&d),
 	).toError(); err != nil {

@@ -33,6 +33,10 @@ type Response struct {
 	// Body of the response.
 	Body io.ReadCloser
 
+	// If this response was served from the cache *and* the response was stale-if-error,
+	// this is the error from the revalidation attempt.
+	maskedError error
+
 	cacheResponse cacheResponse
 
 	abi struct {
@@ -69,6 +73,12 @@ func (resp *Response) RemoteAddr() (net.Addr, error) {
 	}
 
 	return &addr, nil
+}
+
+// If this response was served from the cache *and* the response was stale-if-error,
+// this is the error from the revalidation attempt.
+func (r *Response) MaskedError() error {
+	return r.maskedError
 }
 
 type netaddr struct {
@@ -194,7 +204,16 @@ func (resp *Response) StaleWhileRevalidate() (uint32, bool) {
 		return 0, false
 	}
 
-	return resp.cacheResponse.cacheWriteOptions.stale, true
+	return resp.cacheResponse.cacheWriteOptions.staleRevalidate, true
+}
+
+// StaleIfError returns the time in seconds for which a cached item delivered stale if synchronous revalidation produces an error.
+func (resp *Response) StaleIfError() (uint32, bool) {
+	if resp.wasWrittenToCache() {
+		return 0, false
+	}
+
+	return resp.cacheResponse.cacheWriteOptions.staleError, true
 }
 
 // Vary returns the set of request headers for which the response may vary.
