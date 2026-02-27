@@ -629,12 +629,13 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 			fastly.HTTPCacheTransactionClose(cacheHandle)
 		}
 	}()
-	if err := httpCacheWait(cacheHandle); err != nil {
+	state, err := httpCacheWait(cacheHandle)
+	if err != nil {
 		return nil, err
 	}
 
 	// is there a "usable" cached response (i.e. fresh or within SWR period)
-	resp, err := httpCacheGetFoundResponse(cacheHandle, req, backend, true)
+	resp, err := httpCacheGetFoundResponse(cacheHandle, req, backend, true, true)
 	if err != nil {
 		return nil, err
 	}
@@ -644,7 +645,7 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 
 		// if this is during SWR, we may be the "lucky winner" who is
 		// tasked with performing a background revalidation
-		if ok, _ := httpCacheMustInsertOrUpdate(cacheHandle); ok {
+		if state.Has(fastly.CacheLookupStateMustInsertOrUpdate) {
 			pending, err := req.sendAsyncForCaching(ctx, cacheHandle, backend)
 			if err != nil {
 				return nil, err
@@ -666,7 +667,14 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 			cacheHandle = nil
 		}
 
-		// Meanwhile, whether fresh or in SWR, we can immediately return
+		if state.Has(fastly.CacheLookupStateUsableIfError) {
+			// This is a stale-if-error response that is also USABLE, implying the request
+			// collapse has already happened.
+			// Mark the response's masked error as "error in request collapse leader".
+			resp.maskedError = ErrRequestCollapse
+		}
+
+		// Meanwhile, whether fresh or in SWR/SIE, we can immediately return
 		// the cached response:
 		resp.updateFastlyCacheHeaders(req)
 		return resp, nil
@@ -674,8 +682,7 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 
 	// no cached response
 
-	if ok, _ := httpCacheMustInsertOrUpdate(cacheHandle); ok {
-
+	if state.Has(fastly.CacheLookupStateMustInsertOrUpdate) {
 		pending, err := req.sendAsyncForCaching(ctx, cacheHandle, backend)
 		if err != nil {
 			return nil, err
@@ -683,6 +690,19 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 
 		candidateResp, err := newCandidateFromPendingBackendCaching(pending)
 		if err != nil {
+			if state.Has(fastly.CacheLookupStateUsableIfError) {
+				// Substitute stale-if-error response; let anyone else in the collapse know as
+				// well.
+				fastly.HTTPCacheTransactionChooseStale(cacheHandle)
+				resp, foundErr := httpCacheGetFoundResponse(cacheHandle, req, backend, true, false)
+				if foundErr != nil {
+					return nil, foundErr
+				}
+				resp.maskedError = err
+				resp.updateFastlyCacheHeaders(req)
+				return resp, nil
+			}
+
 			return nil, err
 		}
 

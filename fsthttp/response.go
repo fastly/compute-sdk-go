@@ -33,6 +33,10 @@ type Response struct {
 	// Body of the response.
 	Body io.ReadCloser
 
+	// If this response was served from the cache *and* the response was stale-if-error,
+	// this is the error from the revalidation attempt.
+	maskedError error
+
 	cacheResponse cacheResponse
 
 	abi struct {
@@ -69,6 +73,12 @@ func (resp *Response) RemoteAddr() (net.Addr, error) {
 	}
 
 	return &addr, nil
+}
+
+// If this response was served from the cache *and* the response was stale-if-error,
+// this is the error from the revalidation attempt.
+func (r *Response) MaskedError() error {
+	return r.maskedError
 }
 
 type netaddr struct {

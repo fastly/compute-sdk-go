@@ -159,24 +159,15 @@ const (
 	cacheStorageActionInvalid = 0xffff
 )
 
-func httpCacheWait(c *fastly.HTTPCacheHandle) error {
-	_, err := fastly.HTTPCacheGetState(c)
-	if err != nil {
-		return fmt.Errorf("get state: %w", err)
-	}
-	return nil
-}
-
-func httpCacheMustInsertOrUpdate(c *fastly.HTTPCacheHandle) (bool, error) {
+func httpCacheWait(c *fastly.HTTPCacheHandle) (fastly.CacheLookupState, error) {
 	state, err := fastly.HTTPCacheGetState(c)
 	if err != nil {
-		return false, fmt.Errorf("get state: %w", err)
-
+		return 0, fmt.Errorf("get state: %w", err)
 	}
-	return state&fastly.CacheLookupStateMustInsertOrUpdate == fastly.CacheLookupStateMustInsertOrUpdate, nil
+	return state, nil
 }
 
-func httpCacheGetFoundResponse(c *fastly.HTTPCacheHandle, req *Request, backend string, transformForClient bool) (*Response, error) {
+func httpCacheGetFoundResponse(c *fastly.HTTPCacheHandle, req *Request, backend string, transformForClient bool, wasHit bool) (*Response, error) {
 	abiResp, abiBody, err := fastly.HTTPCacheGetFoundResponse(c, transformForClient)
 	if err != nil {
 		if status, ok := fastly.IsFastlyError(err); ok && status == fastly.FastlyStatusNone {
@@ -185,9 +176,13 @@ func httpCacheGetFoundResponse(c *fastly.HTTPCacheHandle, req *Request, backend 
 		return nil, fmt.Errorf("get found response: %w", err)
 	}
 
-	hits, err := fastly.HTTPCacheGetHits(c)
-	if err != nil {
-		return nil, fmt.Errorf("get hits: %w", err)
+	var hits uint64
+	if wasHit {
+		h, err := fastly.HTTPCacheGetHits(c)
+		if err != nil {
+			return nil, fmt.Errorf("get hits: %w", err)
+		}
+		hits = uint64(h)
 	}
 
 	var opts cacheWriteOptions
@@ -204,7 +199,7 @@ func httpCacheGetFoundResponse(c *fastly.HTTPCacheHandle, req *Request, backend 
 	resp.cacheResponse = cacheResponse{
 		cacheWriteOptions: opts,
 		storageAction:     cacheStorageActionInvalid,
-		hits:              uint64(hits),
+		hits:              hits,
 	}
 	return resp, nil
 }
@@ -710,7 +705,7 @@ func (candidateResponse *CandidateResponse) applyAndStreamBack(req *Request) (*R
 		}
 		body.Close()
 
-		resp, err = httpCacheGetFoundResponse(readback, req, "", false)
+		resp, err = httpCacheGetFoundResponse(readback, req, "", false, true)
 		if err != nil {
 			return nil, fmt.Errorf("cache get found response: %w", err)
 		}
@@ -722,7 +717,7 @@ func (candidateResponse *CandidateResponse) applyAndStreamBack(req *Request) (*R
 		}
 		defer fastly.HTTPCacheTransactionClose(newch)
 
-		resp, err = httpCacheGetFoundResponse(newch, req, "", true)
+		resp, err = httpCacheGetFoundResponse(newch, req, "", true, true)
 		if err != nil {
 			return nil, fmt.Errorf("cache get found response: %w", err)
 		}
