@@ -1160,9 +1160,9 @@ type InspectOptions struct {
 type NGWAFVerdict string
 
 const (
-	VerdictAllow        NGWAFVerdict = "allow"
-	VerdictBlock        NGWAFVerdict = "block"
-	VerdictUnauthorized NGWAFVerdict = "unauthorized"
+	InspectVerdictAllow        NGWAFVerdict = "allow"
+	InspectVerdictBlock        NGWAFVerdict = "block"
+	InspectVerdictUnauthorized NGWAFVerdict = "unauthorized"
 )
 
 type InspectResponse struct {
