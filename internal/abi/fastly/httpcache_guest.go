@@ -112,7 +112,7 @@ func (o *HTTPCacheWriteOptions) SetSensitiveData(b bool) {
 }
 
 func (o *HTTPCacheWriteOptions) SensitiveData() bool {
-	return o.mask&httpCacheWriteOptionsFlagLength == httpCacheWriteOptionsFlagLength
+	return o.mask&httpCacheWriteOptionsFlagSensitiveData == httpCacheWriteOptionsFlagSensitiveData
 }
 
 func (o *HTTPCacheWriteOptions) FillConfigMask() {
