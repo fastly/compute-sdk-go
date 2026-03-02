@@ -1152,9 +1152,9 @@ func (r *Request) HandoffFanout(backend string) error {
 }
 
 type InspectOptions struct {
-	Corp       string
-	Workspace  string
-	OverrideIP string
+	Corp             string
+	Workspace        string
+	OverrideClientIP string
 }
 
 type NGWAFVerdict string
@@ -1200,8 +1200,8 @@ func (r *Request) Inspect(opts *InspectOptions) (*InspectResponse, error) {
 			info.Workspace(opts.Workspace)
 		}
 
-		if opts.OverrideIP != "" {
-			info.OverrideClientIP(opts.OverrideIP)
+		if opts.OverrideClientIP != "" {
+			info.OverrideClientIP(opts.OverrideClientIP)
 		}
 	}
 
