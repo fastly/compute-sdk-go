@@ -457,7 +457,7 @@ func HTTPCacheTransactionUpdateAndReturnFresh(h *HTTPCacheHandle, resp *HTTPResp
 //	    (result $err (expected (error $fastly_status)))
 //	)
 //
-//go:wasmimport fastly_http_cache transaction_chose_stale
+//go:wasmimport fastly_http_cache transaction_choose_stale
 //go:noescape
 func fastlyHTTPCacheTransactionChooseStale(
 	h httpCacheHandle,
