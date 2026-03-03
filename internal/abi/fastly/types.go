@@ -1423,6 +1423,8 @@ const (
 //	    (field $dns_error_rcode u16)
 //	    (field $dns_error_info_code u16)
 //	    (field $tls_alert_id u8)
+//	    (field $h2_error_frame u8)
+//	    (field $h2_error_code u32)
 //	    ))
 
 // SendErrorDetail contains detailed error information from backend send operations.
@@ -1432,6 +1434,8 @@ type SendErrorDetail struct {
 	dnsErrorRCode    prim.U16
 	dnsErrorInfoCode prim.U16
 	tlsAlertID       prim.U8
+	h2ErrorFrame     prim.U8
+	h2ErrorCode      prim.U32
 }
 
 func newSendErrorDetail() SendErrorDetail {
@@ -1491,6 +1495,14 @@ func (d SendErrorDetail) DNSErrorInfoCode() uint16 {
 // [by IANA]: https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-6
 func (d SendErrorDetail) TLSAlertID() uint8 {
 	return uint8(d.tlsAlertID)
+}
+
+func (d SendErrorDetail) H2ErrorFrame() uint8 {
+	return uint8(d.h2ErrorFrame)
+}
+
+func (d SendErrorDetail) H2ErrorCode() uint32 {
+	return uint32(d.h2ErrorCode)
 }
 
 // TLSAlertDescription returns a human-readable description of the TLS alert.
