@@ -68,6 +68,7 @@ func (resp *Response) RemoteAddr() (net.Addr, error) {
 
 var ErrTrailersNotReady = errors.New("trailers not available")
 
+// Trailers returns the trailers associated with the response.  Can only be called after the response Body returns EOF.
 func (resp *Response) Trailers() (Header, error) {
 	if resp.trailers != nil {
 		return resp.trailers, nil
@@ -243,7 +244,18 @@ func (resp *Response) SurrogateKeys() string {
 // ResponseWriter is used to respond to client requests.
 type ResponseWriter interface {
 	// Header returns the headers that will be sent by WriteHeader.
-	// Changing the returned headers after a call to WriteHeader has no effect.
+	// The [Header] map also is the mechanism with which implementations can set HTTP trailers.
+	// Changing the returned headers after a call to WriteHeader has no effect unless the modified headers are Trailers.
+	//
+	// There are two ways to set Trailers. The preferred way is to
+	// predeclare in the headers which trailers you will later
+	// send by setting the "Trailer" header to the names of the
+	// trailer keys which will come later. In this case, those
+	// keys of the Header map are treated as if they were
+	// trailers. See the example. The second way, for trailer
+	// keys not known to the [Handler] until after the first [ResponseWriter.Write],
+	// is to prefix the [Header] map keys with the [TrailerPrefix]
+	// constant value.
 	Header() Header
 
 	// WriteHeader initiates the response to the client by sending an HTTP
@@ -428,16 +440,50 @@ func (resp *responseWriter) Close() error {
 	}
 	resp.closed = true
 
-	for _, h := range resp.trailers {
-		v := resp.header.Values(h)
-		if len(v) > 0 {
-			if err := resp.abiBody.TrailerAppend(h, v[0]); err != nil {
-				println("error during trailer append: ", err.Error())
+	if err := resp.writeTrailers(); err != nil {
+		return err
+	}
+
+	return resp.abiBody.Close()
+}
+
+// TrailerPrefix is a magic prefix for [ResponseWriter.Header] map keys
+// that, if present, signals that the map entry is actually for the response
+// trailers, and not the response headers. The prefix is stripped after the
+// ServeHTTP call finishes and the values are sent in the trailers.
+//
+// This mechanism is intended only for trailers that are not known prior to the
+// headers being written. If the set of trailers is fixed or known before
+// the header is written, the normal Go trailers mechanism is preferred.
+const TrailerPrefix = "Trailer:"
+
+func (resp *responseWriter) writeTrailers() error {
+	t := NewHeader()
+
+	// Get trailers from header map with TrailerPrefix
+	for _, h := range resp.header.Keys() {
+		if key, ok := strings.CutPrefix(h, TrailerPrefix); ok {
+			if v := resp.header.Values(h); len(v) > 0 {
+				t[key] = v
 			}
 		}
 	}
 
-	return resp.abiBody.Close()
+	// Extract Trailer names from saved list.
+	for _, h := range resp.trailers {
+		if v := resp.header.Values(h); len(v) > 0 {
+			t[h] = v
+		}
+	}
+
+	// Write out the trailers.
+	for k, v := range t {
+		if err := resp.abiBody.TrailerAppend(k, v[0]); err != nil {
+			println("error during trailer append: ", err.Error())
+		}
+	}
+
+	return nil
 }
 
 func (resp *responseWriter) SetManualFramingMode(mode bool) {
