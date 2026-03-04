@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/textproto"
 	"strconv"
 	"strings"
 
@@ -32,6 +33,8 @@ type Response struct {
 
 	// Body of the response.
 	Body io.ReadCloser
+
+	trailers Header
 
 	cacheResponse cacheResponse
 
@@ -69,6 +72,45 @@ func (resp *Response) RemoteAddr() (net.Addr, error) {
 	}
 
 	return &addr, nil
+}
+
+var ErrTrailersNotReady = errors.New("trailers not available")
+
+// Trailers returns the trailers associated with the response.  Can only be called after the response Body returns EOF.
+func (resp *Response) Trailers() (Header, error) {
+	if resp.trailers != nil {
+		return resp.trailers, nil
+	}
+
+	// This might happen if the Body field is replaced before Trailers is called.
+	abiBody, ok := resp.Body.(*fastly.HTTPBody)
+	if !ok {
+		return nil, fmt.Errorf("Response.Body is not an HTTP Response Body")
+	}
+
+	trailers := NewHeader()
+
+	keys := abiBody.GetTrailerNames()
+	for keys.Next() {
+		k := string(keys.Bytes())
+		vals := abiBody.GetTrailerValues(k)
+		for vals.Next() {
+			v := string(vals.Bytes())
+			trailers.Add(k, v)
+		}
+		if err := vals.Err(); err != nil {
+			return nil, fmt.Errorf("read trailer key %q: %w", k, err)
+		}
+	}
+	if err := keys.Err(); err != nil {
+		if e, ok := fastly.IsFastlyError(err); ok && e == fastly.FastlyStatusAgain {
+			return nil, ErrTrailersNotReady
+		}
+		return nil, fmt.Errorf("read trailer keys: %w", err)
+	}
+
+	resp.trailers = trailers
+	return resp.trailers, nil
 }
 
 type netaddr struct {
@@ -210,7 +252,18 @@ func (resp *Response) SurrogateKeys() string {
 // ResponseWriter is used to respond to client requests.
 type ResponseWriter interface {
 	// Header returns the headers that will be sent by WriteHeader.
-	// Changing the returned headers after a call to WriteHeader has no effect.
+	// The [Header] map also is the mechanism with which implementations can set HTTP trailers.
+	// Changing the returned headers after a call to WriteHeader has no effect unless the modified headers are Trailers.
+	//
+	// There are two ways to set Trailers. The preferred way is to
+	// predeclare in the headers which trailers you will later
+	// send by setting the "Trailer" header to the names of the
+	// trailer keys which will come later. In this case, those
+	// keys of the Header map are treated as if they were
+	// trailers. See the example. The second way, for trailer
+	// keys not known to the [Handler] until after the first [ResponseWriter.Write],
+	// is to prefix the [Header] map keys with the [TrailerPrefix]
+	// constant value.
 	Header() Header
 
 	// WriteHeader initiates the response to the client by sending an HTTP
@@ -267,6 +320,7 @@ type responseWriter struct {
 	closed            bool
 	ManualFramingMode bool
 	sendErr           error
+	trailers          []string
 }
 
 func newResponseWriter() (*responseWriter, error) {
@@ -291,7 +345,7 @@ func (resp *responseWriter) Header() Header {
 	return resp.header
 }
 
-var excludeHeadersNoBody = map[string]bool{CanonicalHeaderKey("Content-Length"): true, CanonicalHeaderKey("Transfer-Encoding"): true}
+var excludeHeadersNoBody = map[string]bool{CanonicalHeaderKey("Content-Length"): true, CanonicalHeaderKey("Transfer-Encoding"): true, CanonicalHeaderKey("Trailer"): true}
 
 var headerNewlineToSpace = strings.NewReplacer("\n", " ", "\r", " ")
 
@@ -337,12 +391,27 @@ func (resp *responseWriter) WriteHeader(code int) {
 		}
 	}
 
+	// Store list of trailers for later.
+	resp.trailers = parseTrailers(resp.header.Values("Trailer"))
+
 	if code == StatusEarlyHints {
 		// For early hints, don't mark the headers as "sent" so we can send them again next time.
 		return
 	}
 
 	resp.wroteHeaders = true
+}
+
+func parseTrailers(trailers []string) []string {
+	var result []string
+	for _, v := range trailers {
+		for _, s := range strings.Split(v, ",") {
+			if h := textproto.TrimString(s); h != "" {
+				result = append(result, h)
+			}
+		}
+	}
+	return result
 }
 
 var (
@@ -378,7 +447,51 @@ func (resp *responseWriter) Close() error {
 		return nil
 	}
 	resp.closed = true
+
+	if err := resp.writeTrailers(); err != nil {
+		return err
+	}
+
 	return resp.abiBody.Close()
+}
+
+// TrailerPrefix is a magic prefix for [ResponseWriter.Header] map keys
+// that, if present, signals that the map entry is actually for the response
+// trailers, and not the response headers. The prefix is stripped after the
+// ServeHTTP call finishes and the values are sent in the trailers.
+//
+// This mechanism is intended only for trailers that are not known prior to the
+// headers being written. If the set of trailers is fixed or known before
+// the header is written, the normal Go trailers mechanism is preferred.
+const TrailerPrefix = "Trailer:"
+
+func (resp *responseWriter) writeTrailers() error {
+	t := NewHeader()
+
+	// Get trailers from header map with TrailerPrefix
+	for _, h := range resp.header.Keys() {
+		if key, ok := strings.CutPrefix(h, TrailerPrefix); ok {
+			if v := resp.header.Values(h); len(v) > 0 {
+				t[key] = v
+			}
+		}
+	}
+
+	// Extract Trailer names from saved list.
+	for _, h := range resp.trailers {
+		if v := resp.header.Values(h); len(v) > 0 {
+			t[h] = v
+		}
+	}
+
+	// Write out the trailers.
+	for k, v := range t {
+		if err := resp.abiBody.TrailerAppend(k, v[0]); err != nil {
+			println("error during trailer append: ", err.Error())
+		}
+	}
+
+	return nil
 }
 
 func (resp *responseWriter) SetManualFramingMode(mode bool) {
@@ -396,6 +509,5 @@ func (resp *responseWriter) Append(other io.ReadCloser) error {
 	if !ok {
 		return fmt.Errorf("non-Response Body passed to ResponseWriter.Append")
 	}
-	resp.abiBody.Append(otherAbiBody)
-	return nil
+	return resp.abiBody.Append(otherAbiBody)
 }
