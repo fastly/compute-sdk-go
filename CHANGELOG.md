@@ -1,5 +1,16 @@
 ## Unreleased
 
+## 1.7.0 (2026-03-05)
+
+- fsthttp: add support for http trailers (#232)
+- fsthttp: add support for NGWAF Inspect (#228)
+- fsthttp: fix SensitiveData flag for guest caching (#237)
+- fsthttp: add support for ClientSNI  (#235)
+- kvstore: add more hostcalls: InsertWithConfig, List (#231)
+- fsthttp: add Request.Close() and Response.Close() (#229)
+- compute: add GetHeapMiB to report current memory usage (#227)
+- fsthttp: correctly handle streaming flag for StatusEarlyHints (#223)
+
 ## 1.6.1 (2025-11-20)
 
 - fsthttp: fix panic when calling certain methods on non-client requests; fix HandoffFanout (#220)
