@@ -5,8 +5,6 @@
 package fastly
 
 import (
-	"io"
-
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
 )
 
@@ -186,16 +184,7 @@ func fastlyKVStoreInsert(
 ) FastlyStatus
 
 // Insert returns a handle to a pending key/value pair insertion.
-func (k *KVStore) Insert(key string, value io.Reader, config *KVInsertConfig) (kvstoreInsertHandle, error) {
-	body, err := NewHTTPBody()
-	if err != nil {
-		return 0, err
-	}
-
-	if _, err := io.Copy(body, value); err != nil {
-		return 0, err
-	}
-
+func (k *KVStore) Insert(key string, body *HTTPBody, config *KVInsertConfig) (kvstoreInsertHandle, error) {
 	if config == nil {
 		config = &KVInsertConfig{}
 	}

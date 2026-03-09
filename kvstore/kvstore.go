@@ -173,7 +173,19 @@ func (s *Store) InsertWithConfig(key string, value io.Reader, config *InsertConf
 		}
 	}
 
-	h, err := s.kvstore.Insert(key, value, &abiConf)
+	var body *fastly.HTTPBody
+	if abiBody, ok := value.(*fastly.HTTPBody); ok {
+		body = abiBody
+	} else {
+		var err error
+		body, err = fastly.NewHTTPBody()
+		if err != nil {
+			return err
+		}
+		io.Copy(body, value)
+	}
+
+	h, err := s.kvstore.Insert(key, body, &abiConf)
 	if err != nil {
 		return mapFastlyErr(err)
 	}
