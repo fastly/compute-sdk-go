@@ -9,6 +9,7 @@ name = "kvstore"
 service_id = ""
 
 [local_server]
+backends.httpme.url = "https://http-me.fastly.dev"
 
   [local_server.kv_stores]
 

@@ -5,12 +5,14 @@
 package main
 
 import (
+	"context"
 	"maps"
 	"sort"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/fastly/compute-sdk-go/fsthttp"
 	"github.com/fastly/compute-sdk-go/kvstore"
 )
 
@@ -101,6 +103,30 @@ func TestKVStore(t *testing.T) {
 
 	if !maps.Equal(wantListKeys, gotListKeys) {
 		t.Errorf("Expected got/want keys mismatch: want=%v, got=%v", mapKeys(wantListKeys), mapKeys(gotListKeys))
+	}
+
+	uri := "https://http-me.fastly.dev/echo/?body=hello,+world"
+	req, err := fsthttp.NewRequest("GET", uri, nil)
+	if err != nil {
+		t.Errorf("error during NewRequest: uri=%v err=%v", uri, err)
+		return
+	}
+
+	ctx := context.Background()
+	resp, err := req.Send(ctx, "httpme")
+
+	if err := store.Insert("hello", resp.Body); err != nil {
+		t.Errorf("error during HTTPBody Insert: err=%v", err)
+	}
+
+	hello, err = store.Lookup("hello")
+	if err != nil {
+		t.Errorf("error during HTTPBody Lookup: err=%v", err)
+		return
+	}
+
+	if got, want := hello.String(), "hello, world"; got != want {
+		t.Errorf("HTTPBody Lookup: got %q, want %q", got, want)
 	}
 }
 
