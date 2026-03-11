@@ -1629,6 +1629,61 @@ func tlsAlertString(id prim.U8) string {
 	}
 }
 
+type BotCategory int
+
+const (
+	BotCategoryNone                       BotCategory = 0
+	BotCategorySuspected                  BotCategory = 1
+	BotCategoryAccessibility              BotCategory = 2
+	BotCategoryAICrawler                  BotCategory = 3
+	BotCategoryAIFetcher                  BotCategory = 4
+	BotCategoryContentFetcher             BotCategory = 5
+	BotCategoryMonitoringSiteTools        BotCategory = 6
+	BotCategoryOnlineMarketing            BotCategory = 7
+	BotCategoryPagePreview                BotCategory = 8
+	BotCategoryPlatformIntegrations       BotCategory = 9
+	BotCategoryResearch                   BotCategory = 10
+	BotCategorySearchEngineCrawler        BotCategory = 11
+	BotCategorySearchEngineSpecialization BotCategory = 12
+	BotCategorySecurityTools              BotCategory = 13
+	BotCategoryUnknown                    BotCategory = -1
+)
+
+func (c BotCategory) String() string {
+
+	switch c {
+	case BotCategoryNone:
+		return "None"
+	case BotCategorySuspected:
+		return "Suspected"
+	case BotCategoryAccessibility:
+		return "Accessibility"
+	case BotCategoryAICrawler:
+		return "AICrawler"
+	case BotCategoryAIFetcher:
+		return "AIFetcher"
+	case BotCategoryContentFetcher:
+		return "ContentFetcher"
+	case BotCategoryMonitoringSiteTools:
+		return "MonitoringSiteTools"
+	case BotCategoryOnlineMarketing:
+		return "OnlineMarketing"
+	case BotCategoryPagePreview:
+		return "PagePreview"
+	case BotCategoryPlatformIntegrations:
+		return "PlatformIntegrations"
+	case BotCategoryResearch:
+		return "Research"
+	case BotCategorySearchEngineCrawler:
+		return "SearchEngineCrawler"
+	case BotCategorySearchEngineSpecialization:
+		return "SearchEngineSpecialization"
+	case BotCategorySecurityTools:
+		return "SecurityTools"
+	}
+	return "Unknown"
+}
+
 type RateWindow struct {
 	value prim.U32
 }
