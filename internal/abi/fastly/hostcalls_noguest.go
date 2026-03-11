@@ -131,8 +131,8 @@ func (r *HTTPRequest) DownstreamTLSRawClientCertificate() ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) DownstreamTLSClientCertVerifyResult() (bool, error) {
-	return false, fmt.Errorf("not implemented")
+func (r *HTTPRequest) DownstreamTLSClientCertVerifyResult() (ClientCertificateVerifyResult, error) {
+	return 0, fmt.Errorf("not implemented")
 }
 
 func (r *HTTPRequest) DownstreamTLSJA4() ([]byte, error) {
