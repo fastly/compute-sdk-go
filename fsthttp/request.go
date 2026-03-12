@@ -1095,8 +1095,8 @@ func (req *Request) TLSClientCertificateInfo() (*TLSClientCertificateInfo, error
 type ClientCertificateVerifyResult = fastly.ClientCertificateVerifyResult
 
 const (
-	// ClientCertificateVerifyResultOk indicates that client certificate verified successfully.
-	ClientCertificateVerifyResultOk = fastly.ClientCertificateVerifyResultOk
+	// ClientCertificateVerifyResultOK indicates that client certificate verified successfully.
+	ClientCertificateVerifyResultOK = fastly.ClientCertificateVerifyResultOK
 
 	// ClientCertificateVerifyResultBadCertificate means the certificate is corrupt
 	// (e.g., the certificate signatures do not verify correctly).
@@ -1108,10 +1108,10 @@ const (
 	// ClientCertificateVerifyResultCertificateExpired means the client certificate has expired or is not currently valid.
 	ClientCertificateVerifyResultCertificateExpired = fastly.ClientCertificateVerifyResultCertificateExpired
 
-	// ClientCertificateVerifyResultUnknownCa means the valid certificate chain or partial chain was received, but the
+	// ClientCertificateVerifyResultUnknownCA means the valid certificate chain or partial chain was received, but the
 	// certificate was not accepted because the CA certificate could not be located or could not
 	// be matched with a known trust anchor.
-	ClientCertificateVerifyResultUnknownCa = fastly.ClientCertificateVerifyResultUnknownCa
+	ClientCertificateVerifyResultUnknownCA = fastly.ClientCertificateVerifyResultUnknownCA
 
 	// ClientCertificateVerifyResultCertificateMissing means the client did not provide a certificate during the handshake.
 	ClientCertificateVerifyResultCertificateMissing = fastly.ClientCertificateVerifyResultCertificateMissing

@@ -1632,11 +1632,11 @@ func tlsAlertString(id prim.U8) string {
 type ClientCertificateVerifyResult prim.U32
 
 const (
-	ClientCertificateVerifyResultOk                 ClientCertificateVerifyResult = 0
+	ClientCertificateVerifyResultOK                 ClientCertificateVerifyResult = 0
 	ClientCertificateVerifyResultBadCertificate     ClientCertificateVerifyResult = 1
 	ClientCertificateVerifyResultCertificateRevoked ClientCertificateVerifyResult = 2
 	ClientCertificateVerifyResultCertificateExpired ClientCertificateVerifyResult = 3
-	ClientCertificateVerifyResultUnknownCa          ClientCertificateVerifyResult = 4
+	ClientCertificateVerifyResultUnknownCA          ClientCertificateVerifyResult = 4
 	ClientCertificateVerifyResultCertificateMissing ClientCertificateVerifyResult = 5
 	ClientCertificateVerifyResultCertificateUnknown ClientCertificateVerifyResult = 6
 )
