@@ -1834,6 +1834,190 @@ func (r *HTTPRequest) DownstreamFastlyKeyIsValid() (bool, error) {
 
 // witx:
 //
+//	(@interface func (export "downstream_bot_analyzed")
+//	    (param $req $request_handle)
+//	    (result $err (expected $bot_analyzed (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_bot_analyzed
+//go:noescape
+func fastlyHTTPDownstreamBotAnalyzed(
+	req requestHandle,
+	analyzed prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamBotAnalyzed() (bool, error) {
+	var analyzed struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamBotAnalyzed(
+		r.h,
+		prim.ToPointer(&analyzed.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return analyzed.b, nil
+}
+
+// witx:
+//
+//	(@interface func (export "downstream_bot_detected")
+//	    (param $req $request_handle)
+//	    (result $err (expected $bot_detected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_bot_detected
+//go:noescape
+func fastlyHTTPDownstreamBotDetected(
+	req requestHandle,
+	analyzed prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamBotDetected() (bool, error) {
+	var detected struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamBotDetected(
+		r.h,
+		prim.ToPointer(&detected.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return detected.b, nil
+}
+
+// witx:
+//
+//	(@interface func (export "downstream_bot_name")
+//	    (param $req $request_handle)
+//	    (param $bot_name_out (@witx pointer (@witx char8)))
+//	    (param $bot_name_max_len (@witx usize))
+//	    (param $nwritten_out (@witx pointer (@witx usize)))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_bot_name
+//go:noescape
+func fastlyHTTPReqDownstreamBotName(
+	req requestHandle,
+	botNameOut prim.Pointer[prim.Char8],
+	botNameMaxLen prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// DownstreamBotName returns the bot name detected
+func (r *HTTPRequest) DownstreamBotName() (string, error) {
+	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPReqDownstreamBotName(
+			r.h,
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+	})
+	if err != nil {
+		return "", err
+	}
+	return value.ToString(), nil
+}
+
+// witx:
+//
+//	(@interface func (export "downstream_bot_category")
+//	    (param $req $request_handle)
+//	    (param $bot_category_out (@witx pointer (@witx char8)))
+//	    (param $bot_category_max_len (@witx usize))
+//	    (param $nwritten_out (@witx pointer (@witx usize)))
+//	    (result $err (expected (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_bot_category
+//go:noescape
+func fastlyHTTPReqDownstreamBotCategory(
+	req requestHandle,
+	botCategoryOut prim.Pointer[prim.Char8],
+	botCategoryMaxLen prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+// DownstreamBotCategory returns the bot category
+func (r *HTTPRequest) DownstreamBotCategory() (string, error) {
+	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPReqDownstreamBotCategory(
+			r.h,
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+	})
+	if err != nil {
+		return "", err
+	}
+	return value.ToString(), nil
+}
+
+// witx:
+//
+//	(@interface func (export "downstream_bot_category_kind")
+//	    (param $req $request_handle)
+//	    (result $err (expected $bot_category_kind (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_bot_category_kind
+//go:noescape
+func fastlyHTTPDownstreamBotCategoryKind(
+	req requestHandle,
+	kind prim.Pointer[prim.U32],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamBotCategoryKind() (uint32, error) {
+	var kind prim.U32
+	if err := fastlyHTTPDownstreamBotCategoryKind(
+		r.h,
+		prim.ToPointer(&kind),
+	).toError(); err != nil {
+		return 0, err
+	}
+
+	return uint32(kind), nil
+}
+
+// witx:
+//
+// (@interface func (export "downstream_bot_verified")
+//
+//	    (param $req $request_handle)
+//	    (result $err (expected $bot_verified (error $fastly_status)))
+//	)
+//
+//go:wasmimport fastly_http_downstream downstream_bot_verified
+//go:noescape
+func fastlyHTTPDownstreamBotVerified(
+	req requestHandle,
+	analyzed prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamBotVerified() (bool, error) {
+	var verified struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamBotVerified(
+		r.h,
+		prim.ToPointer(&verified.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return verified.b, nil
+}
+
+// witx:
+//
 //	;;; Hostcall for Fastly Compute guests to inspect request HTTP traffic
 //	;;; using the NGWAF lookaside service.
 //	(@interface func (export "inspect")
