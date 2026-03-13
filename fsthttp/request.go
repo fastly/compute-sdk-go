@@ -1081,7 +1081,7 @@ func (req *Request) TLSClientCertificateInfo() (*TLSClientCertificateInfo, error
 		}
 
 		if cert.RawClientCertificate != nil {
-			cert.ClientCertIsVerified, err = req.downstream.req.DownstreamTLSClientCertVerifyResult()
+			cert.VerifyResult, err = req.downstream.req.DownstreamTLSClientCertVerifyResult()
 			if err != nil {
 				return nil, fmt.Errorf("get TLS client certificate verify: %w", err)
 			}
@@ -1092,12 +1092,41 @@ func (req *Request) TLSClientCertificateInfo() (*TLSClientCertificateInfo, error
 	return req.clientCertificate, nil
 }
 
+type ClientCertificateVerifyResult = fastly.ClientCertificateVerifyResult
+
+const (
+	// ClientCertificateVerifyResultOK indicates that client certificate verified successfully.
+	ClientCertificateVerifyResultOK = fastly.ClientCertificateVerifyResultOK
+
+	// ClientCertificateVerifyResultBadCertificate means the certificate is corrupt
+	// (e.g., the certificate signatures do not verify correctly).
+	ClientCertificateVerifyResultBadCertificate = fastly.ClientCertificateVerifyResultBadCertificate
+
+	// ClientCertificateVerifyResultCertificateRevoked means the client certificate is revoked by its signer.
+	ClientCertificateVerifyResultCertificateRevoked = fastly.ClientCertificateVerifyResultCertificateRevoked
+
+	// ClientCertificateVerifyResultCertificateExpired means the client certificate has expired or is not currently valid.
+	ClientCertificateVerifyResultCertificateExpired = fastly.ClientCertificateVerifyResultCertificateExpired
+
+	// ClientCertificateVerifyResultUnknownCA means the valid certificate chain or partial chain was received, but the
+	// certificate was not accepted because the CA certificate could not be located or could not
+	// be matched with a known trust anchor.
+	ClientCertificateVerifyResultUnknownCA = fastly.ClientCertificateVerifyResultUnknownCA
+
+	// ClientCertificateVerifyResultCertificateMissing means the client did not provide a certificate during the handshake.
+	ClientCertificateVerifyResultCertificateMissing = fastly.ClientCertificateVerifyResultCertificateMissing
+
+	// ClientCertificateVerifyResultCertificateUnknown means the client certificate was received, but some other (unspecified) issue
+	// arose in processing the certificate, rendering it unacceptable.
+	ClientCertificateVerifyResultCertificateUnknown = fastly.ClientCertificateVerifyResultCertificateUnknown
+)
+
 type TLSClientCertificateInfo struct {
 	// RawClientCertificate contains the bytes of the raw client certificate, if one was provided.
 	RawClientCertificate []byte
 
-	// ClientCertIsVerified is true if the provided client certificate is valid.
-	ClientCertIsVerified bool
+	// VerifyResult the result of the client certificate verification
+	VerifyResult ClientCertificateVerifyResult
 }
 
 // FastlyMeta holds various Fastly-specific metadata for a request.

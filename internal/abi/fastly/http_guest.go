@@ -1684,19 +1684,19 @@ func (r *HTTPRequest) DownstreamTLSRawClientCertificate() ([]byte, error) {
 //go:noescape
 func fastlyHTTPDownstreamTLSClientCertVerifyResult(
 	req requestHandle,
-	result prim.Pointer[bool],
+	result prim.Pointer[prim.U32],
 ) FastlyStatus
 
-func (r *HTTPRequest) DownstreamTLSClientCertVerifyResult() (bool, error) {
-	var result bool
+func (r *HTTPRequest) DownstreamTLSClientCertVerifyResult() (ClientCertificateVerifyResult, error) {
+	var result prim.U32
 	if err := fastlyHTTPDownstreamTLSClientCertVerifyResult(
 		r.h,
 		prim.ToPointer(&result),
 	).toError(); err != nil {
-		return false, err
+		return 0, err
 	}
 
-	return result, nil
+	return ClientCertificateVerifyResult(result), nil
 }
 
 // witx:

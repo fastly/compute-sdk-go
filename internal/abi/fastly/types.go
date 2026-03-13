@@ -1629,6 +1629,39 @@ func tlsAlertString(id prim.U8) string {
 	}
 }
 
+type ClientCertificateVerifyResult prim.U32
+
+const (
+	ClientCertificateVerifyResultOK                 ClientCertificateVerifyResult = 0
+	ClientCertificateVerifyResultBadCertificate     ClientCertificateVerifyResult = 1
+	ClientCertificateVerifyResultCertificateRevoked ClientCertificateVerifyResult = 2
+	ClientCertificateVerifyResultCertificateExpired ClientCertificateVerifyResult = 3
+	ClientCertificateVerifyResultUnknownCA          ClientCertificateVerifyResult = 4
+	ClientCertificateVerifyResultCertificateMissing ClientCertificateVerifyResult = 5
+	ClientCertificateVerifyResultCertificateUnknown ClientCertificateVerifyResult = 6
+)
+
+func (c ClientCertificateVerifyResult) String() string {
+	switch c {
+	case 0:
+		return "Ok"
+	case 1:
+		return "Bad Certificate"
+	case 2:
+		return "Certificate Revoked"
+	case 3:
+		return "Certificate Expired"
+	case 4:
+		return "Unknown CA"
+	case 5:
+		return "Certificate Missing"
+	case 6:
+		return "Certificate Unknown"
+	}
+
+	return "Unknown result"
+}
+
 type RateWindow struct {
 	value prim.U32
 }
