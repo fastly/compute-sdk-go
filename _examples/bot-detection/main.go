@@ -12,7 +12,12 @@ import (
 
 func main() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		bot, _ := r.BotDetection()
+		bot, err := r.BotDetection()
+		if err != nil {
+			// Log the failure but don't return; gracefully handle the lack of bot detection result instead.
+			// bot.Analyzed will be false.
+			log.Println("Bot detection not available:", err)
+		}
 
 		if bot.Analyzed {
 			if bot.Detected {
