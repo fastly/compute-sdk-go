@@ -65,15 +65,15 @@ type BotDetectionResult struct {
 	// For conditional logic, use CategoryKind.
 	Name string
 
-	// Category is a string indicating the type of bot detected (e.g., `SEARCH-ENGINE-CRAWLER`, `AI-CRAWLER`,
+	// CategoryName is a string indicating the type of bot detected (e.g., `SEARCH-ENGINE-CRAWLER`, `AI-CRAWLER`,
 	// `SUSPECTED-BOT`).
 	//
 	// Note: String values may change over time. Use this for logging or informational purposes.
 	// For conditional logic, use CategoryKind.
-	Category string
+	CategoryName string
 
 	// An enum uniquely identifying the type of bot detected.
-	CategoryKind BotCategory
+	Category BotCategory
 
 	// Verified is whether the detected bot is a verified bot.
 	Verified bool
@@ -105,14 +105,14 @@ func (r *Request) BotDetection() (*BotDetectionResult, error) {
 		return nil, err
 	}
 
-	if result.Category, err = r.downstream.req.DownstreamBotCategory(); err != nil {
+	if result.CategoryName, err = r.downstream.req.DownstreamBotCategoryName(); err != nil {
 		return nil, err
 	}
 
-	if kind, err := r.downstream.req.DownstreamBotCategoryKind(); err != nil {
+	if kind, err := r.downstream.req.DownstreamBotCategory(); err != nil {
 		return nil, err
 	} else {
-		result.CategoryKind = BotCategory(kind)
+		result.Category = BotCategory(kind)
 	}
 
 	if result.Verified, err = r.downstream.req.DownstreamBotVerified(); err != nil {

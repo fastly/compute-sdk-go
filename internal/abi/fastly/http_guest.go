@@ -1937,17 +1937,17 @@ func (r *HTTPRequest) DownstreamBotName() (string, error) {
 //
 //go:wasmimport fastly_http_downstream downstream_bot_category
 //go:noescape
-func fastlyHTTPReqDownstreamBotCategory(
+func fastlyHTTPReqDownstreamBotCategoryName(
 	req requestHandle,
 	botCategoryOut prim.Pointer[prim.Char8],
 	botCategoryMaxLen prim.Usize,
 	nwrittenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
-// DownstreamBotCategory returns the bot category
-func (r *HTTPRequest) DownstreamBotCategory() (string, error) {
+// DownstreamBotCategoryName returns the bot category as a string
+func (r *HTTPRequest) DownstreamBotCategoryName() (string, error) {
 	value, err := withAdaptiveBuffer(DefaultSmallBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
-		return fastlyHTTPReqDownstreamBotCategory(
+		return fastlyHTTPReqDownstreamBotCategoryName(
 			r.h,
 			prim.ToPointer(buf.Char8Pointer()),
 			buf.Cap(),
@@ -1969,14 +1969,14 @@ func (r *HTTPRequest) DownstreamBotCategory() (string, error) {
 //
 //go:wasmimport fastly_http_downstream downstream_bot_category_kind
 //go:noescape
-func fastlyHTTPDownstreamBotCategoryKind(
+func fastlyHTTPDownstreamBotCategory(
 	req requestHandle,
 	kind prim.Pointer[prim.U32],
 ) FastlyStatus
 
-func (r *HTTPRequest) DownstreamBotCategoryKind() (uint32, error) {
+func (r *HTTPRequest) DownstreamBotCategory() (uint32, error) {
 	var kind prim.U32
-	if err := fastlyHTTPDownstreamBotCategoryKind(
+	if err := fastlyHTTPDownstreamBotCategory(
 		r.h,
 		prim.ToPointer(&kind),
 	).toError(); err != nil {

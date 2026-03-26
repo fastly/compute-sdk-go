@@ -159,11 +159,11 @@ func (r *HTTPRequest) DownstreamBotName() (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) DownstreamBotCategory() (string, error) {
+func (r *HTTPRequest) DownstreamBotCategoryName() (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) DownstreamBotCategoryKind() (uint32, error) {
+func (r *HTTPRequest) DownstreamBotCategory() (uint32, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
