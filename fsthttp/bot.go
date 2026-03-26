@@ -109,6 +109,12 @@ func (r *Request) BotDetection() (*BotDetectionResult, error) {
 		return nil, err
 	}
 
+	if kind, err := r.downstream.req.DownstreamBotCategoryKind(); err != nil {
+		return nil, err
+	} else {
+		result.CategoryKind = BotCategory(kind)
+	}
+
 	if result.Verified, err = r.downstream.req.DownstreamBotVerified(); err != nil {
 		return nil, err
 	}
