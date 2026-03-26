@@ -69,7 +69,7 @@ type BotDetectionResult struct {
 	// `SUSPECTED-BOT`).
 	//
 	// Note: String values may change over time. Use this for logging or informational purposes.
-	// For conditional logic, use [`get_bot_category_kind()`][Self::get_bot_category_kind].
+	// For conditional logic, use CategoryKind.
 	Category string
 
 	// An enum uniquely identifying the type of bot detected.
