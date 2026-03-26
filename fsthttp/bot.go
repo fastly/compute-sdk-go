@@ -76,7 +76,7 @@ type BotDetectionResult struct {
 	CategoryKind BotCategory
 
 	// Verified is whether the detected bot is a verified bot.
-	Verfied bool
+	Verified bool
 }
 
 func (r *Request) BotDetection() (*BotDetectionResult, error) {
@@ -109,7 +109,7 @@ func (r *Request) BotDetection() (*BotDetectionResult, error) {
 		return nil, err
 	}
 
-	if result.Verfied, err = r.downstream.req.DownstreamBotVerified(); err != nil {
+	if result.Verified, err = r.downstream.req.DownstreamBotVerified(); err != nil {
 		return nil, err
 	}
 
