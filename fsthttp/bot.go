@@ -84,7 +84,7 @@ func (r *Request) BotDetection() (*BotDetectionResult, error) {
 
 	var err error
 	if result.Analyzed, err = r.downstream.req.DownstreamBotAnalyzed(); err != nil {
-		return nil, err
+		return &BotDetectionResult{}, err
 	}
 
 	// Didn't analyze the request?  Nothing else to do.
@@ -93,7 +93,9 @@ func (r *Request) BotDetection() (*BotDetectionResult, error) {
 	}
 
 	if result.Detected, err = r.downstream.req.DownstreamBotDetected(); err != nil {
-		return nil, err
+		// Return an empty BotDetectionResult so Analyzed is false.  We don't want to
+		// claim that Analyzed == true but Detected == false.
+		return &BotDetectionResult{}, err
 	}
 
 	// Request wasn't detected as a bot?  Nothing to fill in.
@@ -101,23 +103,27 @@ func (r *Request) BotDetection() (*BotDetectionResult, error) {
 		return &result, nil
 	}
 
+	// Best effort fill in what we have
+	var firstError error
+
 	if result.Name, err = r.downstream.req.DownstreamBotName(); err != nil {
-		return nil, err
+		firstError = err
 	}
 
-	if result.CategoryName, err = r.downstream.req.DownstreamBotCategoryName(); err != nil {
-		return nil, err
+	if result.CategoryName, err = r.downstream.req.DownstreamBotCategoryName(); firstError == nil && err != nil {
+		firstError = err
 	}
 
-	if kind, err := r.downstream.req.DownstreamBotCategory(); err != nil {
-		return nil, err
+	if kind, err := r.downstream.req.DownstreamBotCategory(); firstError == nil && err != nil {
+		result.Category = BotCategoryUnknown
+		firstError = err
 	} else {
 		result.Category = BotCategory(kind)
 	}
 
-	if result.Verified, err = r.downstream.req.DownstreamBotVerified(); err != nil {
-		return nil, err
+	if result.Verified, err = r.downstream.req.DownstreamBotVerified(); firstError == nil && err != nil {
+		firstError = err
 	}
 
-	return &result, nil
+	return &result, firstError
 }
