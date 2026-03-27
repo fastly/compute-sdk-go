@@ -147,6 +147,30 @@ func (r *HTTPRequest) DownstreamFastlyKeyIsValid() (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
+func (r *HTTPRequest) DownstreamBotAnalyzed() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamBotDetected() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamBotName() (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamBotCategoryName() (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamBotCategory() (uint32, error) {
+	return 0, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamBotVerified() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
 func NewHTTPRequest() (*HTTPRequest, error) {
 	return nil, fmt.Errorf("not implemented")
 }
