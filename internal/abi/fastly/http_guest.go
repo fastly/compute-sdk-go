@@ -1832,6 +1832,254 @@ func (r *HTTPRequest) DownstreamFastlyKeyIsValid() (bool, error) {
 	return valid.b, nil
 }
 
+//go:wasmimport fastly_http_downstream downstream_resvpnproxy_is_anonymous
+//go:noescape
+func fastlyHTTPDownstreamResVPNProxyIsAnonymous(
+	req requestHandle,
+	result prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsAnonymous() (bool, error) {
+	var result struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamResVPNProxyIsAnonymous(
+		r.h,
+		prim.ToPointer(&result.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return result.b, nil
+}
+
+//go:wasmimport fastly_http_downstream downstream_resvpnproxy_is_anonymous_vpn
+//go:noescape
+func fastlyHTTPDownstreamResVPNProxyIsAnonymousVPN(
+	req requestHandle,
+	result prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsAnonymousVPN() (bool, error) {
+	var result struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamResVPNProxyIsAnonymousVPN(
+		r.h,
+		prim.ToPointer(&result.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return result.b, nil
+}
+
+//go:wasmimport fastly_http_downstream downstream_resvpnproxy_is_hosting_provider
+//go:noescape
+func fastlyHTTPDownstreamResVPNProxyIsHostingProvider(
+	req requestHandle,
+	result prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsHostingProvider() (bool, error) {
+	var result struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamResVPNProxyIsHostingProvider(
+		r.h,
+		prim.ToPointer(&result.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return result.b, nil
+}
+
+//go:wasmimport fastly_http_downstream downstream_resvpnproxy_is_proxy_over_vpn
+//go:noescape
+func fastlyHTTPDownstreamResVPNProxyIsProxyOverVPN(
+	req requestHandle,
+	result prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsProxyOverVPN() (bool, error) {
+	var result struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamResVPNProxyIsProxyOverVPN(
+		r.h,
+		prim.ToPointer(&result.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return result.b, nil
+}
+
+//go:wasmimport fastly_http_downstream downstream_resvpnproxy_is_public_proxy
+//go:noescape
+func fastlyHTTPDownstreamResVPNProxyIsPublicProxy(
+	req requestHandle,
+	result prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsPublicProxy() (bool, error) {
+	var result struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamResVPNProxyIsPublicProxy(
+		r.h,
+		prim.ToPointer(&result.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return result.b, nil
+}
+
+//go:wasmimport fastly_http_downstream downstream_resvpnproxy_is_relay_proxy
+//go:noescape
+func fastlyHTTPDownstreamResVPNProxyIsRelayProxy(
+	req requestHandle,
+	result prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsRelayProxy() (bool, error) {
+	var result struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamResVPNProxyIsRelayProxy(
+		r.h,
+		prim.ToPointer(&result.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return result.b, nil
+}
+
+//go:wasmimport fastly_http_downstream downstream_resvpnproxy_is_residential_proxy
+//go:noescape
+func fastlyHTTPDownstreamResVPNProxyIsResidentialProxy(
+	req requestHandle,
+	result prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsResidentialProxy() (bool, error) {
+	var result struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamResVPNProxyIsResidentialProxy(
+		r.h,
+		prim.ToPointer(&result.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return result.b, nil
+}
+
+//go:wasmimport fastly_http_downstream downstream_resvpnproxy_is_smart_dns_proxy
+//go:noescape
+func fastlyHTTPDownstreamResVPNProxyIsSmartDNSProxy(
+	req requestHandle,
+	result prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsSmartDNSProxy() (bool, error) {
+	var result struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamResVPNProxyIsSmartDNSProxy(
+		r.h,
+		prim.ToPointer(&result.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return result.b, nil
+}
+
+//go:wasmimport fastly_http_downstream downstream_resvpnproxy_is_tor_exit_node
+//go:noescape
+func fastlyHTTPDownstreamResVPNProxyIsTorExitNode(
+	req requestHandle,
+	result prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsTorExitNode() (bool, error) {
+	var result struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamResVPNProxyIsTorExitNode(
+		r.h,
+		prim.ToPointer(&result.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return result.b, nil
+}
+
+//go:wasmimport fastly_http_downstream downstream_resvpnproxy_is_vpn_datacenter
+//go:noescape
+func fastlyHTTPDownstreamResVPNProxyIsVPNDatacenter(
+	req requestHandle,
+	result prim.Pointer[bool],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsVPNDatacenter() (bool, error) {
+	var result struct {
+		b bool
+		_ prim.Usize // align padding
+	}
+	if err := fastlyHTTPDownstreamResVPNProxyIsVPNDatacenter(
+		r.h,
+		prim.ToPointer(&result.b),
+	).toError(); err != nil {
+		return false, err
+	}
+
+	return result.b, nil
+}
+
+//go:wasmimport fastly_http_downstream downstream_resvpnproxy_vpn_service_name
+//go:noescape
+func fastlyHTTPDownstreamResVPNProxyVPNServiceName(
+	req requestHandle,
+	serviceNameOut prim.Pointer[prim.Char8],
+	serviceNameMaxLen prim.Usize,
+	nwrittenOut prim.Pointer[prim.Usize],
+) FastlyStatus
+
+func (r *HTTPRequest) DownstreamResVPNProxyVPNServiceName() (string, error) {
+	value, err := withAdaptiveBuffer(DefaultMediumBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
+		return fastlyHTTPDownstreamResVPNProxyVPNServiceName(
+			r.h,
+			prim.ToPointer(buf.Char8Pointer()),
+			buf.Cap(),
+			prim.ToPointer(buf.NPointer()),
+		)
+	})
+	if err != nil {
+		status, ok := IsFastlyError(err)
+		if ok && status == FastlyStatusNone {
+			return "", status.toError()
+		}
+		return "", err
+	}
+	return value.ToString(), nil
+}
+
 // witx:
 //
 //	(@interface func (export "downstream_bot_analyzed")
@@ -2044,7 +2292,6 @@ func fastlyHTTPReqInspect(
 
 // Inspect HTTP traffic with NGWAF
 func (r *HTTPRequest) Inspect(info *InspectInfo, b *HTTPBody) ([]byte, error) {
-
 	value, err := withAdaptiveBuffer(DefaultMediumBufLen, func(buf *prim.WriteBuffer) FastlyStatus {
 		return fastlyHTTPReqInspect(
 			r.h,

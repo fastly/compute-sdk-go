@@ -1228,7 +1228,6 @@ func (inspect *InspectResponse) IsRedirect() bool {
 // {"waf_response":200,"redirect_url":"","tags":[],"verdict":"allow","decision_ms":0}
 
 func (r *Request) Inspect(opts *InspectOptions) (*InspectResponse, error) {
-
 	type inspectJSON struct {
 		WafResponse int      `json:"waf_response"`
 		RedirectURL string   `json:"redirect_url"`
