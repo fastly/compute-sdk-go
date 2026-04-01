@@ -21,6 +21,14 @@ func (o *HTTPCacheLookupOptions) OverrideKey(key string) {
 	o.mask |= httpCacheLookupOptionsFlagOverrideKey
 }
 
+func (o *HTTPCacheLookupOptions) Backend(backend string) {
+	b := []byte(backend)
+	buf := prim.NewReadBufferFromBytes(b)
+	o.opts.backendPtr = prim.ToPointer(buf.Char8Pointer())
+	o.opts.backendLen = buf.Len()
+	o.mask |= httpCacheLookupOptionsFlagBackend
+}
+
 type HTTPCacheWriteOptions struct {
 	mask httpCacheWriteOptionsMask
 	opts httpCacheWriteOptions
