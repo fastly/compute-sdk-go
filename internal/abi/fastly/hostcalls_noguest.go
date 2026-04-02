@@ -171,6 +171,50 @@ func (r *HTTPRequest) DownstreamBotVerified() (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
+func (r *HTTPRequest) DownstreamResVPNProxyIsAnonymous() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsAnonymousVPN() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsHostingProvider() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsProxyOverVPN() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsPublicProxy() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsRelayProxy() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsResidentialProxy() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsSmartDNSProxy() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsTorExitNode() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamResVPNProxyIsVPNDatacenter() (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (r *HTTPRequest) DownstreamResVPNProxyVPNServiceName() (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
 func NewHTTPRequest() (*HTTPRequest, error) {
 	return nil, fmt.Errorf("not implemented")
 }
@@ -472,6 +516,7 @@ func (d *ConfigStore) Has(key string) (bool, error) {
 func GeoLookup(ip net.IP) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
 
 type KVStore struct{}
 

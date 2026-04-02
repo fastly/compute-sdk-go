@@ -1,0 +1,8 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["oss@fastly.com"]
+description = "Test ResVPNProxy hostcalls"
+language = "go"
+manifest_version = 2
+name = "resvpnproxy-test"
