@@ -765,6 +765,10 @@ type HTTPCacheLookupOptions struct{}
 func (HTTPCacheLookupOptions) OverrideKey(key string) {
 }
 
+func (HTTPCacheLookupOptions) Backend(backend string) {
+}
+
+
 func HTTPCacheIsRequestCacheable(req *HTTPRequest) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }

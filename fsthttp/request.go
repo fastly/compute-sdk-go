@@ -624,6 +624,8 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 		req.CacheOptions.OverrideKey = ""
 	}
 
+	options.Backend(backend)
+
 	// force the lookup to await in the host, retrieving any errors synchronously
 	cacheHandle, err := fastly.HTTPCacheTransactionLookup(req.abi.req, &options)
 	if err != nil {

@@ -1824,6 +1824,8 @@ const (
 type httpCacheLookupOptions struct {
 	overrideKeyPtr prim.Pointer[prim.Char8]
 	overrideKeyLen prim.Usize
+	backendPtr     prim.Pointer[prim.Char8]
+	backendLen     prim.Usize
 }
 
 type httpCacheLookupOptionsMask prim.U32
@@ -1831,6 +1833,7 @@ type httpCacheLookupOptionsMask prim.U32
 const (
 	httpCacheLookupOptionsFlagReserved    httpCacheLookupOptionsMask = 1 << 0
 	httpCacheLookupOptionsFlagOverrideKey httpCacheLookupOptionsMask = 1 << 1
+	httpCacheLookupOptionsFlagBackend     httpCacheLookupOptionsMask = 1 << 2
 )
 
 type (
