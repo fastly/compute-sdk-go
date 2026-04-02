@@ -992,7 +992,13 @@ const (
 	CacheLookupStateUsable             CacheLookupState = 0b0000_0010 // $usable
 	CacheLookupStateStale              CacheLookupState = 0b0000_0100 // $stale
 	CacheLookupStateMustInsertOrUpdate CacheLookupState = 0b0000_1000 // $must_insert_or_update
+	CacheLookupStateUsableIfError      CacheLookupState = 0b0001_0000 // $usable_if_error
+	CacheLookupStateCollapseError      CacheLookupState = 0b0010_0000 // $collapse_error
 )
+
+func (c CacheLookupState) Has(m CacheLookupState) bool {
+	return (c & m) == m
+}
 
 // witx:
 //
@@ -1381,6 +1387,7 @@ const (
 	SendErrorDetailTagInternalError                     SendErrorDetailTag = 22
 	SendErrorDetailTagTLSAlertReceived                  SendErrorDetailTag = 23
 	SendErrorDetailTagTLSProtocolError                  SendErrorDetailTag = 24
+	SendErrorDetailTagH2Error                           SendErrorDetailTag = 25
 )
 
 // witx:
@@ -1404,6 +1411,7 @@ const (
 	sendErrorDetailMaskDNSErrorRCode = 1 << 1 // $dns_error_rcode
 	sendErrorDetailMaskDNSErrorInfo  = 1 << 2 // $dns_error_info_code
 	sendErrorDetailMaskTLSAlertID    = 1 << 3 // $tls_alert_id
+	sendErrorDetailMaskH2Error       = 1 << 4 // $h2_error
 )
 
 // witx:
@@ -1415,6 +1423,8 @@ const (
 //	    (field $dns_error_rcode u16)
 //	    (field $dns_error_info_code u16)
 //	    (field $tls_alert_id u8)
+//	    (field $h2_error_frame u8)
+//	    (field $h2_error_code u32)
 //	    ))
 
 // SendErrorDetail contains detailed error information from backend send operations.
@@ -1424,6 +1434,8 @@ type SendErrorDetail struct {
 	dnsErrorRCode    prim.U16
 	dnsErrorInfoCode prim.U16
 	tlsAlertID       prim.U8
+	h2ErrorFrame     prim.U8
+	h2ErrorCode      prim.U32
 }
 
 func newSendErrorDetail() SendErrorDetail {
@@ -1485,6 +1497,14 @@ func (d SendErrorDetail) TLSAlertID() uint8 {
 	return uint8(d.tlsAlertID)
 }
 
+func (d SendErrorDetail) H2ErrorFrame() uint8 {
+	return uint8(d.h2ErrorFrame)
+}
+
+func (d SendErrorDetail) H2ErrorCode() uint32 {
+	return uint32(d.h2ErrorCode)
+}
+
 // TLSAlertDescription returns a human-readable description of the TLS alert.
 func (d SendErrorDetail) TLSAlertDescription() string {
 	return tlsAlertString(d.tlsAlertID)
@@ -1542,7 +1562,8 @@ func (d SendErrorDetail) String() string {
 		return fmt.Sprintf("TLS alert received (%s)", tlsAlertString(d.tlsAlertID))
 	case SendErrorDetailTagTLSProtocolError:
 		return "TLS protocol error"
-
+	case SendErrorDetailTagH2Error:
+		return "HTTP/2 error"
 	case SendErrorDetailTagUninitialized:
 		panic("should not be reached: SendErrorDetailTagUninitialized")
 	case SendErrorDetailTagOK:
@@ -1883,6 +1904,12 @@ type httpCacheWriteOptions struct {
 	// body have enough information to synthesize a `content-length` even before the complete
 	// body is inserted to the cache.
 	length httpCacheObjectLength
+
+	// The maximum duration after `max_age` during which the response may be delivered stale
+	// if synchronous revalidation produces an error.
+	//
+	// If this field is not set, the default value is zero.
+	staleIfErrorNs httpCacheDurationNs
 }
 
 type httpCacheWriteOptionsMask prim.U32
@@ -1895,6 +1922,7 @@ const (
 	httpCacheWriteOptionsFlagSurrogateKeys        httpCacheWriteOptionsMask = 1 << 4
 	httpCacheWriteOptionsFlagLength               httpCacheWriteOptionsMask = 1 << 5
 	httpCacheWriteOptionsFlagSensitiveData        httpCacheWriteOptionsMask = 1 << 6
+	httpCacheWriteOptionsFlagStaleIfError         httpCacheWriteOptionsMask = 1 << 7
 )
 
 // shielding.witx
