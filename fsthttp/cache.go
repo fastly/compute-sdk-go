@@ -50,16 +50,16 @@ type cacheResponse struct {
 }
 
 type cacheWriteOptions struct {
-	maxAge          uint32 // seconds
-	vary            string
-	useVary         bool
-	age             uint32 // seconds
-	staleRevalidate uint32 // seconds
-	surrogate       string
-	length          uint64
-	useLength       bool
-	sensitive       bool
-	staleError      uint32
+	maxAge               uint32 // seconds
+	vary                 string
+	useVary              bool
+	age                  uint32 // seconds
+	staleWhileRevalidate uint32 // seconds
+	surrogate            string
+	length               uint64
+	useLength            bool
+	sensitive            bool
+	staleIfError         uint32 // seconds
 
 	abiOpts fastly.HTTPCacheWriteOptions
 }
@@ -73,10 +73,10 @@ func (opts *cacheWriteOptions) flushToABI() {
 	opts.abiOpts.SetMaxAgeNs(u32sTou64ns(opts.maxAge))
 	opts.abiOpts.SetVaryRule(opts.vary)
 	opts.abiOpts.SetInitialAgeNs(u32sTou64ns(opts.age))
-	opts.abiOpts.SetStaleWhileRevalidateNs(u32sTou64ns(opts.staleRevalidate))
+	opts.abiOpts.SetStaleWhileRevalidateNs(u32sTou64ns(opts.staleWhileRevalidate))
 	opts.abiOpts.SetSurrogateKeys(opts.surrogate)
 	opts.abiOpts.SetSensitiveData(opts.sensitive)
-	opts.abiOpts.SetStaleIfErrorNs(u32sTou64ns(opts.staleError))
+	opts.abiOpts.SetStaleIfErrorNs(u32sTou64ns(opts.staleIfError))
 }
 
 func (opts *cacheWriteOptions) loadFromABI() {
@@ -86,14 +86,14 @@ func (opts *cacheWriteOptions) loadFromABI() {
 		opts.age = u64nsTou32s(ns)
 	}
 	if ns, ok := opts.abiOpts.StaleWhileRevalidateNs(); ok {
-		opts.staleRevalidate = u64nsTou32s(ns)
+		opts.staleWhileRevalidate = u64nsTou32s(ns)
 	}
 	opts.surrogate, _ = opts.abiOpts.SurrogateKeys()
 	opts.length, opts.useLength = opts.abiOpts.Length()
 	opts.sensitive = opts.abiOpts.SensitiveData()
 
 	if ns, ok := opts.abiOpts.StaleIfErrorNs(); ok {
-		opts.staleError = u64nsTou32s(ns)
+		opts.staleIfError = u64nsTou32s(ns)
 	}
 }
 
@@ -120,7 +120,7 @@ func (opts *cacheWriteOptions) loadFromHandle(c *fastly.HTTPCacheHandle) error {
 	if ns, err := fastly.HTTPCacheGetStaleWhileRevalidateNs(c); err != nil {
 		return fmt.Errorf("get stale while revalidate: %w", err)
 	} else {
-		opts.staleRevalidate = u64nsTou32s(uint64(ns))
+		opts.staleWhileRevalidate = u64nsTou32s(uint64(ns))
 	}
 
 	opts.surrogate, err = fastly.HTTPCacheGetSurrogateKeys(c)
@@ -148,7 +148,7 @@ func (opts *cacheWriteOptions) loadFromHandle(c *fastly.HTTPCacheHandle) error {
 	if ns, err := fastly.HTTPCacheGetStaleIfErrorNs(c); err != nil {
 		return fmt.Errorf("get stale if error: %w", err)
 	} else {
-		opts.staleError = u64nsTou32s(uint64(ns))
+		opts.staleIfError = u64nsTou32s(uint64(ns))
 	}
 
 	return nil
@@ -418,7 +418,7 @@ func (candidateResponse *CandidateResponse) StaleWhileRevalidate() (uint32, erro
 	if err != nil {
 		return 0, err
 	}
-	return opts.staleRevalidate, nil
+	return opts.staleWhileRevalidate, nil
 }
 
 // SetStaleIfError sets the time in seconds for which a cached item can be delivered stale if synchronous revalidation produces an error.
@@ -436,7 +436,7 @@ func (candidateResponse *CandidateResponse) StaleIfError() (uint32, error) {
 	if err != nil {
 		return 0, err
 	}
-	return opts.staleError, nil
+	return opts.staleIfError, nil
 }
 
 // Returns whether there is a stale-if-error response available from the cache.
@@ -630,9 +630,9 @@ func (candidateResponse *CandidateResponse) finalizeOptions() (fastly.HTTPCacheS
 	opts.age = suggestedCacheWriteOptions.age
 
 	if candidateResponse.useSWR {
-		opts.staleRevalidate = candidateResponse.overrideStaleWhileRevalidate
+		opts.staleWhileRevalidate = candidateResponse.overrideStaleWhileRevalidate
 	} else {
-		opts.staleRevalidate = suggestedCacheWriteOptions.staleRevalidate
+		opts.staleWhileRevalidate = suggestedCacheWriteOptions.staleWhileRevalidate
 	}
 
 	if candidateResponse.useVary {
