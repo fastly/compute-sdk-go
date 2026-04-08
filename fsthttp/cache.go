@@ -366,7 +366,7 @@ func (candidateResponse *CandidateResponse) IsStale() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("get state: %w", err)
 	}
-	return state&fastly.CacheLookupStateStale == fastly.CacheLookupStateStale, nil
+	return state.Has(fastly.CacheLookupStateStale), nil
 }
 
 // Age returns current age in seconds of the cached item, relative to the originating backend.
@@ -451,7 +451,7 @@ func (candidateResponse *CandidateResponse) StaleIfError() (uint32, error) {
 // return the stale-if-error response.
 func (candidateResponse *CandidateResponse) StaleIfErrorAvailable() bool {
 	state, _ := fastly.HTTPCacheGetState(candidateResponse.cacheHandle)
-	return state&fastly.CacheLookupStateUsableIfError == fastly.CacheLookupStateUsableIfError
+	return state.Has(fastly.CacheLookupStateUsableIfError)
 }
 
 // SetSensitive sets the caching behavior of this response to enable or disable PCI/HIPAA-compliant
