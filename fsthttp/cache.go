@@ -446,8 +446,8 @@ func (candidateResponse *CandidateResponse) StaleIfError() (uint32, error) {
 // if the Backend's response is a 5xx error.
 //
 // This method returns true if there is a cached response that is within the stale-if-error
-// period. If a stale-if-error response is available, and the after_send hook returns an
-// error, the response from the Backend will not be cached, and the [Request::send] call will
+// period. If a stale-if-error response is available, and the AfterSend hook returns an
+// error, the response from the Backend will not be cached, and the [Request.Send] call will
 // return the stale-if-error response.
 func (candidateResponse *CandidateResponse) StaleIfErrorAvailable() bool {
 	state, _ := fastly.HTTPCacheGetState(candidateResponse.cacheHandle)
