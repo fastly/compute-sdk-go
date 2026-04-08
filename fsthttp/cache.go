@@ -427,7 +427,7 @@ func (candidateResponse *CandidateResponse) SetStaleIfError(sie uint32) {
 	candidateResponse.useSIE = true
 }
 
-// StaleIfError returns the time in seconds for which a cached item be delivered stale if synchronous revalidation produces an error.
+// StaleIfError returns the time in seconds for which a cached item will be delivered stale if synchronous revalidation produces an error.
 func (candidateResponse *CandidateResponse) StaleIfError() (uint32, error) {
 	if candidateResponse.useSIE {
 		return candidateResponse.overrideStaleIfError, nil
