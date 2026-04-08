@@ -1018,8 +1018,8 @@ type CacheOptions struct {
 	// bypass the cache.
 	StaleWhileRevalidate uint32
 
-	// The maximum duration after `max_age` during which the response may be delivered stale
-	// if synchronous revalidation produces an error.
+	// The maximum duration in seconds after `max_age` during which the response
+	// may be delivered stale if synchronous revalidation produces an error.
 	//
 	// If this field is not set, the default value is zero.
 	StaleIfError uint32
