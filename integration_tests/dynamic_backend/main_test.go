@@ -99,3 +99,95 @@ func TestDynamicBackend(t *testing.T) {
 		t.Errorf("Body = %q, want %q", got, want)
 	}
 }
+
+func TestOriginHealth(t *testing.T) {
+	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
+
+		{
+			b, err := fsthttp.BackendFromName("healthy")
+
+			if err != nil {
+				t.Errorf("BackendFromName: %v", err)
+				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				return
+			}
+
+			health, err := b.Health()
+			if err != nil {
+				t.Errorf("Health: %v", err)
+				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				return
+			}
+
+			if health != fsthttp.BackendHealthHealthy {
+				want := fsthttp.BackendHealthHealthy
+				t.Errorf("Health = %v, want %v", health, want)
+				fsthttp.Error(w, fmt.Sprintf("Health = %v, want %v", health, want), fsthttp.StatusInternalServerError)
+				return
+			}
+
+		}
+
+		b, err := fsthttp.BackendFromName("unhealthy")
+
+		if err != nil {
+			t.Errorf("BackendFromName: %v", err)
+			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			return
+		}
+
+		health, err := b.Health()
+		if err != nil {
+			t.Errorf("Health: %v", err)
+			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			return
+		}
+
+		if health != fsthttp.BackendHealthUnhealthy {
+			want := fsthttp.BackendHealthUnhealthy
+			t.Errorf("Health = %v, want %v", health, want)
+			fsthttp.Error(w, fmt.Sprintf("Health = %v, want %v", health, want), fsthttp.StatusInternalServerError)
+			return
+		}
+
+		req, err := fsthttp.NewRequest("GET", b.Target(), nil)
+		if err != nil {
+			t.Errorf("NewRequest: %v", err)
+			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			return
+		}
+
+		_ = req
+
+		/*
+			// Send to our unhealthy backend
+			_, err = req.Send(ctx, b.Name())
+			if err == nil {
+				t.Errorf("Send had nil error")
+				fsthttp.Error(w, "nil error", fsthttp.StatusInternalServerError)
+				return
+			} else {
+				fmt.Fprintf(w, "error from unhealthy send: %v", err)
+			}
+
+		*/
+
+		fmt.Fprintf(w, "Ok")
+	}
+
+	r, err := fsthttp.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatalf("NewRequest: %v", err)
+	}
+	w := fsttest.NewRecorder()
+
+	handler(context.Background(), w, r)
+
+	if got, want := w.Code, fsthttp.StatusOK; got != want {
+		t.Errorf("Code = %d, want %d", got, want)
+	}
+
+	if got, want := w.Body.String(), "Ok"; got != want {
+		t.Errorf("Body = %q, want %q", got, want)
+	}
+}
