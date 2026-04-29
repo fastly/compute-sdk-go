@@ -151,10 +151,11 @@ const (
 )
 
 type InsertConfig struct {
-	Mode            InsertMode
-	BackgroundFetch bool
-	Metadata        []byte
-	TTLSec          uint32
+	Mode              InsertMode
+	BackgroundFetch   bool
+	Metadata          []byte
+	TTLSec            uint32
+	IfGenerationMatch uint64
 }
 
 // Insert adds a key to the associated KV store.
@@ -170,6 +171,9 @@ func (s *Store) InsertWithConfig(key string, value io.Reader, config *InsertConf
 		}
 		if config.TTLSec != 0 {
 			abiConf.TTLSec(config.TTLSec)
+		}
+		if config.IfGenerationMatch != 0 {
+			abiConf.IfGenerationMatch(config.IfGenerationMatch)
 		}
 	}
 
