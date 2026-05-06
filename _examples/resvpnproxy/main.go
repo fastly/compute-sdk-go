@@ -41,6 +41,14 @@ func main() {
 			return
 		}
 
+		// Check to see if we have live data by checking Available. It doesn't make sense ingesting the rest of the
+		// response if available is false.
+		if !vpnData.Available {
+			w.WriteHeader(fsthttp.StatusOK)
+			fmt.Fprintf(w, `{"error": "ResVPNProxy dataset not enabled for this service"}`)
+			return
+		}
+
 		// Success case - return the ResVPNProxy data
 		w.WriteHeader(fsthttp.StatusOK)
 		response := Response{
