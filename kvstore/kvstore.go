@@ -182,7 +182,9 @@ func (s *Store) InsertWithConfig(key string, value io.Reader, config *InsertConf
 		if err != nil {
 			return err
 		}
-		io.Copy(body, value)
+		if _, err := io.Copy(body, value); err != nil {
+			return err
+		}
 	}
 
 	h, err := s.kvstore.Insert(key, body, &abiConf)
