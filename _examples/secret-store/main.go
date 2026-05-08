@@ -21,6 +21,10 @@ func main() {
 			return
 		}
 
+		// SECURITY: We're writing the decrypted secret back to the user.  DON'T DO THIS!
+		// In reality this would be an API key or equivalent added to
+		// an outgoing HTTP request header, or perhaps a key used to
+		// decrypt or verify a request header or body.
 		fmt.Fprintf(w, "secret value: %q", v)
 	})
 }
