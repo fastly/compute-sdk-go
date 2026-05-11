@@ -59,6 +59,33 @@ func TestKVStore(t *testing.T) {
 		t.Error("expected Lookup failure after delete")
 	}
 
+	err = store.Insert("animal", strings.NewReader("cat"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	animal, err = store.Lookup("animal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	currentGeneration := animal.Generation()
+
+	err = store.InsertWithConfig("animal", strings.NewReader("dog"), &kvstore.InsertConfig{
+		IfGenerationMatch: currentGeneration,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = store.InsertWithConfig("animal", strings.NewReader("dog"), &kvstore.InsertConfig{
+		IfGenerationMatch: currentGeneration,
+	})
+	if err == nil {
+		t.Error("expected InsertWithConfig failure due to generation mismatch")
+	}
+	err = store.Delete("animal")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	/*
 		// TODO(athomason) address inconsistent behavior in viceroy and production
 		if err = store.Delete("nonexistent"); err != nil {
