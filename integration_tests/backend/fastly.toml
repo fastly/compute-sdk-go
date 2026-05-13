@@ -12,5 +12,10 @@ service_id = ""
 
   [local_server.backends]
 
-    [local_server.backends.TheOrigin]
-      url = "https://compute-sdk-test-backend.edgecompute.app/"
+    [local_server.backends.healthy]
+      url = "https://example.com"
+      health = "healthy"
+
+    [local_server.backends.unhealthy]
+      url = "https://example.com"
+      health = "unhealthy"
