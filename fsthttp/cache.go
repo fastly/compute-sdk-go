@@ -621,7 +621,7 @@ func (candidateResponse *CandidateResponse) finalizeOptions() (fastly.HTTPCacheS
 
 	var opts cacheWriteOptions
 
-	if candidateResponse.useTTL {
+	if candidateResponse.useTTL && candidateResponse.overrideTTL >= suggestedCacheWriteOptions.age {
 		opts.maxAge = candidateResponse.overrideTTL - suggestedCacheWriteOptions.age
 	} else {
 		opts.maxAge = suggestedCacheWriteOptions.maxAge
