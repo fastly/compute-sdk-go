@@ -184,7 +184,21 @@ func TestKVStoreInsertWithConfig(t *testing.T) {
 		}
 	})
 	t.Run("Mode", func(t *testing.T) {})
-	t.Run("Configs", func(t *testing.T) {})
+	t.Run("AcceptsAllFields", func(t *testing.T) {
+		err := store.InsertWithConfig("allfields", strings.NewReader("v"), &kvstore.InsertConfig{
+			Mode:            kvstore.InsertModeOverwrite,
+			BackgroundFetch: true,
+			TTLSec:          3600,
+			Metadata:        []byte("meta"),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = store.Delete("allfields")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 func mapKeys(m map[string]bool) []string {
