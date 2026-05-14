@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"maps"
 	"sort"
 	"strconv"
@@ -183,7 +184,105 @@ func TestKVStoreInsertWithConfig(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
-	t.Run("Mode", func(t *testing.T) {})
+	t.Run("Mode/Overwrite", func(t *testing.T) {
+		err := store.InsertWithConfig("overwritekey", strings.NewReader("v"), &kvstore.InsertConfig{
+			Mode: kvstore.InsertModeOverwrite,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = store.InsertWithConfig("overwritekey", strings.NewReader("updated"), &kvstore.InsertConfig{
+			Mode: kvstore.InsertModeOverwrite,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		entry, err := store.Lookup("overwritekey")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := entry.String(); got != "updated" {
+			t.Errorf("Overwrite mode: got %q, want 'updated'", got)
+		}
+		err = store.Delete("overwritekey")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("Mode/Add", func(t *testing.T) {
+		err := store.InsertWithConfig("addkey", strings.NewReader("v"), &kvstore.InsertConfig{
+			Mode: kvstore.InsertModeAdd,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = store.InsertWithConfig("addkey", strings.NewReader("updated"), &kvstore.InsertConfig{
+			Mode: kvstore.InsertModeAdd,
+		})
+		if err == nil {
+			t.Errorf("Add mode: expected error when adding existing key, got nil")
+		}
+		if !errors.Is(err, kvstore.ErrPreconditionFailed) {
+			t.Errorf("Add mode: expected ErrPreconditionFailed, got %v", err)
+		}
+		entry, err := store.Lookup("addkey")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := entry.String(); got != "v" {
+			t.Errorf("Add mode: got %q, want 'v'", got)
+		}
+		err = store.Delete("addkey")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("Mode/Append", func(t *testing.T) {
+		err := store.Insert("appendkey", strings.NewReader("1"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = store.InsertWithConfig("appendkey", strings.NewReader("2"), &kvstore.InsertConfig{
+			Mode: kvstore.InsertModeAppend,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		entry, err := store.Lookup("appendkey")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := entry.String(); got != "12" {
+			t.Errorf("Append mode: got %q, want '12'", got)
+		}
+		err = store.Delete("appendkey")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("Mode/Prepend", func(t *testing.T) {
+		err := store.Insert("prependkey", strings.NewReader("2"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = store.InsertWithConfig("prependkey", strings.NewReader("1"), &kvstore.InsertConfig{
+			Mode: kvstore.InsertModePrepend,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		entry, err := store.Lookup("prependkey")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := entry.String(); got != "12" {
+			t.Errorf("Prepend mode: got %q, want '12'", got)
+		}
+		err = store.Delete("prependkey")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 	t.Run("AcceptsAllFields", func(t *testing.T) {
 		err := store.InsertWithConfig("allfields", strings.NewReader("v"), &kvstore.InsertConfig{
 			Mode:            kvstore.InsertModeOverwrite,
