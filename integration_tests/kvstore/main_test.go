@@ -163,7 +163,26 @@ func TestKVStoreInsertWithConfig(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
-	t.Run("Metadata", func(t *testing.T) {})
+	t.Run("Metadata", func(t *testing.T) {
+		err := store.InsertWithConfig("animal", strings.NewReader("cat"), &kvstore.InsertConfig{
+			Metadata: []byte("metadata"),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		animal, err := store.Lookup("animal")
+		if err != nil {
+			t.Fatal(err)
+		}
+		metadata := animal.Meta()
+		if string(metadata) != "metadata" {
+			t.Errorf("expected metadata to be 'metadata', got %q", string(metadata))
+		}
+		err = store.Delete("animal")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 	t.Run("Mode", func(t *testing.T) {})
 	t.Run("Configs", func(t *testing.T) {})
 }
