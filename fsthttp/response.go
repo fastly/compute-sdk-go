@@ -36,10 +36,6 @@ type Response struct {
 
 	trailers Header
 
-	// If this response was served from the cache *and* the response was stale-if-error,
-	// this is the error from the revalidation attempt.
-	maskedError error
-
 	cacheResponse cacheResponse
 
 	abi struct {
@@ -115,12 +111,6 @@ func (resp *Response) Trailers() (Header, error) {
 
 	resp.trailers = trailers
 	return resp.trailers, nil
-}
-
-// If this response was served from the cache *and* the response was stale-if-error,
-// this is the error from the revalidation attempt.
-func (r *Response) MaskedError() error {
-	return r.maskedError
 }
 
 type netaddr struct {
@@ -246,16 +236,7 @@ func (resp *Response) StaleWhileRevalidate() (uint32, bool) {
 		return 0, false
 	}
 
-	return resp.cacheResponse.cacheWriteOptions.staleWhileRevalidate, true
-}
-
-// StaleIfError returns the time in seconds for which a cached item delivered stale if synchronous revalidation produces an error.
-func (resp *Response) StaleIfError() (uint32, bool) {
-	if resp.wasWrittenToCache() {
-		return 0, false
-	}
-
-	return resp.cacheResponse.cacheWriteOptions.staleIfError, true
+	return resp.cacheResponse.cacheWriteOptions.stale, true
 }
 
 // Vary returns the set of request headers for which the response may vary.

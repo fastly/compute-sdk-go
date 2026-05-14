@@ -27,9 +27,6 @@ type CandidateResponse struct {
 	overrideStaleWhileRevalidate uint32 // seconds
 	useSWR                       bool
 
-	overrideStaleIfError uint32 // seconds
-	useSIE               bool
-
 	extraSurrogateKeys    string
 	overrideSurrogateKeys string
 	useSurrogate          bool
@@ -50,16 +47,15 @@ type cacheResponse struct {
 }
 
 type cacheWriteOptions struct {
-	maxAge               uint32 // seconds
-	vary                 string
-	useVary              bool
-	age                  uint32 // seconds
-	staleWhileRevalidate uint32 // seconds
-	surrogate            string
-	length               uint64
-	useLength            bool
-	sensitive            bool
-	staleIfError         uint32 // seconds
+	maxAge    uint32 // seconds
+	vary      string
+	useVary   bool
+	age       uint32 // seconds
+	stale     uint32 // seconds
+	surrogate string
+	length    uint64
+	useLength bool
+	sensitive bool
 
 	abiOpts fastly.HTTPCacheWriteOptions
 }
@@ -73,10 +69,9 @@ func (opts *cacheWriteOptions) flushToABI() {
 	opts.abiOpts.SetMaxAgeNs(u32sTou64ns(opts.maxAge))
 	opts.abiOpts.SetVaryRule(opts.vary)
 	opts.abiOpts.SetInitialAgeNs(u32sTou64ns(opts.age))
-	opts.abiOpts.SetStaleWhileRevalidateNs(u32sTou64ns(opts.staleWhileRevalidate))
+	opts.abiOpts.SetStaleWhileRevalidateNs(u32sTou64ns(opts.stale))
 	opts.abiOpts.SetSurrogateKeys(opts.surrogate)
 	opts.abiOpts.SetSensitiveData(opts.sensitive)
-	opts.abiOpts.SetStaleIfErrorNs(u32sTou64ns(opts.staleIfError))
 }
 
 func (opts *cacheWriteOptions) loadFromABI() {
@@ -86,15 +81,11 @@ func (opts *cacheWriteOptions) loadFromABI() {
 		opts.age = u64nsTou32s(ns)
 	}
 	if ns, ok := opts.abiOpts.StaleWhileRevalidateNs(); ok {
-		opts.staleWhileRevalidate = u64nsTou32s(ns)
+		opts.stale = u64nsTou32s(ns)
 	}
 	opts.surrogate, _ = opts.abiOpts.SurrogateKeys()
 	opts.length, opts.useLength = opts.abiOpts.Length()
 	opts.sensitive = opts.abiOpts.SensitiveData()
-
-	if ns, ok := opts.abiOpts.StaleIfErrorNs(); ok {
-		opts.staleIfError = u64nsTou32s(ns)
-	}
 }
 
 func (opts *cacheWriteOptions) loadFromHandle(c *fastly.HTTPCacheHandle) error {
@@ -120,7 +111,7 @@ func (opts *cacheWriteOptions) loadFromHandle(c *fastly.HTTPCacheHandle) error {
 	if ns, err := fastly.HTTPCacheGetStaleWhileRevalidateNs(c); err != nil {
 		return fmt.Errorf("get stale while revalidate: %w", err)
 	} else {
-		opts.staleWhileRevalidate = u64nsTou32s(uint64(ns))
+		opts.stale = u64nsTou32s(uint64(ns))
 	}
 
 	opts.surrogate, err = fastly.HTTPCacheGetSurrogateKeys(c)
@@ -145,12 +136,6 @@ func (opts *cacheWriteOptions) loadFromHandle(c *fastly.HTTPCacheHandle) error {
 		return fmt.Errorf("get sensitive data: %w", err)
 	}
 
-	if ns, err := fastly.HTTPCacheGetStaleIfErrorNs(c); err != nil {
-		return fmt.Errorf("get stale if error: %w", err)
-	} else {
-		opts.staleIfError = u64nsTou32s(uint64(ns))
-	}
-
 	return nil
 }
 
@@ -159,15 +144,24 @@ const (
 	cacheStorageActionInvalid = 0xffff
 )
 
-func httpCacheWait(c *fastly.HTTPCacheHandle) (fastly.CacheLookupState, error) {
-	state, err := fastly.HTTPCacheGetState(c)
+func httpCacheWait(c *fastly.HTTPCacheHandle) error {
+	_, err := fastly.HTTPCacheGetState(c)
 	if err != nil {
-		return 0, fmt.Errorf("get state: %w", err)
+		return fmt.Errorf("get state: %w", err)
 	}
-	return state, nil
+	return nil
 }
 
-func httpCacheGetFoundResponse(c *fastly.HTTPCacheHandle, req *Request, backend string, transformForClient bool, wasHit bool) (*Response, error) {
+func httpCacheMustInsertOrUpdate(c *fastly.HTTPCacheHandle) (bool, error) {
+	state, err := fastly.HTTPCacheGetState(c)
+	if err != nil {
+		return false, fmt.Errorf("get state: %w", err)
+
+	}
+	return state&fastly.CacheLookupStateMustInsertOrUpdate == fastly.CacheLookupStateMustInsertOrUpdate, nil
+}
+
+func httpCacheGetFoundResponse(c *fastly.HTTPCacheHandle, req *Request, backend string, transformForClient bool) (*Response, error) {
 	abiResp, abiBody, err := fastly.HTTPCacheGetFoundResponse(c, transformForClient)
 	if err != nil {
 		if status, ok := fastly.IsFastlyError(err); ok && status == fastly.FastlyStatusNone {
@@ -176,13 +170,9 @@ func httpCacheGetFoundResponse(c *fastly.HTTPCacheHandle, req *Request, backend 
 		return nil, fmt.Errorf("get found response: %w", err)
 	}
 
-	var hits uint64
-	if wasHit {
-		h, err := fastly.HTTPCacheGetHits(c)
-		if err != nil {
-			return nil, fmt.Errorf("get hits: %w", err)
-		}
-		hits = uint64(h)
+	hits, err := fastly.HTTPCacheGetHits(c)
+	if err != nil {
+		return nil, fmt.Errorf("get hits: %w", err)
 	}
 
 	var opts cacheWriteOptions
@@ -199,7 +189,7 @@ func httpCacheGetFoundResponse(c *fastly.HTTPCacheHandle, req *Request, backend 
 	resp.cacheResponse = cacheResponse{
 		cacheWriteOptions: opts,
 		storageAction:     cacheStorageActionInvalid,
-		hits:              hits,
+		hits:              uint64(hits),
 	}
 	return resp, nil
 }
@@ -249,7 +239,6 @@ func newCandidate(c *fastly.HTTPCacheHandle, opts *CacheOptions, abiResp *fastly
 		overrideStorageAction:        0,
 		overridePCI:                  opts.PCI,
 		overrideStaleWhileRevalidate: opts.StaleWhileRevalidate,
-		overrideStaleIfError:         opts.StaleIfError,
 		extraSurrogateKeys:           opts.SurrogateKey,
 		overrideSurrogateKeys:        "",
 		overrideTTL:                  opts.TTL,
@@ -262,10 +251,6 @@ func newCandidate(c *fastly.HTTPCacheHandle, opts *CacheOptions, abiResp *fastly
 
 	if candidate.overrideStaleWhileRevalidate != 0 {
 		candidate.useSWR = true
-	}
-
-	if candidate.overrideStaleIfError != 0 {
-		candidate.useSIE = true
 	}
 
 	if candidate.overridePCI {
@@ -366,7 +351,7 @@ func (candidateResponse *CandidateResponse) IsStale() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("get state: %w", err)
 	}
-	return state.Has(fastly.CacheLookupStateStale), nil
+	return state&fastly.CacheLookupStateStale == fastly.CacheLookupStateStale, nil
 }
 
 // Age returns current age in seconds of the cached item, relative to the originating backend.
@@ -418,40 +403,7 @@ func (candidateResponse *CandidateResponse) StaleWhileRevalidate() (uint32, erro
 	if err != nil {
 		return 0, err
 	}
-	return opts.staleWhileRevalidate, nil
-}
-
-// SetStaleIfError sets the time in seconds for which a cached item can be delivered stale if synchronous revalidation produces an error.
-func (candidateResponse *CandidateResponse) SetStaleIfError(sie uint32) {
-	candidateResponse.overrideStaleIfError = sie
-	candidateResponse.useSIE = true
-}
-
-// StaleIfError returns the time in seconds for which a cached item will be delivered stale if synchronous revalidation produces an error.
-func (candidateResponse *CandidateResponse) StaleIfError() (uint32, error) {
-	if candidateResponse.useSIE {
-		return candidateResponse.overrideStaleIfError, nil
-	}
-	opts, err := candidateResponse.getSuggestedCacheWriteOptions()
-	if err != nil {
-		return 0, err
-	}
-	return opts.staleIfError, nil
-}
-
-// Returns whether there is a stale-if-error response available from the cache.
-//
-// A CandidateResponse represents an HTTP response returned from a Backend. However, it may be
-// preferable to return a cached response rather than the Backend's response -- for instance,
-// if the Backend's response is a 5xx error.
-//
-// This method returns true if there is a cached response that is within the stale-if-error
-// period. If a stale-if-error response is available, and the AfterSend hook returns an
-// error, the response from the Backend will not be cached, and the [Request.Send] call will
-// return the stale-if-error response.
-func (candidateResponse *CandidateResponse) StaleIfErrorAvailable() bool {
-	state, _ := fastly.HTTPCacheGetState(candidateResponse.cacheHandle)
-	return state.Has(fastly.CacheLookupStateUsableIfError)
+	return opts.stale, nil
 }
 
 // SetSensitive sets the caching behavior of this response to enable or disable PCI/HIPAA-compliant
@@ -630,9 +582,9 @@ func (candidateResponse *CandidateResponse) finalizeOptions() (fastly.HTTPCacheS
 	opts.age = suggestedCacheWriteOptions.age
 
 	if candidateResponse.useSWR {
-		opts.staleWhileRevalidate = candidateResponse.overrideStaleWhileRevalidate
+		opts.stale = candidateResponse.overrideStaleWhileRevalidate
 	} else {
-		opts.staleWhileRevalidate = suggestedCacheWriteOptions.staleWhileRevalidate
+		opts.stale = suggestedCacheWriteOptions.stale
 	}
 
 	if candidateResponse.useVary {
@@ -705,7 +657,7 @@ func (candidateResponse *CandidateResponse) applyAndStreamBack(req *Request) (*R
 		}
 		body.Close()
 
-		resp, err = httpCacheGetFoundResponse(readback, req, "", false, true)
+		resp, err = httpCacheGetFoundResponse(readback, req, "", false)
 		if err != nil {
 			return nil, fmt.Errorf("cache get found response: %w", err)
 		}
@@ -717,7 +669,7 @@ func (candidateResponse *CandidateResponse) applyAndStreamBack(req *Request) (*R
 		}
 		defer fastly.HTTPCacheTransactionClose(newch)
 
-		resp, err = httpCacheGetFoundResponse(newch, req, "", true, true)
+		resp, err = httpCacheGetFoundResponse(newch, req, "", true)
 		if err != nil {
 			return nil, fmt.Errorf("cache get found response: %w", err)
 		}
