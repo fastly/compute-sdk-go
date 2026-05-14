@@ -59,33 +59,6 @@ func TestKVStore(t *testing.T) {
 		t.Error("expected Lookup failure after delete")
 	}
 
-	err = store.Insert("animal", strings.NewReader("cat"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	animal, err = store.Lookup("animal")
-	if err != nil {
-		t.Fatal(err)
-	}
-	currentGeneration := animal.Generation()
-
-	err = store.InsertWithConfig("animal", strings.NewReader("dog"), &kvstore.InsertConfig{
-		IfGenerationMatch: currentGeneration,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = store.InsertWithConfig("animal", strings.NewReader("dog"), &kvstore.InsertConfig{
-		IfGenerationMatch: currentGeneration,
-	})
-	if err == nil {
-		t.Error("expected InsertWithConfig failure due to generation mismatch")
-	}
-	err = store.Delete("animal")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	/*
 		// TODO(athomason) address inconsistent behavior in viceroy and production
 		if err = store.Delete("nonexistent"); err != nil {
@@ -155,6 +128,44 @@ func TestKVStore(t *testing.T) {
 	if got, want := hello.String(), "hello, world"; got != want {
 		t.Errorf("HTTPBody Lookup: got %q, want %q", got, want)
 	}
+}
+
+func TestKVStoreInsertWithConfig(t *testing.T) {
+	store, err := kvstore.Open("example-test-kv-store")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Run("IfGenerationMatch", func(t *testing.T) {
+		err := store.Insert("animal", strings.NewReader("cat"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		animal, err := store.Lookup("animal")
+		if err != nil {
+			t.Fatal(err)
+		}
+		currentGeneration := animal.Generation()
+
+		err = store.InsertWithConfig("animal", strings.NewReader("dog"), &kvstore.InsertConfig{
+			IfGenerationMatch: currentGeneration,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = store.InsertWithConfig("animal", strings.NewReader("dog"), &kvstore.InsertConfig{
+			IfGenerationMatch: currentGeneration,
+		})
+		if err == nil {
+			t.Error("expected failure due to generation mismatch")
+		}
+		err = store.Delete("animal")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("Metadata", func(t *testing.T) {})
+	t.Run("Mode", func(t *testing.T) {})
+	t.Run("Configs", func(t *testing.T) {})
 }
 
 func mapKeys(m map[string]bool) []string {
