@@ -441,7 +441,7 @@ func (b *BackendOptions) UseGRPC(v bool) *BackendOptions {
 	return b
 }
 
-// Register a new dynamic backend.
+// RegisterDynamicBackend registers a new dynamic backend.
 func RegisterDynamicBackend(name string, target string, options *BackendOptions) (*Backend, error) {
 	var abiOpts *fastly.BackendConfigOptions
 	if options != nil {
@@ -450,7 +450,7 @@ func RegisterDynamicBackend(name string, target string, options *BackendOptions)
 		abiOpts = &fastly.BackendConfigOptions{}
 	}
 
-	if len(options.err) > 0 {
+	if options != nil && len(options.err) > 0 {
 		return nil, errors.Join(options.err...)
 	}
 
