@@ -100,12 +100,49 @@ func TestDynamicBackend(t *testing.T) {
 	}
 }
 
+func TestDynamicBackendNilOptions(t *testing.T) {
+	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
+		b, err := fsthttp.RegisterDynamicBackend(
+			"dynamic-nil-opts",
+			"compute-sdk-test-backend.edgecompute.app",
+			nil,
+		)
+		if err != nil {
+			t.Errorf("RegisterDynamicBackend: %v", err)
+			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			return
+		}
+
+		if got, want := b.IsDynamic(), true; got != want {
+			t.Errorf("IsDynamic() = %v, want %v", got, want)
+			fsthttp.Error(w, "IsDynamic mismatch", fsthttp.StatusInternalServerError)
+			return
+		}
+
+		fmt.Fprint(w, "Ok")
+	}
+
+	r, err := fsthttp.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatalf("NewRequest: %v", err)
+	}
+	w := fsttest.NewRecorder()
+
+	handler(context.Background(), w, r)
+
+	if got, want := w.Code, fsthttp.StatusOK; got != want {
+		t.Errorf("Code = %d, want %d", got, want)
+	}
+
+	if got, want := w.Body.String(), "Ok"; got != want {
+		t.Errorf("Body = %q, want %q", got, want)
+	}
+}
+
 func TestOriginHealth(t *testing.T) {
 	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-
 		{
 			b, err := fsthttp.BackendFromName("healthy")
-
 			if err != nil {
 				t.Errorf("BackendFromName: %v", err)
 				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
@@ -129,7 +166,6 @@ func TestOriginHealth(t *testing.T) {
 		}
 
 		b, err := fsthttp.BackendFromName("unhealthy")
-
 		if err != nil {
 			t.Errorf("BackendFromName: %v", err)
 			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
