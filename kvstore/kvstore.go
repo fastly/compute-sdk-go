@@ -337,7 +337,7 @@ type ListPage struct {
 	// Data is the list of keys returned for this page.
 	Data []string `json:"data"`
 
-	// Meta is the metadata assocaited with this page of results.
+	// Meta is the metadata associated with this page of results.
 	Meta ListMetadata `json:"meta"`
 }
 
