@@ -60,7 +60,7 @@ func fmtFloat(f float64) string {
 	return strconv.FormatFloat(nearest3, 'g', -1, 64)
 }
 
-// PixelsOrPercentage specifies a position along an exist.
+// PixelsOrPercentage specifies a length as either pixels or a percentage.
 //
 // Valid values are either an integer number of pixels, or a percentage followed by `p`.
 type PixelsOrPercentage string
@@ -155,9 +155,9 @@ func (area *Area) String() string {
 	case areaStateNone:
 		return ""
 	case areaStateAspectRatio:
-		return fmt.Sprintf("%v:%v", area.aspect.w, area.aspect.h)
+		return strconv.FormatUint(uint64(area.aspect.w), 10) + ":" + strconv.FormatUint(uint64(area.aspect.h), 10)
 	case areaStateWidthHeight:
-		return fmt.Sprintf("%v,%v", area.widthHeight.w, area.widthHeight.h)
+		return string(area.widthHeight.w) + "," + string(area.widthHeight.h)
 	}
 	return "error"
 }
@@ -253,7 +253,7 @@ type Sides struct {
 }
 
 func (s *Sides) String() string {
-	return fmt.Sprintf("%v,%v,%v,%v", s.Top, s.Right, s.Bottom, s.Left)
+	return string(s.Top) + "," + string(s.Right) + "," + string(s.Bottom) + "," + string(s.Left)
 }
 
 func (s *Sides) validate() error {
@@ -286,7 +286,7 @@ func (s *Sides) validate() error {
 type OptimizeLevel string
 
 const (
-	// OptimizeLevelLow means the output mage quality will be similar to the input image quality.
+	// OptimizeLevelLow means the output image quality will be similar to the input image quality.
 	OptimizeLevelLow OptimizeLevel = "low"
 
 	// OptimizeLevelMedium means more optimization is allowed, while attempting to preserve the visual
@@ -326,8 +326,10 @@ type HexColor struct {
 }
 
 func (h *HexColor) String() string {
-	return fmt.Sprintf("%v,%v,%v,%v", h.R, h.G, h.B, h.A)
-
+	return strconv.Itoa(int(h.R)) + "," +
+		strconv.Itoa(int(h.G)) + "," +
+		strconv.Itoa(int(h.B)) + "," +
+		strconv.FormatFloat(float64(h.A), 'g', -1, 32)
 }
 
 func (h *HexColor) validate() error {
@@ -438,9 +440,9 @@ func (b *BlurMode) String() string {
 	case blurModeStateNone:
 		return ""
 	case blurModeStatePercentage:
-		return fmt.Sprintf("%vp", b.percentage)
+		return strconv.FormatFloat(b.percentage, 'g', -1, 64) + "p"
 	case blurModeStatePixels:
-		return fmt.Sprintf("%v", b.pixels)
+		return strconv.FormatFloat(b.pixels, 'g', -1, 64)
 	}
 
 	return "error"
@@ -605,7 +607,9 @@ type Sharpen struct {
 }
 
 func (s *Sharpen) String() string {
-	return fmt.Sprintf("a%v,r%v,t%v", s.Amount, fmtFloat(float64(s.Radius)), s.Threshold)
+	return "a" + strconv.Itoa(int(s.Amount)) +
+		",r" + fmtFloat(float64(s.Radius)) +
+		",t" + strconv.Itoa(int(s.Threshold))
 }
 
 func (s *Sharpen) validate() error {
@@ -623,7 +627,7 @@ func (s *Sharpen) validate() error {
 type EnableOpt string
 
 const (
-	/// EnableOptUpsace allow images to be resized such that the output image's dimensions are
+	/// EnableOptUpscale allows images to be resized such that the output image's dimensions are
 	/// larger than the source image.
 	EnableOptUpscale EnableOpt = "upscale"
 )
@@ -886,7 +890,7 @@ func (o *Options) QueryString() (string, error) {
 	}
 
 	if o.Dpr != 0 {
-		args = append(args, "dpr="+fmt.Sprintf("%v", o.Dpr))
+		args = append(args, "dpr="+strconv.FormatFloat(float64(o.Dpr), 'g', -1, 32))
 	}
 
 	if o.Enable.isSet() {
