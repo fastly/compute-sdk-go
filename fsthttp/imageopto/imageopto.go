@@ -57,10 +57,7 @@ func (a Auto) String() string { return string(a) }
 
 func fmtFloat(f float64) string {
 	nearest3 := math.Round(1000.0*f) / 1000.0
-	if _, fract := math.Modf(nearest3); fract > 0.0 {
-		return fmt.Sprintf("%v", nearest3)
-	}
-	return fmt.Sprintf("%v", int32(f))
+	return strconv.FormatFloat(nearest3, 'g', -1, 64)
 }
 
 // PixelsOrPercentage specifies a position along an exist.
