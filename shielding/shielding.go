@@ -4,7 +4,7 @@ import (
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
 
-// Shield is a shielding site withing Fastly.
+// Shield is a shielding site within Fastly.
 type Shield struct {
 	name      string
 	runningOn bool
