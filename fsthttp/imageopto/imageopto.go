@@ -881,7 +881,7 @@ func (o *Options) QueryString() (string, error) {
 	}
 
 	if o.Contrast != 0 {
-		args = append(args, "constrast="+strconv.Itoa(o.Contrast))
+		args = append(args, "contrast="+strconv.Itoa(o.Contrast))
 	}
 
 	if o.Crop != nil {

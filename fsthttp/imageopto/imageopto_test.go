@@ -16,7 +16,7 @@ func TestOpts(t *testing.T) {
 		{&Options{Region: RegionUsEast, Blur: NewBlurModePercentage(0.8)}, "region=us_east&blur=0.8p"},
 		{&Options{Region: RegionUsEast, Brightness: -50}, "region=us_east&brightness=-50"},
 		{&Options{Region: RegionUsEast, Bw: NewBWModeThreshold(10)}, "region=us_east&bw=threshold,10"},
-		{&Options{Region: RegionUsEast, Contrast: -5}, "region=us_east&constrast=-5"},
+		{&Options{Region: RegionUsEast, Contrast: -5}, "region=us_east&contrast=-5"},
 		{&Options{Region: RegionUsEast, Dpr: 3.2}, "region=us_east&dpr=3.2"},
 		{&Options{Region: RegionUsEast, Enable: EnableOptUpscale}, "region=us_east&enable=upscale"},
 		{&Options{Region: RegionUsEast, Format: FormatJPEGXL}, "region=us_east&format=jpegxl"},
