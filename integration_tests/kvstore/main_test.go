@@ -153,12 +153,32 @@ func TestKVStoreInsertWithConfig(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = store.InsertWithConfig("animal", strings.NewReader("dog"), &kvstore.InsertConfig{
+		animal, err = store.Lookup("animal")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := animal.String(); got != "dog" {
+			t.Errorf("expected value to be 'dog', got %q", got)
+		}
+
+		err = store.InsertWithConfig("animal", strings.NewReader("monkey"), &kvstore.InsertConfig{
 			IfGenerationMatch: currentGeneration,
 		})
 		if err == nil {
 			t.Error("expected failure due to generation mismatch")
 		}
+		if !errors.Is(err, kvstore.ErrPreconditionFailed) {
+			t.Errorf("expected ErrPreconditionFailed, got %v", err)
+		}
+
+		animal, err = store.Lookup("animal")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := animal.String(); got != "dog" {
+			t.Errorf("expected value to still be 'dog', got %q", got)
+		}
+
 		err = store.Delete("animal")
 		if err != nil {
 			t.Fatal(err)
