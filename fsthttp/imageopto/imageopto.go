@@ -157,7 +157,7 @@ func (area *Area) String() string {
 	case areaStateAspectRatio:
 		return strconv.FormatUint(uint64(area.aspect.w), 10) + ":" + strconv.FormatUint(uint64(area.aspect.h), 10)
 	case areaStateWidthHeight:
-		return string(area.widthHeight.w) + "," + string(area.widthHeight.h)
+		return area.widthHeight.w.String() + "," + area.widthHeight.h.String()
 	}
 	return "error"
 }
@@ -253,7 +253,7 @@ type Sides struct {
 }
 
 func (s *Sides) String() string {
-	return string(s.Top) + "," + string(s.Right) + "," + string(s.Bottom) + "," + string(s.Left)
+	return s.Top.String() + "," + s.Right.String() + "," + s.Bottom.String() + "," + s.Left.String()
 }
 
 func (s *Sides) validate() error {
