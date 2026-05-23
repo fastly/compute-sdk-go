@@ -199,6 +199,16 @@ func TestOpts(t *testing.T) {
 
 			"region=us_east&precrop=1:1,offset-x30,offset-y15,safe",
 		},
+
+		// fmtFloat: a value that rounds to a whole number must format as that
+		// whole number. Sharpen.Radius=1.9999 rounds to 2.0 -> "r2".
+		{
+			&Options{
+				Region:  RegionUsEast,
+				Sharpen: &Sharpen{Amount: 5, Radius: 1.9999, Threshold: 1},
+			},
+			"region=us_east&sharpen=a5,r2,t1",
+		},
 	}
 
 	for i, tt := range tests {
