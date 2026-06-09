@@ -378,11 +378,13 @@ func (candidateResponse *CandidateResponse) Age() (uint32, error) {
 	return opts.age, nil
 }
 
-// TTL returns the Time to Live (TTL) in seconds in the cache for this response.
+// MaxAge returns the duration of "freshness", in seconds, for the cached
+// response after it is inserted into the cache.
 //
-// The TTL determines the duration of "freshness" for the cached response
-// after it is inserted into the cache.
-func (candidateResponse *CandidateResponse) TTL() (uint32, error) {
+// This is the full freshness lifetime of the object: it does not subtract the
+// time the object has already spent in cache (its age). Use TTLRemaining to
+// find out how much freshness is left right now.
+func (candidateResponse *CandidateResponse) MaxAge() (uint32, error) {
 	if candidateResponse.useTTL {
 		return candidateResponse.overrideTTL, nil
 	}
@@ -391,7 +393,52 @@ func (candidateResponse *CandidateResponse) TTL() (uint32, error) {
 		return 0, err
 	}
 
-	return opts.maxAge - opts.age, nil
+	return opts.maxAge, nil
+}
+
+// TTLRemaining returns the remaining "freshness", in seconds, of the cached
+// response: how much longer the object stays fresh from now.
+//
+// This is the object's full freshness lifetime (MaxAge) minus the time it has
+// already spent in cache (its age). When the object is already stale (its age
+// meets or exceeds its full lifetime) the remaining freshness is reported as 0
+// rather than wrapping around.
+func (candidateResponse *CandidateResponse) TTLRemaining() (uint32, error) {
+	var maxAge, age uint32
+	if candidateResponse.useTTL {
+		// A set TTL is the full freshness lifetime; the remaining freshness
+		// still accounts for the time already spent in cache.
+		maxAge = candidateResponse.overrideTTL
+		opts, err := candidateResponse.getSuggestedCacheWriteOptions()
+		if err != nil {
+			return 0, err
+		}
+		age = opts.age
+	} else {
+		opts, err := candidateResponse.getSuggestedCacheWriteOptions()
+		if err != nil {
+			return 0, err
+		}
+		maxAge, age = opts.maxAge, opts.age
+	}
+
+	if age >= maxAge {
+		return 0, nil
+	}
+	return maxAge - age, nil
+}
+
+// TTL returns the remaining Time to Live (TTL) in seconds in the cache for this
+// response.
+//
+// The TTL determines the duration of "freshness" for the cached response
+// after it is inserted into the cache.
+//
+// Deprecated: use TTLRemaining or MaxAge. The name TTL does not make clear
+// whether it reports the full freshness lifetime of the object or the
+// remaining freshness; it returns the remaining freshness (TTLRemaining).
+func (candidateResponse *CandidateResponse) TTL() (uint32, error) {
+	return candidateResponse.TTLRemaining()
 }
 
 // SetTTL sets the Time to Live (TTL) in seconds in the cache for this response.
