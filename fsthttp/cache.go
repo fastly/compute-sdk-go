@@ -404,22 +404,15 @@ func (candidateResponse *CandidateResponse) MaxAge() (uint32, error) {
 // meets or exceeds its full lifetime) the remaining freshness is reported as 0
 // rather than wrapping around.
 func (candidateResponse *CandidateResponse) TTLRemaining() (uint32, error) {
-	var maxAge, age uint32
+	opts, err := candidateResponse.getSuggestedCacheWriteOptions()
+	if err != nil {
+		return 0, err
+	}
+	maxAge, age := opts.maxAge, opts.age
 	if candidateResponse.useTTL {
 		// A set TTL is the full freshness lifetime; the remaining freshness
 		// still accounts for the time already spent in cache.
 		maxAge = candidateResponse.overrideTTL
-		opts, err := candidateResponse.getSuggestedCacheWriteOptions()
-		if err != nil {
-			return 0, err
-		}
-		age = opts.age
-	} else {
-		opts, err := candidateResponse.getSuggestedCacheWriteOptions()
-		if err != nil {
-			return 0, err
-		}
-		maxAge, age = opts.maxAge, opts.age
 	}
 
 	if age >= maxAge {
