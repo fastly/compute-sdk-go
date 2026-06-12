@@ -320,6 +320,79 @@ func TestKVStoreInsertWithConfig(t *testing.T) {
 	})
 }
 
+func TestKVStoreDeleteWithConfig(t *testing.T) {
+	store, err := kvstore.Open("example-test-kv-store")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("IfGenerationMatch", func(t *testing.T) {
+		err := store.Insert("deletewithconfig", strings.NewReader("cat"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		animal, err := store.Lookup("deletewithconfig")
+		if err != nil {
+			t.Fatal(err)
+		}
+		currentGeneration := animal.Generation()
+
+		err = store.DeleteWithConfig("deletewithconfig", &kvstore.DeleteConfig{
+			IfGenerationMatch: currentGeneration,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = store.Lookup("deletewithconfig")
+		if !errors.Is(err, kvstore.ErrKeyNotFound) {
+			t.Errorf("expected ErrKeyNotFound after delete, got %v", err)
+		}
+	})
+
+	t.Run("StaleGeneration", func(t *testing.T) {
+		err := store.Insert("deletewithstalegeneration", strings.NewReader("cat"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		animal, err := store.Lookup("deletewithstalegeneration")
+		if err != nil {
+			t.Fatal(err)
+		}
+		currentGeneration := animal.Generation()
+
+		err = store.InsertWithConfig("deletewithstalegeneration", strings.NewReader("dog"), &kvstore.InsertConfig{
+			IfGenerationMatch: currentGeneration,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = store.DeleteWithConfig("deletewithstalegeneration", &kvstore.DeleteConfig{
+			IfGenerationMatch: currentGeneration,
+		})
+		if err == nil {
+			t.Error("expected failure due to generation mismatch")
+		}
+		if !errors.Is(err, kvstore.ErrPreconditionFailed) {
+			t.Errorf("expected ErrPreconditionFailed, got %v", err)
+		}
+
+		animal, err = store.Lookup("deletewithstalegeneration")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := animal.String(); got != "dog" {
+			t.Errorf("expected value to still be 'dog', got %q", got)
+		}
+
+		err = store.Delete("deletewithstalegeneration")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
 func mapKeys(m map[string]bool) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
