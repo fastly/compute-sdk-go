@@ -541,8 +541,14 @@ func testAfterSendCandidateResponsePropertiesUncached(ctx context.Context) error
 			return fmt.Errorf("candidate has age=%v or err=%v, want 0, nil", age, err)
 		}
 
-		if ttl, err := r.TTL(); ttl != 3600 || err != nil {
-			return fmt.Errorf("candidate has ttl=%v or err=%v, want 3600, nil", ttl, err)
+		if maxAge, err := r.MaxAge(); maxAge != 3600 || err != nil {
+			return fmt.Errorf("candidate has maxAge=%v or err=%v, want 3600, nil", maxAge, err)
+		}
+
+		// age is 0 here, so the remaining TTL equals the full freshness
+		// lifetime.
+		if remaining, err := r.TTLRemaining(); remaining != 3600 || err != nil {
+			return fmt.Errorf("candidate has ttlRemaining=%v or err=%v, want 3600, nil", remaining, err)
 		}
 
 		if got, err := r.Vary(); err != nil {
