@@ -327,6 +327,8 @@ func TestKVStoreDeleteWithConfig(t *testing.T) {
 	}
 
 	t.Run("IfGenerationMatch", func(t *testing.T) {
+		skipKVStoreDeleteGenerationUnsupported(t)
+
 		err := store.Insert("deletewithconfig", strings.NewReader("cat"))
 		if err != nil {
 			t.Fatal(err)
@@ -351,6 +353,8 @@ func TestKVStoreDeleteWithConfig(t *testing.T) {
 	})
 
 	t.Run("StaleGeneration", func(t *testing.T) {
+		skipKVStoreDeleteGenerationUnsupported(t)
+
 		err := store.Insert("deletewithstalegeneration", strings.NewReader("cat"))
 		if err != nil {
 			t.Fatal(err)
@@ -391,6 +395,11 @@ func TestKVStoreDeleteWithConfig(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func skipKVStoreDeleteGenerationUnsupported(t *testing.T) {
+	t.Helper()
+	t.Skip("Viceroy <= 0.18.0 does not support kv_store delete if_generation_match; its WITX only defines the reserved delete config flag")
 }
 
 func mapKeys(m map[string]bool) []string {
