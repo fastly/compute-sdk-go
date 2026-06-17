@@ -401,15 +401,19 @@ func TestKVStoreDeleteWithConfig(t *testing.T) {
 	})
 }
 
-// skipKVStoreDeleteGenerationUnsupported marks the current test as skipped and
-// reports true so the caller can return. Under standard Go, t.Skip halts the
-// test via runtime.Goexit and the returned bool is never observed; under
-// TinyGo, runtime.Goexit is incomplete (SkipNow does not stop execution), so
-// the caller must use the returned value to return and avoid running the
-// unsupported host call.
+// skipKVStoreDeleteGenerationUnsupported logs why the delete-with-generation
+// tests cannot run and reports true so the caller returns early without
+// exercising the unsupported host call.
+//
+// It deliberately does NOT call t.Skip: this file builds only for the wasip1
+// TinyGo target, and TinyGo's testing.T.SkipNow is incomplete ("requires
+// runtime.Goexit"), so t.Skip neither stops the test nor reports it as skipped
+// there -- it marks the test failed instead. Logging plus an early return is
+// the portable way to no-op these tests until Viceroy implements kv_store
+// delete if_generation_match.
 func skipKVStoreDeleteGenerationUnsupported(t *testing.T) bool {
 	t.Helper()
-	t.Skip("Viceroy <= 0.18.0 does not support kv_store delete if_generation_match; its WITX only defines the reserved delete config flag")
+	t.Log("skipping: Viceroy <= 0.18.0 does not support kv_store delete if_generation_match; its WITX only defines the reserved delete config flag")
 	return true
 }
 
