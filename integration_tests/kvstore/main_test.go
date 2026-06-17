@@ -327,7 +327,9 @@ func TestKVStoreDeleteWithConfig(t *testing.T) {
 	}
 
 	t.Run("IfGenerationMatch", func(t *testing.T) {
-		skipKVStoreDeleteGenerationUnsupported(t)
+		if skipKVStoreDeleteGenerationUnsupported(t) {
+			return
+		}
 
 		err := store.Insert("deletewithconfig", strings.NewReader("cat"))
 		if err != nil {
@@ -353,7 +355,9 @@ func TestKVStoreDeleteWithConfig(t *testing.T) {
 	})
 
 	t.Run("StaleGeneration", func(t *testing.T) {
-		skipKVStoreDeleteGenerationUnsupported(t)
+		if skipKVStoreDeleteGenerationUnsupported(t) {
+			return
+		}
 
 		err := store.Insert("deletewithstalegeneration", strings.NewReader("cat"))
 		if err != nil {
@@ -397,9 +401,16 @@ func TestKVStoreDeleteWithConfig(t *testing.T) {
 	})
 }
 
-func skipKVStoreDeleteGenerationUnsupported(t *testing.T) {
+// skipKVStoreDeleteGenerationUnsupported marks the current test as skipped and
+// reports true so the caller can return. Under standard Go, t.Skip halts the
+// test via runtime.Goexit and the returned bool is never observed; under
+// TinyGo, runtime.Goexit is incomplete (SkipNow does not stop execution), so
+// the caller must use the returned value to return and avoid running the
+// unsupported host call.
+func skipKVStoreDeleteGenerationUnsupported(t *testing.T) bool {
 	t.Helper()
 	t.Skip("Viceroy <= 0.18.0 does not support kv_store delete if_generation_match; its WITX only defines the reserved delete config flag")
+	return true
 }
 
 func mapKeys(m map[string]bool) []string {
