@@ -1,5 +1,20 @@
 ## Unreleased
 
+## 1.8.0 (2026-06-23)
+
+- kvstore: allow streaming bodies on insert (#240)
+- fsthttp: fix broken api for DownstreamTLSCientCertVerifyResult (#241)
+- fsthttp: add bot detection hostcalls (#242)
+- fsthttp: add ResVPNProxy support (#243, #247)
+- fsthttp: Add stale-if-error logic to http caching layer (#236)
+- kvstore: add IfGenerationMatch to InsertConfig (#246)
+- kvstore: restore missing error check for io.Copy() (#251)
+- fsthttp: prevent integer underflow for maxAge (#249)
+- imageopto: fix url spelling for contrast parameter (#260)
+- imageopto: reduce fmt usage (#259)
+- fsthttp: add MaxAge and TTLRemaining to CandidateResponse (#262)
+- other small fixes for unit tests, parameter validation, and spelling
+
 ## 1.7.0 (2026-03-05)
 
 - fsthttp: add support for http trailers (#232)
