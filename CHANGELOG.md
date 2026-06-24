@@ -1,5 +1,9 @@
 ## Unreleased
 
+## 1.8.1 (2026-06-24)
+
+- fsthttp: ensure stale-if-error options are passed to ABI hostcall (#265)
+
 ## 1.8.0 (2026-06-23)
 
 - kvstore: allow streaming bodies on insert (#240)
