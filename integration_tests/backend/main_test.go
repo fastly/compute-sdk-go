@@ -27,7 +27,7 @@ func TestDynamicBackend(t *testing.T) {
 		)
 		if err != nil {
 			t.Errorf("RegisterDynamicBackend: %v", err)
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 
@@ -46,7 +46,7 @@ func TestDynamicBackend(t *testing.T) {
 		health, err := b.Health()
 		if err != nil {
 			t.Errorf("Health: %v", err)
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 
@@ -60,7 +60,7 @@ func TestDynamicBackend(t *testing.T) {
 		req, err := fsthttp.NewRequest("GET", "https://compute-sdk-test-backend.edgecompute.app/", nil)
 		if err != nil {
 			t.Errorf("NewRequest: %v", err)
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 
@@ -70,7 +70,7 @@ func TestDynamicBackend(t *testing.T) {
 		resp, err := req.Send(ctx, "dynamic")
 		if err != nil {
 			t.Errorf("Send: %v", err)
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 
@@ -78,7 +78,7 @@ func TestDynamicBackend(t *testing.T) {
 		w.WriteHeader(resp.StatusCode)
 		if _, err := io.Copy(w, resp.Body); err != nil {
 			t.Errorf("Copy: %v", err)
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 	}
@@ -109,7 +109,7 @@ func TestDynamicBackendNilOptions(t *testing.T) {
 		)
 		if err != nil {
 			t.Errorf("RegisterDynamicBackend: %v", err)
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 
@@ -145,14 +145,14 @@ func TestOriginHealth(t *testing.T) {
 			b, err := fsthttp.BackendFromName("healthy")
 			if err != nil {
 				t.Errorf("BackendFromName: %v", err)
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 
 			health, err := b.Health()
 			if err != nil {
 				t.Errorf("Health: %v", err)
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 
@@ -168,14 +168,14 @@ func TestOriginHealth(t *testing.T) {
 		b, err := fsthttp.BackendFromName("unhealthy")
 		if err != nil {
 			t.Errorf("BackendFromName: %v", err)
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 
 		health, err := b.Health()
 		if err != nil {
 			t.Errorf("Health: %v", err)
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 
@@ -189,7 +189,7 @@ func TestOriginHealth(t *testing.T) {
 		req, err := fsthttp.NewRequest("GET", b.Target(), nil)
 		if err != nil {
 			t.Errorf("NewRequest: %v", err)
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 
