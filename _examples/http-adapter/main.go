@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
@@ -42,10 +41,6 @@ func main() {
 
 		w.WriteHeader(resp.StatusCode)
 		io.Copy(w, resp.Body)
-		fmt.Fprintf(w, "\n---\n")
-
-		ofr := fsthttp.RequestFromContext(r.Context())
-		fmt.Fprintf(w, "%s\n", ofr.Host)
 	})
 
 	mux.HandleFunc("/long", func(w http.ResponseWriter, r *http.Request) {
