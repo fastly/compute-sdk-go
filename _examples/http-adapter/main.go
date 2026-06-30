@@ -49,8 +49,6 @@ func main() {
 	})
 
 	mux.HandleFunc("/long", func(w http.ResponseWriter, r *http.Request) {
-		rand.Seed(time.Now().UnixNano())
-
 		ctx := r.Context()
 		processTime := time.Duration(rand.Intn(10)+1) * time.Second
 
