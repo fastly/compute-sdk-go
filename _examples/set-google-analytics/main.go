@@ -25,7 +25,6 @@ func main() {
 		c, err := r.Cookie("_ga")
 		if r.Header.Get("Fastly-FF") == "" && (err != nil || !strings.HasPrefix(c.Value, "GA")) {
 			now := time.Now()
-			rand.Seed(now.UnixNano())
 
 			// The _ga cookie is made up of four fields:
 			//
