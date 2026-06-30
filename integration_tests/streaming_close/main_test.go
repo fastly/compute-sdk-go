@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"context"
 	"io"
+	"log"
 	"strconv"
 	"testing"
 
@@ -27,14 +28,16 @@ func TestStreamingClose(t *testing.T) {
 	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
 		req, err := fsthttp.NewRequest("GET", "https://compute-sdk-test-backend.edgecompute.app/streaming_close", nil)
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			log.Println("error creating new http request:", err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 
 		req.CacheOptions.Pass = true
 		resp, err := req.Send(ctx, "TheOrigin")
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			log.Println("error sending to origin:", err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 
@@ -48,7 +51,8 @@ func TestStreamingClose(t *testing.T) {
 			}
 
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+				log.Println("error reading body byte:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				t.Errorf("ReadByte: %v", err)
 				return
 			}

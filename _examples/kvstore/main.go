@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"io"
+	"log"
 	"strings"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
@@ -15,13 +16,15 @@ func main() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
 		o, err := kvstore.Open("example_kvstore")
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			log.Println("error during kvstore open:", err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 			return
 		}
 
 		v, err := o.Lookup("foo")
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			log.Println("error during kvstore lookup:", err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 			return
 		}
 
@@ -34,7 +37,8 @@ func main() {
 		if err != nil && err == kvstore.ErrKeyNotFound {
 			reader = strings.NewReader("default value")
 		} else if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			log.Println("error during kvstore lookup:", err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 			return
 		} else {
 			reader = v

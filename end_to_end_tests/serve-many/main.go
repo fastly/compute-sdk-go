@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
@@ -26,7 +27,8 @@ func main() {
 
 		meta, err := r.FastlyMeta()
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			log.Println("error fetching fastly metadata for request:", err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 		sandboxID, requestID := meta.SandboxID, meta.RequestID

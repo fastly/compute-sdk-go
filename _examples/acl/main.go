@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 
 	"github.com/fastly/compute-sdk-go/acl"
@@ -16,7 +17,8 @@ func main() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
 		aclh, err := acl.Open("example")
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			log.Println("error opening acl:", err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 			return
 		}
 
@@ -32,7 +34,8 @@ func main() {
 			return
 		}
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			log.Printf("error looking up acl for %v: %v", ip, err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 			return
 		}
 

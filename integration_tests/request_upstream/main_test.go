@@ -28,7 +28,7 @@ func requestUpstream(useAppend bool, t *testing.T) {
 		// Create our upstream request
 		req, err := fsthttp.NewRequest("GET", "https://compute-sdk-test-backend.edgecompute.app/request_upstream", nil)
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			t.Errorf("NewRequest: %v", err)
 			return
 		}
@@ -42,7 +42,7 @@ func requestUpstream(useAppend bool, t *testing.T) {
 		// named "TheOrigin" and pointing to "http://provider.org/TheURL".
 		resp, err := req.Send(ctx, "TheOrigin")
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			t.Errorf("Send: %v", err)
 			return
 		}

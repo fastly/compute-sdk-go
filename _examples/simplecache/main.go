@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"time"
 
@@ -23,14 +24,16 @@ func main() {
 		case "GET":
 			rc, err := simple.Get(key)
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error during cache.Get:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 			defer rc.Close()
 
 			msg, err := io.ReadAll(rc)
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error reading cache response:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 
@@ -53,7 +56,8 @@ func main() {
 				}, nil
 			})
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error during GetOrSet:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 			defer rc.Close()
@@ -65,7 +69,8 @@ func main() {
 
 			msg, err := io.ReadAll(rc)
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error reading cache response:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 
@@ -76,7 +81,8 @@ func main() {
 		// Purge the key from the cache.
 		case "DELETE":
 			if err := simple.Purge(key, simple.PurgeOptions{}); err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error purging cache:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 			w.WriteHeader(fsthttp.StatusAccepted)
