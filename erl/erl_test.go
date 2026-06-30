@@ -3,6 +3,7 @@ package erl_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/erl"
@@ -26,8 +27,12 @@ func ExampleRateLimiter_CheckRate() {
 			},
 		)
 		if err != nil {
-			// It's probably better to fail open.  Consider logging the
-			// error but continuing to handle the request.
+			// We encountered an error during lookup.  Make sure we fail-safe
+			// and don't allow errors to allow overloading the service.
+			// Log the error so we know we had a problem.
+			log.Println("error during limit.CheckRate:", err)
+			w.WriteHeader(fsthttp.StatusInternalServerError)
+			return
 		} else if block {
 			// The rate limit has been exceeded.  Return a 429 Too Many
 			// Requests response.
