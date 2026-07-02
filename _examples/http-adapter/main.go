@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -17,22 +17,18 @@ func main() {
 	// one here, including chi, gorilla/mux, etc.
 	mux := http.NewServeMux()
 
+	// Set a transport for the default HTTP client
+	http.DefaultClient.Transport = fsthttp.NewTransport(backend)
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello World!"))
 	})
 
 	mux.HandleFunc("/ip", func(w http.ResponseWriter, r *http.Request) {
-		req, err := fsthttp.NewRequest("GET", "https://http-me.fastly.dev/ip", nil)
+		resp, err := http.Get("https://http-me.fastly.dev/ip")
 		if err != nil {
-			w.WriteHeader(fsthttp.StatusInternalServerError)
-			return
-		}
-
-		req.Header.Set("Fastly-Debug", "1")
-
-		resp, err := req.Send(r.Context(), backend)
-		if err != nil {
-			w.WriteHeader(fsthttp.StatusBadGateway)
+			log.Println("error during fetch:", err)
+			w.WriteHeader(http.StatusBadGateway)
 			return
 		}
 
@@ -42,15 +38,9 @@ func main() {
 
 		w.WriteHeader(resp.StatusCode)
 		io.Copy(w, resp.Body)
-		fmt.Fprintf(w, "\n---\n")
-
-		ofr := fsthttp.RequestFromContext(r.Context())
-		fmt.Fprintf(w, "%s\n", ofr.Host)
 	})
 
 	mux.HandleFunc("/long", func(w http.ResponseWriter, r *http.Request) {
-		rand.Seed(time.Now().UnixNano())
-
 		ctx := r.Context()
 		processTime := time.Duration(rand.Intn(10)+1) * time.Second
 
