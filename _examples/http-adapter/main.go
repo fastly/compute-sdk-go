@@ -25,7 +25,6 @@ func main() {
 		req, err := fsthttp.NewRequest("GET", "https://http-me.fastly.dev/ip", nil)
 		if err != nil {
 			w.WriteHeader(fsthttp.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
 			return
 		}
 
@@ -34,7 +33,6 @@ func main() {
 		resp, err := req.Send(r.Context(), backend)
 		if err != nil {
 			w.WriteHeader(fsthttp.StatusBadGateway)
-			w.Write([]byte(err.Error()))
 			return
 		}
 

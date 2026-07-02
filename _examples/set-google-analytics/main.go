@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"strings"
 	"time"
@@ -17,13 +18,13 @@ func main() {
 	fsthttp.ServeFunc(func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
 		resp, err := r.Send(ctx, "backend")
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			log.Println("error sending to backend:", err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 			return
 		}
 		c, err := r.Cookie("_ga")
 		if r.Header.Get("Fastly-FF") == "" && (err != nil || !strings.HasPrefix(c.Value, "GA")) {
 			now := time.Now()
-			rand.Seed(now.UnixNano())
 
 			// The _ga cookie is made up of four fields:
 			//

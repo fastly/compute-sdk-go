@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"io"
+	"log"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
 )
@@ -23,7 +24,8 @@ func main() {
 		// named "httpme" and pointing to "https://http-me.fastly.dev".
 		resp, err := r.Send(ctx, "httpme")
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			log.Println("error sending to origin:", err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 			return
 		}
 
