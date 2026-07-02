@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -26,7 +27,8 @@ func main() {
 	mux.HandleFunc("/ip", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := http.Get("https://http-me.fastly.dev/ip")
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			log.Println("error during fetch:", err)
+			w.WriteHeader(http.StatusBadGateway)
 			return
 		}
 
