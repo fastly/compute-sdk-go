@@ -1700,6 +1700,7 @@ const (
 	BotCategorySearchEngineCrawler        BotCategory = 11
 	BotCategorySearchEngineSpecialization BotCategory = 12
 	BotCategorySecurityTools              BotCategory = 13
+	BotCategoryHeadless                   BotCategory = 14
 	BotCategoryUnknown                    BotCategory = -1
 )
 
@@ -1734,6 +1735,8 @@ func (c BotCategory) String() string {
 		return "SearchEngineSpecialization"
 	case BotCategorySecurityTools:
 		return "SecurityTools"
+	case BotCategoryHeadless:
+		return "Headless"
 	}
 	return "Unknown"
 }

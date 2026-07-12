@@ -21,7 +21,7 @@ func main() {
 
 		if bot.Analyzed {
 			if bot.Detected {
-				log.Println(w, "request from bot:", bot.Category, bot.Name)
+				log.Println("Request from bot:", bot.Name, bot.Category)
 			}
 		}
 
