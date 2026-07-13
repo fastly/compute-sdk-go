@@ -47,7 +47,7 @@ const (
 	// BotCategorySecurityTools is for security analysis tools that inspect your website for vulnerabilities, misconfigurations and other security features.
 	BotCategorySecurityTools = fastly.BotCategorySecurityTools
 
-	// BotCategoryHeadless is for a request that is suspected of being a headless bad bot.
+	// BotCategoryHeadless is for a request that is suspected of being a headless bot.
 	BotCategoryHeadless = fastly.BotCategoryHeadless
 
 	// BotCategoryUnknown indicates the detected bot belongs to a category not recognized by this SDK version.
