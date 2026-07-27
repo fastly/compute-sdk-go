@@ -262,7 +262,7 @@ func (v HTTPVersion) splat() (proto string, major, minor int, err error) {
 // witx:
 //
 //	(typename $http_status u16)
-type httpStatus uint32
+type httpStatus uint16
 
 // witx:
 //
