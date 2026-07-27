@@ -19,4 +19,4 @@ url = "https://compute-sdk-test-backend.edgecompute.app/"
 url = "https://example.org/"
 
 [local_server.backends.httpedge]
-url = "https://http.edgecompute.app/anything/"
+url = "https://http-me.fastly.dev/anything/"
