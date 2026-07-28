@@ -1233,9 +1233,10 @@ func (r *Request) HandoffFanout(backend string) error {
 		return ErrHandoffNotSupported
 	}
 	err := r.downstream.req.HandoffFanout(backend)
-	status, ok := fastly.IsFastlyError(err)
-	if ok && status == fastly.FastlyStatusUnsupported {
-		return ErrFanoutNotEnabled
+	if err != nil {
+		if status, ok := fastly.IsFastlyError(err); ok && status == fastly.FastlyStatusUnsupported {
+			return ErrFanoutNotEnabled
+		}
 	}
 	return err
 }
