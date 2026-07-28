@@ -1197,6 +1197,8 @@ type DecompressResponseOptions struct {
 
 var ErrHandoffNotSupported = errors.New("handoff not supported on this request")
 
+var ErrFanoutNotEnabled = errors.New("fanout or websockets are not enabled on this service; please contact support for help")
+
 // HandoffWebsocket passes the WebSocket directly to a backend.
 //
 // This can only be used on services that have the WebSockets feature
@@ -1209,7 +1211,13 @@ func (r *Request) HandoffWebsocket(backend string) error {
 	if r.downstream.req == nil {
 		return ErrHandoffNotSupported
 	}
-	return r.downstream.req.HandoffWebsocket(backend)
+	err := r.downstream.req.HandoffWebsocket(backend)
+	if err != nil {
+		if status, ok := fastly.IsFastlyError(err); ok && status == fastly.FastlyStatusUnsupported {
+			return ErrFanoutNotEnabled
+		}
+	}
+	return err
 }
 
 // HandoffFanout passes the request through the Fanout GRIP proxy and on to
@@ -1224,7 +1232,13 @@ func (r *Request) HandoffFanout(backend string) error {
 	if r.downstream.req == nil {
 		return ErrHandoffNotSupported
 	}
-	return r.downstream.req.HandoffFanout(backend)
+	err := r.downstream.req.HandoffFanout(backend)
+	if err != nil {
+		if status, ok := fastly.IsFastlyError(err); ok && status == fastly.FastlyStatusUnsupported {
+			return ErrFanoutNotEnabled
+		}
+	}
+	return err
 }
 
 type InspectOptions struct {
