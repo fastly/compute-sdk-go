@@ -1197,7 +1197,7 @@ type DecompressResponseOptions struct {
 
 var ErrHandoffNotSupported = errors.New("handoff not supported on this request")
 
-var ErrFanoutNotEnabled = errors.New("Fanout or WebSockets are not enabled on this service; please contact support for help")
+var ErrFanoutNotEnabled = errors.New("fanout or websockets are not enabled on this service; please contact support for help")
 
 // HandoffWebsocket passes the WebSocket directly to a backend.
 //
