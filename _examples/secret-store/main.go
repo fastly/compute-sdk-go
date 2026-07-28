@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
 	"github.com/fastly/compute-sdk-go/secretstore"
@@ -14,10 +15,12 @@ func main() {
 		v, err := secretstore.Plaintext("example_secretstore", "my_secret")
 		switch {
 		case errors.Is(err, secretstore.ErrSecretStoreNotFound) || errors.Is(err, secretstore.ErrSecretNotFound):
-			fsthttp.Error(w, err.Error(), fsthttp.StatusNotFound)
+			log.Println("error looking up secret:", err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusNotFound), fsthttp.StatusNotFound)
 			return
 		case err != nil:
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			log.Println("error looking up secret:", err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 			return
 		}
 

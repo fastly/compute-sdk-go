@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"math/rand"
 	"strconv"
 	"strings"
 	"testing"
@@ -28,7 +29,7 @@ func requestUpstream(useAppend bool, t *testing.T) {
 		// Create our upstream request
 		req, err := fsthttp.NewRequest("GET", "https://compute-sdk-test-backend.edgecompute.app/request_upstream", nil)
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			t.Errorf("NewRequest: %v", err)
 			return
 		}
@@ -42,7 +43,7 @@ func requestUpstream(useAppend bool, t *testing.T) {
 		// named "TheOrigin" and pointing to "http://provider.org/TheURL".
 		resp, err := req.Send(ctx, "TheOrigin")
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			t.Errorf("Send: %v", err)
 			return
 		}
@@ -118,18 +119,22 @@ func TestRequestUpstreamBody(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			requestUpstreamBody(t, tc.body, tc.size, tc.chunked)
+			requestUpstreamBody(t, tc.name, tc.body, tc.size, tc.chunked)
 		})
 	}
 }
 
-func requestUpstreamBody(t *testing.T, body io.Reader, size int, chunked bool) {
+func requestUpstreamBody(t *testing.T, name string, body io.Reader, size int, chunked bool) {
 	req, err := fsthttp.NewRequest("POST", "https://http.edgecompute.app/anything/", body)
 	if err != nil {
 		t.Fatalf("NewRequest: %v", err)
 	}
 
 	req.Header.Set("Content-Type", "application/octet-stream")
+
+	testHeader := name + " " + strconv.Itoa(rand.Int())
+	req.Header.Set("X-Fastly-Test-Case", testHeader)
+
 	req.CacheOptions.Pass = true
 
 	resp, err := req.Send(context.Background(), "httpedge")
@@ -145,6 +150,10 @@ func requestUpstreamBody(t *testing.T, body io.Reader, size int, chunked bool) {
 	gotBody := new(bytes.Buffer)
 	if err := json.NewDecoder(io.TeeReader(resp.Body, gotBody)).Decode(&respData); err != nil {
 		t.Fatalf("Decode: %v\nBody:\n%s", err, gotBody.String())
+	}
+
+	if got, want := respData.Headers["x-fastly-test-case"], testHeader; got != want {
+		t.Errorf("Header[x-fastly-test-case] = %q, want %q", got, want)
 	}
 
 	var teWant, clWant string

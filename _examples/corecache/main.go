@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"time"
 
@@ -24,25 +25,28 @@ func main() {
 		case "GET":
 			tx, err := core.NewTransaction(key, core.LookupOptions{})
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error creating cache transaction:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 			defer tx.Close()
 
 			f, err := tx.Found()
 			if errors.Is(err, core.ErrNotFound) {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusNotFound)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusNotFound), fsthttp.StatusNotFound)
 				return
 			}
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error during tx.Found:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 			defer f.Body.Close()
 
 			msg, err := io.ReadAll(f.Body)
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error reading cache response:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 
@@ -58,13 +62,15 @@ func main() {
 
 			msg, err := io.ReadAll(r.Body)
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error reading request body:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 
 			tx, err := core.NewTransaction(key, core.LookupOptions{})
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error creating cache transaction:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 			defer tx.Close()
@@ -92,7 +98,8 @@ func main() {
 				SurrogateKeys: []string{hex.EncodeToString(key)},
 			})
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error inserting into cache:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 			defer found.Body.Close()
@@ -100,13 +107,15 @@ func main() {
 			insertBody.Write(msg)
 
 			if err := insertBody.Close(); err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error closing cache insert:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 
 			msg, err = io.ReadAll(found.Body)
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error reading cache response:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 
@@ -117,7 +126,8 @@ func main() {
 		// Purge the key from the cache.
 		case "DELETE":
 			if err := purge.PurgeSurrogateKey(hex.EncodeToString(key), purge.PurgeOptions{}); err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+				log.Println("error puring surragate key:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 			w.WriteHeader(fsthttp.StatusAccepted)

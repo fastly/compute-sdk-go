@@ -675,6 +675,12 @@ func (candidateResponse *CandidateResponse) finalizeOptions() (fastly.HTTPCacheS
 		opts.staleWhileRevalidate = suggestedCacheWriteOptions.staleWhileRevalidate
 	}
 
+	if candidateResponse.useSIE {
+		opts.staleIfError = candidateResponse.overrideStaleIfError
+	} else {
+		opts.staleIfError = suggestedCacheWriteOptions.staleIfError
+	}
+
 	if candidateResponse.useVary {
 		opts.vary = candidateResponse.overrideVary
 	} else {

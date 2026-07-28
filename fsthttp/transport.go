@@ -3,6 +3,7 @@ package fsthttp
 import (
 	"net/http"
 	"strings"
+	"sync"
 )
 
 // Transport is an http.RoundTripper implementation for backend requests
@@ -22,6 +23,7 @@ import (
 // possible.
 type Transport struct {
 	defaultBackend string
+	mu             sync.Mutex
 	backends       map[string]string
 
 	// Request is an optional callback invoked before the request is
@@ -44,11 +46,17 @@ func NewTransport(backend string) *Transport {
 // AddHostBackend adds a new host-to-backend mapping.  Multiple hosts
 // may be mapped to the same backend.
 func (t *Transport) AddHostBackend(host, backend string) {
+	t.mu.Lock()
 	t.backends[strings.ToLower(host)] = backend
+	t.mu.Unlock()
 }
 
 func (t *Transport) getBackend(host string) string {
-	if backend, ok := t.backends[strings.ToLower(host)]; ok {
+	host = strings.ToLower(host)
+	t.mu.Lock()
+	backend, ok := t.backends[host]
+	t.mu.Unlock()
+	if ok {
 		return backend
 	}
 	return t.defaultBackend

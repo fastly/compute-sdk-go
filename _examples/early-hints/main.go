@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
@@ -23,7 +24,8 @@ func main() {
 			w.WriteHeader(http.StatusEarlyHints)
 			resp, err := r.Send(ctx, "origin")
 			if err != nil {
-				fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+				log.Println("error sending to origin:", err)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 				return
 			}
 			w.Header().Reset(resp.Header)

@@ -18,7 +18,7 @@ func TestByteRepeater(t *testing.T) {
 	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
 		req, err := fsthttp.NewRequest("GET", "https://compute-sdk-test-backend.edgecompute.app/byte_repeater", nil)
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 			t.Errorf("NewRequest: %v", err)
 			return
 		}
@@ -26,7 +26,7 @@ func TestByteRepeater(t *testing.T) {
 
 		resp, err := req.Send(ctx, "TheOrigin")
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 			t.Errorf("Send: %v", err)
 			return
 		}
@@ -40,7 +40,7 @@ func TestByteRepeater(t *testing.T) {
 			case err == io.EOF: // done
 				return
 			case err != nil: // error
-				fsthttp.Error(w, err.Error(), fsthttp.StatusBadGateway)
+				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 				t.Errorf("ReadByte: %v", err)
 				return
 			}

@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
@@ -20,7 +21,8 @@ func TestShielding(t *testing.T) {
 
 		shield, err := shielding.ShieldFromName(name)
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			log.Printf("error looking up shield %v: %v", name, err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 

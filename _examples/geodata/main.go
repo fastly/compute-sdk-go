@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
@@ -16,7 +17,8 @@ func main() {
 		ip := net.ParseIP(r.RemoteAddr)
 		g, err := geo.Lookup(ip)
 		if err != nil {
-			fsthttp.Error(w, err.Error(), fsthttp.StatusInternalServerError)
+			log.Println("error during geo lookup:", err)
+			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 			return
 		}
 

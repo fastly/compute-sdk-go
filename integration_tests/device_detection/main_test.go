@@ -27,7 +27,7 @@ func TestDeviceDetection(t *testing.T) {
 		switch req.URL.Path {
 		case "/iPhone":
 			if err != nil {
-				fsthttp.Error(res, err.Error(), fsthttp.StatusInternalServerError)
+				fsthttp.Error(res, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 
@@ -40,7 +40,7 @@ func TestDeviceDetection(t *testing.T) {
 
 		case "/AsusTeK":
 			if err != nil {
-				fsthttp.Error(res, err.Error(), fsthttp.StatusInternalServerError)
+				fsthttp.Error(res, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 
@@ -50,7 +50,7 @@ func TestDeviceDetection(t *testing.T) {
 
 		case "/unknown":
 			if err != device.ErrDeviceNotFound {
-				fsthttp.Error(res, err.Error(), fsthttp.StatusInternalServerError)
+				fsthttp.Error(res, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
 				return
 			}
 
