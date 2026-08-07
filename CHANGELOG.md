@@ -1,5 +1,12 @@
 ## Unreleased
 
+## 1.9.0 (2026-08-07)
+
+- fsthttp: add Headless bot type
+- fsthttp: make fsthttp.Transport (net/http adapter) goroutine-safe
+- fsthttp: improve error messages when fanout is not enabled
+- all: improve error handling in examples and tests
+
 ## 1.8.1 (2026-06-24)
 
 - fsthttp: ensure stale-if-error options are passed to ABI hostcall (#265)
