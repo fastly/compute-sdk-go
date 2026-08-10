@@ -1,3 +1,5 @@
+//go:build !fastlynonethttp
+
 package fsthttp
 
 import (
