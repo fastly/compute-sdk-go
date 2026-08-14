@@ -42,6 +42,12 @@ func (b *BackendOptions) FirstByteTimeout(t time.Duration) *BackendOptions {
 	return b
 }
 
+// BetweenBytesTimeout sets the between-bytes timeout for a derived backend.
+func (b *BackendOptions) BetweenBytesTimeout(t time.Duration) *BackendOptions {
+	b.abiOpts.BetweenBytesTimeout(t)
+	return b
+}
+
 // Backend returns a named backend for use with the fsthttp package.
 func (s *Shield) Backend(opts *BackendOptions) (string, error) {
 	return fastly.ShieldingBackendForShield(s.name, &opts.abiOpts)
