@@ -14,16 +14,14 @@ type HTTPCacheLookupOptions struct {
 }
 
 func (o *HTTPCacheLookupOptions) OverrideKey(key string) {
-	k := []byte(key)
-	buf := prim.NewReadBufferFromBytes(k)
+	buf := prim.NewReadBufferFromString(key)
 	o.opts.overrideKeyPtr = prim.ToPointer(buf.Char8Pointer())
 	o.opts.overrideKeyLen = buf.Len()
 	o.mask |= httpCacheLookupOptionsFlagOverrideKey
 }
 
 func (o *HTTPCacheLookupOptions) Backend(backend string) {
-	b := []byte(backend)
-	buf := prim.NewReadBufferFromBytes(b)
+	buf := prim.NewReadBufferFromString(backend)
 	o.opts.backendPtr = prim.ToPointer(buf.Char8Pointer())
 	o.opts.backendLen = buf.Len()
 	o.mask |= httpCacheLookupOptionsFlagBackend

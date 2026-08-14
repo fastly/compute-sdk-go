@@ -139,7 +139,8 @@ type ReadBuffer struct {
 // NewReadBufferFromString creates a ReadBuffer with its buffer based on the
 // provided string.
 func NewReadBufferFromString(s string) *ReadBuffer {
-	return NewReadBufferFromBytes([]byte(s))
+	b := unsafe.Slice(unsafe.StringData(s), len(s))
+	return NewReadBufferFromBytes(b)
 }
 
 // NewReadBufferFromBytes creates a new ReadBuffer with the provided byte slice
