@@ -5,29 +5,13 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"testing"
 
-	"github.com/fastly/compute-sdk-go/fsthttp"
-	"github.com/fastly/compute-sdk-go/fsttest"
 	"github.com/fastly/compute-sdk-go/shielding"
 )
 
 func TestShielding(t *testing.T) {
-	handler := func(_ context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		name := r.URL.Query().Get("shield")
-
-		shield, err := shielding.ShieldFromName(name)
-		if err != nil {
-			log.Printf("error looking up shield %v: %v", name, err)
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		fmt.Fprintf(w, "Name=%v RunningOn=%v", shield.Name(), shield.IsRunningOn())
-	}
 
 	var tests = []struct {
 		shield, want string
@@ -37,22 +21,15 @@ func TestShielding(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-
-		r, err := fsthttp.NewRequest("GET", "/?shield="+tt.shield, nil)
+		shield, err := shielding.ShieldFromName(tt.shield)
 		if err != nil {
-			t.Fatalf("NewRequest: %v", err)
-		}
-		w := fsttest.NewRecorder()
-
-		handler(context.Background(), w, r)
-
-		if got, want := w.Code, fsthttp.StatusOK; got != want {
-			t.Errorf("Code = %d, want %d", got, want)
+			t.Errorf("ShieldFromName(%v) got error %v", tt.shield, err)
 		}
 
-		if got, want := w.Body.String(), tt.want; got != want {
-			t.Errorf("Body = %q, want %q", got, want)
-		}
+		got := fmt.Sprintf("Name=%v RunningOn=%v", shield.Name(), shield.IsRunningOn())
 
+		if got != tt.want {
+			t.Errorf("Body = %q, want %q", got, tt.want)
+		}
 	}
 }
