@@ -356,6 +356,11 @@ const (
 //	(typename $endpoint_handle (handle))
 type endpointHandle handle
 
+// LogEndpoint represents a specific Fastly log endpoint.
+type LogEndpoint struct {
+	h endpointHandle
+}
+
 // witx:
 //
 //	(typename $dictionary_handle (handle))

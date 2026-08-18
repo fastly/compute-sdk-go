@@ -10,11 +10,6 @@ import (
 
 // (module $fastly_log
 
-// LogEndpoint represents a specific Fastly log endpoint.
-type LogEndpoint struct {
-	h endpointHandle
-}
-
 // witx:
 //
 //	(@interface func (export "endpoint_get")

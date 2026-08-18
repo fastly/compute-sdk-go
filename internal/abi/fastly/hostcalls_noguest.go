@@ -57,8 +57,6 @@ func (b *HTTPBody) GetTrailerValues(name string) *Values {
 	return nil
 }
 
-type LogEndpoint struct{}
-
 func GetLogEndpoint(name string) (*LogEndpoint, error) {
 	return nil, fmt.Errorf("not implemented")
 }
