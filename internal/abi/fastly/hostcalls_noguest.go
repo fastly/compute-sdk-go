@@ -698,14 +698,6 @@ func (acl *ACLHandle) Lookup(ip net.IP) (*HTTPBody, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-type HTTPCacheLookupOptions struct{}
-
-func (HTTPCacheLookupOptions) OverrideKey(key string) {
-}
-
-func (HTTPCacheLookupOptions) Backend(backend string) {
-}
-
 func HTTPCacheIsRequestCacheable(req *HTTPRequest) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
@@ -723,49 +715,6 @@ func HTTPCacheLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (*HTTPCache
 func HTTPCacheTransactionLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (*HTTPCacheHandle, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-type HTTPCacheWriteOptions struct{}
-
-func (o *HTTPCacheWriteOptions) FillConfigMask() {}
-
-func (o *HTTPCacheWriteOptions) SetMaxAgeNs(maxAge uint64) {}
-
-func (o *HTTPCacheWriteOptions) MaxAgeNs() uint64 { return 0 }
-
-func (o *HTTPCacheWriteOptions) SetVaryRule(rule string) {}
-
-func (o *HTTPCacheWriteOptions) VaryRule() (string, bool) { return "", false }
-
-func (o *HTTPCacheWriteOptions) SetInitialAgeNs(initialAge uint64) {}
-
-func (o *HTTPCacheWriteOptions) InitialAgeNs() (uint64, bool) {
-	return 0, false
-}
-
-func (o *HTTPCacheWriteOptions) SetStaleWhileRevalidateNs(staleWhileRevalidateNs uint64) {
-}
-
-func (o *HTTPCacheWriteOptions) StaleWhileRevalidateNs() (uint64, bool) {
-	return 0, false
-}
-
-func (o *HTTPCacheWriteOptions) SetSurrogateKeys(keys string) {}
-
-func (o *HTTPCacheWriteOptions) SurrogateKeys() (string, bool) {
-	return "", false
-}
-
-func (o *HTTPCacheWriteOptions) SetLength(length uint64) {}
-
-func (o *HTTPCacheWriteOptions) Length() (uint64, bool) { return 0, false }
-
-func (o *HTTPCacheWriteOptions) SetSensitiveData(sensitive bool) {}
-
-func (o *HTTPCacheWriteOptions) SensitiveData() bool { return false }
-
-func (o *HTTPCacheWriteOptions) SetStaleIfErrorNs(staleIfErrorNs uint64) {}
-
-func (o *HTTPCacheWriteOptions) StaleIfErrorNs() (uint64, bool) { return 0, false }
 
 func HTTPCacheTransactionInsert(h *HTTPCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPBody, error) {
 	return nil, fmt.Errorf("not implemented")

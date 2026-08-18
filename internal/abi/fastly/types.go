@@ -2071,6 +2071,25 @@ const (
 	httpCacheLookupOptionsFlagBackend     httpCacheLookupOptionsMask = 1 << 2
 )
 
+type HTTPCacheLookupOptions struct {
+	mask httpCacheLookupOptionsMask
+	opts httpCacheLookupOptions
+}
+
+func (o *HTTPCacheLookupOptions) OverrideKey(key string) {
+	buf := prim.NewReadBufferFromString(key)
+	o.opts.overrideKeyPtr = prim.ToPointer(buf.Char8Pointer())
+	o.opts.overrideKeyLen = buf.Len()
+	o.mask |= httpCacheLookupOptionsFlagOverrideKey
+}
+
+func (o *HTTPCacheLookupOptions) Backend(backend string) {
+	buf := prim.NewReadBufferFromString(backend)
+	o.opts.backendPtr = prim.ToPointer(buf.Char8Pointer())
+	o.opts.backendLen = buf.Len()
+	o.mask |= httpCacheLookupOptionsFlagBackend
+}
+
 type (
 	httpCacheDurationNs   prim.U64
 	httpCacheObjectLength prim.U64
@@ -2127,6 +2146,121 @@ type httpCacheWriteOptions struct {
 	//
 	// If this field is not set, the default value is zero.
 	staleIfErrorNs httpCacheDurationNs
+}
+
+type HTTPCacheWriteOptions struct {
+	mask httpCacheWriteOptionsMask
+	opts httpCacheWriteOptions
+
+	vary      *prim.WriteBuffer
+	surrogate *prim.WriteBuffer
+}
+
+func (o *HTTPCacheWriteOptions) SetMaxAgeNs(maxAge uint64) {
+	o.opts.maxAgeNs = httpCacheDurationNs(maxAge)
+	// This field is required; there is no mask bit set.
+}
+
+func (o *HTTPCacheWriteOptions) MaxAgeNs() uint64 {
+	return uint64(o.opts.maxAgeNs)
+}
+
+func (o *HTTPCacheWriteOptions) SetVaryRule(rule string) {
+	b := []byte(rule)
+	o.vary = prim.NewWriteBufferFromBytes(b)
+	o.opts.varyRulePtr = prim.ToPointer(o.vary.Char8Pointer())
+	o.opts.varyRuleLen = o.vary.Len()
+	o.mask |= httpCacheWriteOptionsFlagVaryRule
+}
+
+func (o *HTTPCacheWriteOptions) VaryRule() (string, bool) {
+	if o.mask&httpCacheWriteOptionsFlagVaryRule == 0 {
+		return "", false
+	}
+
+	p := o.vary.NPointer()
+	*p = o.opts.varyRuleLen
+
+	return o.vary.ToString(), true
+}
+
+func (o *HTTPCacheWriteOptions) SetInitialAgeNs(initialAge uint64) {
+	o.opts.initialAgeNs = httpCacheDurationNs(initialAge)
+	o.mask |= httpCacheWriteOptionsFlagInitialAge
+}
+
+func (o *HTTPCacheWriteOptions) InitialAgeNs() (uint64, bool) {
+	return uint64(o.opts.initialAgeNs), o.mask&httpCacheWriteOptionsFlagInitialAge == httpCacheWriteOptionsFlagInitialAge
+}
+
+func (o *HTTPCacheWriteOptions) SetStaleWhileRevalidateNs(staleWhileRevalidateNs uint64) {
+	o.opts.staleWhileRevalidateNs = httpCacheDurationNs(staleWhileRevalidateNs)
+	o.mask |= httpCacheWriteOptionsFlagStaleWhileRevalidate
+}
+
+func (o *HTTPCacheWriteOptions) StaleWhileRevalidateNs() (uint64, bool) {
+	return uint64(o.opts.staleWhileRevalidateNs), o.mask&httpCacheWriteOptionsFlagStaleWhileRevalidate == httpCacheWriteOptionsFlagStaleWhileRevalidate
+}
+
+func (o *HTTPCacheWriteOptions) SetSurrogateKeys(keys string) {
+	b := []byte(keys)
+	o.surrogate = prim.NewWriteBufferFromBytes(b)
+	o.opts.surrogateKeysPtr = prim.ToPointer(o.surrogate.Char8Pointer())
+	o.opts.surrogateKeysLen = o.surrogate.Len()
+	o.mask |= httpCacheWriteOptionsFlagSurrogateKeys
+}
+
+func (o *HTTPCacheWriteOptions) SurrogateKeys() (string, bool) {
+	if o.mask&httpCacheWriteOptionsFlagSurrogateKeys == 0 {
+		return "", false
+	}
+
+	p := o.surrogate.NPointer()
+	*p = o.opts.surrogateKeysLen
+
+	return o.surrogate.ToString(), true
+}
+
+func (o *HTTPCacheWriteOptions) SetLength(length uint64) {
+	o.opts.length = httpCacheObjectLength(length)
+	o.mask |= httpCacheWriteOptionsFlagLength
+}
+
+func (o *HTTPCacheWriteOptions) Length() (uint64, bool) {
+	return uint64(o.opts.length), o.mask&httpCacheWriteOptionsFlagLength == httpCacheWriteOptionsFlagLength
+}
+
+func (o *HTTPCacheWriteOptions) SetSensitiveData(b bool) {
+	if b {
+		o.mask |= httpCacheWriteOptionsFlagSensitiveData
+	} else {
+		o.mask &^= httpCacheWriteOptionsFlagSensitiveData
+	}
+}
+
+func (o *HTTPCacheWriteOptions) SensitiveData() bool {
+	return o.mask&httpCacheWriteOptionsFlagSensitiveData == httpCacheWriteOptionsFlagSensitiveData
+}
+
+func (o *HTTPCacheWriteOptions) SetStaleIfErrorNs(staleNs uint64) {
+	o.opts.staleIfErrorNs = httpCacheDurationNs(staleNs)
+	o.mask |= httpCacheWriteOptionsFlagStaleIfError
+}
+
+func (o *HTTPCacheWriteOptions) StaleIfErrorNs() (uint64, bool) {
+	return uint64(o.opts.staleIfErrorNs), o.mask&httpCacheWriteOptionsFlagStaleIfError == httpCacheWriteOptionsFlagStaleIfError
+}
+
+func (o *HTTPCacheWriteOptions) FillConfigMask() {
+	o.mask = 0 |
+		httpCacheWriteOptionsFlagReserved |
+		httpCacheWriteOptionsFlagVaryRule |
+		httpCacheWriteOptionsFlagInitialAge |
+		httpCacheWriteOptionsFlagStaleWhileRevalidate |
+		httpCacheWriteOptionsFlagSurrogateKeys |
+		httpCacheWriteOptionsFlagLength |
+		httpCacheWriteOptionsFlagSensitiveData |
+		httpCacheWriteOptionsFlagStaleIfError
 }
 
 type httpCacheWriteOptionsMask prim.U32
