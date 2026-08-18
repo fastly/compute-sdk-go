@@ -25,11 +25,6 @@ func fastlyACLOpen(
 	h prim.Pointer[aclHandle],
 ) FastlyStatus
 
-// ACL is a handle to the ACL subsystem.
-type ACLHandle struct {
-	h aclHandle
-}
-
 // OpenACL returns a handle to the named ACL set.
 func OpenACL(name string) (*ACLHandle, error) {
 	var acl ACLHandle

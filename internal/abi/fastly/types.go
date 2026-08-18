@@ -2016,6 +2016,11 @@ var (
 //	(typename $acl_handle (handle))
 type aclHandle handle
 
+// ACL is a handle to the ACL subsystem.
+type ACLHandle struct {
+	h aclHandle
+}
+
 type ACLError prim.U32
 
 // witx:

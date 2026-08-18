@@ -682,8 +682,6 @@ func GetHeapMiB() (uint32, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-type ACLHandle struct{}
-
 func OpenACL(name string) (*ACLHandle, error) {
 	return nil, fmt.Errorf("not implemented")
 }
