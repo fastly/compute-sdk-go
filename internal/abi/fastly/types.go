@@ -12,6 +12,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
@@ -359,6 +360,30 @@ type endpointHandle handle
 //
 //	(typename $dictionary_handle (handle))
 type dictionaryHandle handle
+
+// Dictionary represents a Fastly edge dictionary, a collection of read-only
+// key/value pairs. For convenience, keys are modeled as Go strings, and values
+// as byte slices.
+//
+// NOTE: wasm, by definition, is a single-threaded execution environment. This
+// allows us to use valueBuf scratch space between the guest and host to avoid
+// allocations any larger than necessary, without locking.
+type Dictionary struct {
+	h dictionaryHandle
+
+	mu       sync.Mutex // protects valueBuf
+	valueBuf [dictionaryMaxValueLen]byte
+}
+
+// Dictionaries are subject to very specific limitations: 255 character keys and 8000 character values, utf-8 encoded.
+// The current storage collation limits utf-8 representations to 3 bytes in length.
+// https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
+// https://dev.mysql.com/doc/refman/8.4/en/charset-unicode-utf8mb3.html
+// https://en.wikipedia.org/wiki/UTF-8#Encoding
+const (
+	dictionaryMaxKeyLen   = 255 * 3  // known maximum size for config store keys: 755 bytes, for 255 3-byte utf-8 encoded characters
+	dictionaryMaxValueLen = 8000 * 3 // known maximum size for config store values: 24,000 bytes, for 8000 3-byte utf-8 encoded characters
+)
 
 // witx:
 //

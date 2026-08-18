@@ -471,8 +471,6 @@ func (r *HTTPResponse) SetFramingHeadersMode(manual bool) error {
 	return fmt.Errorf("not implemented")
 }
 
-type Dictionary struct{}
-
 func OpenDictionary(name string) (*Dictionary, error) {
 	return nil, fmt.Errorf("not implemented")
 }
