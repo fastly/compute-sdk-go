@@ -5,7 +5,6 @@
 package fastly
 
 import (
-	"io"
 	"net"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
@@ -62,7 +61,7 @@ func fastlyACLLookup(
 ) FastlyStatus
 
 // Lookup returns the entry for the IP, if it exists.
-func (a *ACLHandle) Lookup(ip net.IP) (io.Reader, error) {
+func (a *ACLHandle) Lookup(ip net.IP) (*HTTPBody, error) {
 	body := HTTPBody{h: invalidBodyHandle}
 
 	var ipBytes []byte

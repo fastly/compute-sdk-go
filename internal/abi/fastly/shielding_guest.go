@@ -96,7 +96,7 @@ func fastlyShieldingBackendForShield(
 	bufLenOut prim.Pointer[prim.Usize],
 ) FastlyStatus
 
-func ShieldingBackendForShield(name string, opts *ShieldingBackendOptions) (backend string, err error) {
+func ShieldingBackendForShield(name string, opts *ShieldingBackendOptions) (string, error) {
 
 	n := prim.NewReadBufferFromString(name)
 	value, err := withAdaptiveBuffer(DefaultMediumBufLen, func(buf *prim.WriteBuffer) FastlyStatus {

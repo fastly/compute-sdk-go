@@ -8,7 +8,6 @@ package fastly
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"time"
 )
@@ -49,7 +48,7 @@ func (b *HTTPBody) GetTrailerNames() *Values {
 	return nil
 }
 
-func (b *HTTPBody) GetTrailerValue(name string, maxHeaderValueLen int) (string, error) {
+func (b *HTTPBody) GetTrailerValue(name string) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
@@ -225,7 +224,7 @@ func (r *HTTPRequest) DownstreamOriginalHeaderCount() (int, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) GetHeaderValue(name string, maxHeaderValueLen int) (string, error) {
+func (r *HTTPRequest) GetHeaderValue(name string) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
@@ -329,11 +328,11 @@ func DownstreamNextRequest(opts *NextRequestOptions) (*HTTPRequestPromise, error
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (HTTPRequestPromise) Wait() (*HTTPRequest, *HTTPBody, error) {
+func (p *HTTPRequestPromise) Wait() (*HTTPRequest, *HTTPBody, error) {
 	return nil, nil, fmt.Errorf("not implemented")
 }
 
-func (HTTPRequestPromise) Abandon() error {
+func (p *HTTPRequestPromise) Abandon() error {
 	return fmt.Errorf("not implemented")
 }
 
@@ -473,10 +472,6 @@ func (d *Dictionary) GetBytes(key string) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (d *Dictionary) Get(key string) (string, error) {
-	return "", fmt.Errorf("not implemented")
-}
-
 func (d *Dictionary) Has(key string) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
@@ -487,10 +482,6 @@ func OpenConfigStore(name string) (*ConfigStore, error) {
 
 func (d *ConfigStore) GetBytes(key string) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
-}
-
-func (d *ConfigStore) Get(key string) (string, error) {
-	return "", fmt.Errorf("not implemented")
 }
 
 func (d *ConfigStore) Has(key string) (bool, error) {
@@ -513,7 +504,7 @@ func (o *KVStore) LookupWait(h kvstoreLookupHandle) (KVLookupResult, error) {
 	return KVLookupResult{}, fmt.Errorf("not implemented")
 }
 
-func (o *KVStore) Insert(key string, value io.Reader, config *KVInsertConfig) (kvstoreInsertHandle, error) {
+func (o *KVStore) Insert(key string, body *HTTPBody, config *KVInsertConfig) (kvstoreInsertHandle, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
@@ -674,10 +665,6 @@ func HTTPCacheIsRequestCacheable(req *HTTPRequest) (bool, error) {
 }
 
 func HTTPCacheGetSuggestedCacheKey(req *HTTPRequest) ([]byte, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func HTTPCacheLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (*HTTPCacheHandle, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

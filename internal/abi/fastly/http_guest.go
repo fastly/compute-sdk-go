@@ -2546,7 +2546,7 @@ func fastlyHTTPBodyTrailerAppend(
 ) FastlyStatus
 
 // TrailerAppend appends a name/value pair as an HTTP Trailer
-func (r *HTTPBody) TrailerAppend(name string, value string) error {
+func (r *HTTPBody) TrailerAppend(name, value string) error {
 	nameBuffer := prim.NewReadBufferFromString(name).ArrayU8()
 	valueBuffer := prim.NewReadBufferFromString(value).ArrayU8()
 
