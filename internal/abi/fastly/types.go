@@ -588,6 +588,12 @@ const (
 	invalidKVListHandle   = kvstoreListHandle(math.MaxUint32 - 1)
 )
 
+// KVStore represents a Fastly kv store, a collection of key/value pairs.
+// For convenience, keys and values are both modelled as Go strings.
+type KVStore struct {
+	h kvstoreHandle
+}
+
 type kvLookupConfigMask prim.U32
 
 const (

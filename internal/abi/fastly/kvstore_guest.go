@@ -30,12 +30,6 @@ func fastlyKVStoreOpen(
 	h prim.Pointer[kvstoreHandle],
 ) FastlyStatus
 
-// KVStore represents a Fastly kv store, a collection of key/value pairs.
-// For convenience, keys and values are both modelled as Go strings.
-type KVStore struct {
-	h kvstoreHandle
-}
-
 // KVStoreOpen returns a reference to the named kv store, if it exists.
 func OpenKVStore(name string) (*KVStore, error) {
 	var kv KVStore = KVStore{h: invalidKVStoreHandle}

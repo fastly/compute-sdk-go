@@ -511,8 +511,6 @@ func GeoLookup(ip net.IP) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-type KVStore struct{}
-
 func OpenKVStore(name string) (*KVStore, error) {
 	return nil, fmt.Errorf("not implemented")
 }
