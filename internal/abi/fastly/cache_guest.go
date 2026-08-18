@@ -10,10 +10,6 @@ import (
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
 )
 
-type CacheEntry struct {
-	h cacheHandle
-}
-
 // witx:
 //
 //	(module $fastly_cache

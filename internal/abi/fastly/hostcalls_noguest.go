@@ -574,10 +574,6 @@ func SecretFromBytes(b []byte) (*Secret, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-type (
-	CacheEntry struct{}
-)
-
 func CacheLookup(key []byte, opts CacheLookupOptions) (*CacheEntry, error) {
 	return nil, fmt.Errorf("not implemented")
 }

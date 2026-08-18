@@ -867,6 +867,10 @@ type (
 //	(typename $cache_handle (handle))
 type cacheHandle handle
 
+type CacheEntry struct {
+	h cacheHandle
+}
+
 // witx:
 //
 //	;;; Extensible options for cache lookup operations; currently used for both `lookup` and `transaction_lookup`.
