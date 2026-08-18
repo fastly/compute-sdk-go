@@ -342,6 +342,10 @@ const (
 	invalidRequestPromiseHandle = requestPromiseHandle(math.MaxUint32 - 1)
 )
 
+type HTTPRequestPromise struct {
+	h requestPromiseHandle
+}
+
 // witx:
 //
 //	(typename $pending_request_handle (handle))
@@ -350,6 +354,12 @@ type pendingRequestHandle handle
 const (
 	invalidPendingRequestHandle = pendingRequestHandle(math.MaxUint32 - 1)
 )
+
+// PendingRequest is an outstanding or completed asynchronous HTTP request.
+// The zero value is invalid.
+type PendingRequest struct {
+	h pendingRequestHandle
+}
 
 // witx:
 //
@@ -2128,6 +2138,10 @@ func (e ACLError) Error() string {
 type httpCacheHandle handle
 
 const invalidHTTPCacheHandle = httpCacheHandle(math.MaxUint32 - 1)
+
+type HTTPCacheHandle struct {
+	h httpCacheHandle
+}
 
 type httpIsCacheable prim.U32
 

@@ -285,8 +285,6 @@ func (r *HTTPRequest) Inspect(info *InspectInfo, b *HTTPBody) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-type PendingRequest struct{}
-
 func (r *HTTPRequest) SendAsync(requestBody *HTTPBody, backend string) (*PendingRequest, error) {
 	return nil, fmt.Errorf("not implemented")
 }
@@ -326,8 +324,6 @@ func (r *HTTPRequest) HandoffWebsocket(backend string) error {
 func (r *HTTPRequest) HandoffFanout(backend string) error {
 	return fmt.Errorf("not implemented")
 }
-
-type HTTPRequestPromise struct{}
 
 func DownstreamNextRequest(opts *NextRequestOptions) (*HTTPRequestPromise, error) {
 	return nil, fmt.Errorf("not implemented")
@@ -680,8 +676,6 @@ func HTTPCacheIsRequestCacheable(req *HTTPRequest) (bool, error) {
 func HTTPCacheGetSuggestedCacheKey(req *HTTPRequest) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-type HTTPCacheHandle struct{}
 
 func HTTPCacheLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (*HTTPCacheHandle, error) {
 	return nil, fmt.Errorf("not implemented")

@@ -89,10 +89,6 @@ func HTTPCacheGetSuggestedCacheKey(req *HTTPRequest) ([]byte, error) {
 	return value.AsBytes(), nil
 }
 
-type HTTPCacheHandle struct {
-	h httpCacheHandle
-}
-
 // witx:
 //
 //	;;; Perform a cache lookup based on the given request.

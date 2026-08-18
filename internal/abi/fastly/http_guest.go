@@ -830,12 +830,6 @@ func fastlyHTTPReqSendAsync(
 	pendingReq prim.Pointer[pendingRequestHandle],
 ) FastlyStatus
 
-// PendingRequest is an outstanding or completed asynchronous HTTP request.
-// The zero value is invalid.
-type PendingRequest struct {
-	h pendingRequestHandle
-}
-
 // SendAsync sends the request, with the provided body, to the named backend.
 // The body is buffered and sent all at once. Returns immediately with a
 // reference to the newly created request.
@@ -1112,10 +1106,6 @@ func (r *HTTPRequest) SetFramingHeadersMode(manual bool) error {
 }
 
 // (module $fastly_http_downstream
-
-type HTTPRequestPromise struct {
-	h requestPromiseHandle
-}
 
 // witx:
 //
