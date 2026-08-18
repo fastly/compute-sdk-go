@@ -11,6 +11,7 @@ import (
 	"io"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
@@ -869,6 +870,99 @@ const (
 	cacheLookupOptionsMaskAlwaysUseRequestedRange cacheLookupOptionsMask = 0b0000_1000 // $always_use_requested_range
 )
 
+type CacheLookupOptions struct {
+	opts cacheLookupOptions
+	mask cacheLookupOptionsMask
+}
+
+func (o *CacheLookupOptions) SetRequest(req *HTTPRequest) {
+	o.opts.requestHeaders = req.h
+	o.mask |= cacheLookupOptionsMaskRequestHeaders
+}
+
+func (o *CacheLookupOptions) SetAlwaysUseRequestedRange(alwaysUseRequestedRange bool) {
+	if alwaysUseRequestedRange {
+		o.mask |= cacheLookupOptionsMaskAlwaysUseRequestedRange
+	} else {
+		o.mask &= ^cacheLookupOptionsMaskAlwaysUseRequestedRange
+	}
+}
+
+type CacheGetBodyOptions struct {
+	opts cacheGetBodyOptions
+	mask cacheGetBodyOptionsMask
+}
+
+func (o *CacheGetBodyOptions) From(from uint64) {
+	o.opts.from = prim.U64(from)
+	o.mask |= cacheGetBodyOptionsMaskFrom
+}
+
+func (o *CacheGetBodyOptions) To(to uint64) {
+	o.opts.to = prim.U64(to)
+	o.mask |= cacheGetBodyOptionsMaskTo
+}
+
+type CacheWriteOptions struct {
+	opts cacheWriteOptions
+	mask cacheWriteOptionsMask
+}
+
+func (o *CacheWriteOptions) MaxAge(v time.Duration) {
+	o.opts.maxAgeNs = prim.U64(v.Nanoseconds())
+}
+
+func (o *CacheWriteOptions) SetRequest(req *HTTPRequest) {
+	o.opts.requestHeaders = req.h
+	o.mask |= cacheWriteOptionsMaskRequestHeaders
+}
+
+func (o *CacheWriteOptions) Vary(v []string) {
+	vstr := strings.Join(v, " ")
+	buf := prim.NewReadBufferFromString(vstr)
+	o.opts.varyRulePtr = prim.ToPointer(buf.Char8Pointer())
+	o.opts.varyRuleLen = buf.Len()
+	o.mask |= cacheWriteOptionsMaskVaryRule
+}
+
+func (o *CacheWriteOptions) InitialAge(v time.Duration) {
+	o.opts.initialAgeNs = prim.U64(v.Nanoseconds())
+	o.mask |= cacheWriteOptionsMaskInitialAgeNs
+}
+
+func (o *CacheWriteOptions) StaleWhileRevalidate(v time.Duration) {
+	o.opts.staleWhileRevalidateNs = prim.U64(v.Nanoseconds())
+	o.mask |= cacheWriteOptionsMaskStaleWhileRevalidateNs
+}
+
+func (o *CacheWriteOptions) SurrogateKeys(v []string) {
+	vstr := strings.Join(v, " ")
+	buf := prim.NewReadBufferFromString(vstr)
+	o.opts.surrogateKeysPtr = prim.ToPointer(buf.Char8Pointer())
+	o.opts.surrogateKeysLen = buf.Len()
+	o.mask |= cacheWriteOptionsMaskSurrogateKeys
+}
+
+func (o *CacheWriteOptions) ContentLength(v uint64) {
+	o.opts.length = prim.U64(v)
+	o.mask |= cacheWriteOptionsMaskLength
+}
+
+func (o *CacheWriteOptions) UserMetadata(v []byte) {
+	buf := prim.NewReadBufferFromBytes(v)
+	o.opts.userMetadataPtr = prim.ToPointer(buf.U8Pointer())
+	o.opts.userMetadataLen = buf.Len()
+	o.mask |= cacheWriteOptionsMaskUserMetadata
+}
+
+func (o *CacheWriteOptions) SensitiveData(v bool) {
+	if v {
+		o.mask |= cacheWriteOptionsMaskSensitiveData
+	} else {
+		o.mask &^= cacheWriteOptionsMaskSensitiveData
+	}
+}
+
 // witx:
 //
 //	(typename $cache_object_length u64)
@@ -1014,6 +1108,19 @@ const (
 	purgeOptionsMaskSoftPurge purgeOptionsMask = 1 << 0 // $soft_purge
 	purgeOptionsMaskRetBuf    purgeOptionsMask = 1 << 1 // $ret_buf
 )
+
+type PurgeOptions struct {
+	mask purgeOptionsMask
+	opts purgeOptions
+}
+
+func (o *PurgeOptions) SoftPurge(v bool) {
+	if v {
+		o.mask |= purgeOptionsMaskSoftPurge
+	} else {
+		o.mask &^= purgeOptionsMaskSoftPurge
+	}
+}
 
 // witx:
 //

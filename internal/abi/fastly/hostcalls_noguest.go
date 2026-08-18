@@ -517,7 +517,6 @@ func GeoLookup(ip net.IP) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-
 type KVStore struct{}
 
 func OpenKVStore(name string) (*KVStore, error) {
@@ -582,63 +581,8 @@ func SecretFromBytes(b []byte) (*Secret, error) {
 }
 
 type (
-	CacheEntry          struct{}
-	CacheLookupOptions  struct{}
-	CacheGetBodyOptions struct{}
-	CacheWriteOptions   struct{}
+	CacheEntry struct{}
 )
-
-func (o *CacheLookupOptions) SetRequest(req *HTTPRequest) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheLookupOptions) SetAlwaysUseRequestedRange(alwaysUseRequestedRange bool) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheGetBodyOptions) From(from uint64) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheGetBodyOptions) To(to uint64) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) MaxAge(v time.Duration) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) SetRequest(req *HTTPRequest) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) Vary(v []string) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) InitialAge(v time.Duration) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) StaleWhileRevalidate(v time.Duration) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) SurrogateKeys(v []string) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) ContentLength(v uint64) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) UserMetadata(v []byte) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) SensitiveData(v bool) error {
-	return fmt.Errorf("not implemented")
-}
 
 func CacheLookup(key []byte, opts CacheLookupOptions) (*CacheEntry, error) {
 	return nil, fmt.Errorf("not implemented")
@@ -704,12 +648,6 @@ func (c *CacheEntry) Hits() (uint64, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-type PurgeOptions struct{}
-
-func (o *PurgeOptions) SoftPurge(v bool) error {
-	return fmt.Errorf("not implemented")
-}
-
 func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
 	return fmt.Errorf("not implemented")
 }
@@ -767,7 +705,6 @@ func (HTTPCacheLookupOptions) OverrideKey(key string) {
 
 func (HTTPCacheLookupOptions) Backend(backend string) {
 }
-
 
 func HTTPCacheIsRequestCacheable(req *HTTPRequest) (bool, error) {
 	return false, fmt.Errorf("not implemented")
