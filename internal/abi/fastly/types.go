@@ -396,8 +396,8 @@ type Dictionary struct {
 // https://dev.mysql.com/doc/refman/8.4/en/charset-unicode-utf8mb3.html
 // https://en.wikipedia.org/wiki/UTF-8#Encoding
 const (
-	dictionaryMaxKeyLen   = 255 * 3  // known maximum size for config store keys: 755 bytes, for 255 3-byte utf-8 encoded characters
-	dictionaryMaxValueLen = 8000 * 3 // known maximum size for config store values: 24,000 bytes, for 8000 3-byte utf-8 encoded characters
+	dictionaryMaxKeyLen   = 255 * 3  // known maximum size for dictionary keys: 755 bytes, for 255 3-byte utf-8 encoded characters
+	dictionaryMaxValueLen = 8000 * 3 // known maximum size for dictionary store values: 24,000 bytes, for 8000 3-byte utf-8 encoded characters
 )
 
 // witx:
