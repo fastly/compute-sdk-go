@@ -487,8 +487,6 @@ func (d *Dictionary) Has(key string) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
-type ConfigStore struct{}
-
 func OpenConfigStore(name string) (*ConfigStore, error) {
 	return nil, fmt.Errorf("not implemented")
 }

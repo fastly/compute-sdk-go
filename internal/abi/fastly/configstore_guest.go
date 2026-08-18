@@ -23,18 +23,6 @@ func fastlyConfigStoreOpen(
 	h prim.Pointer[configstoreHandle],
 ) FastlyStatus
 
-// ConfigStore represents a Fastly config store a collection of read-only
-// key/value pairs. For convenience, keys are modeled as Go strings, and values
-// as byte slices.
-type ConfigStore struct {
-	h configstoreHandle
-}
-
-// Config Stores are limited to keys of length 255 character. By default, values are limited to 8000 character values,
-// but this can be adjust on a per-customer basis.
-// https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
-const configstoreMaxKeyLen = 255 * 3 // known maximum size for config store keys: 755 bytes, for 255 3-byte utf-8 encoded characters
-
 // OpenConfigStore returns a reference to the named config store, if it exists.
 func OpenConfigStore(name string) (*ConfigStore, error) {
 	var c ConfigStore

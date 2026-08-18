@@ -390,6 +390,18 @@ const (
 //	(typename $config_store_handle (handle))
 type configstoreHandle handle
 
+// ConfigStore represents a Fastly config store a collection of read-only
+// key/value pairs. For convenience, keys are modeled as Go strings, and values
+// as byte slices.
+type ConfigStore struct {
+	h configstoreHandle
+}
+
+// Config Stores are limited to keys of length 255 character. By default, values are limited to 8000 character values,
+// but this can be adjust on a per-customer basis.
+// https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
+const configstoreMaxKeyLen = 255 * 3 // known maximum size for config store keys: 755 bytes, for 255 3-byte utf-8 encoded characters
+
 // witx:
 //
 //	(typename $multi_value_cursor u32)
