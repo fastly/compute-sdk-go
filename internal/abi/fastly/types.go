@@ -659,7 +659,7 @@ type kvLookupConfig struct {
 type kvDeleteConfigMask prim.U32
 
 const (
-	kvDeleteConfigMaskReserved = 1 << 0
+	kvDeleteConfigMaskReserved kvDeleteConfigMask = 1 << 0
 )
 
 type kvDeleteConfig struct {
@@ -1719,11 +1719,11 @@ const (
 type sendErrorDetailMask prim.U32
 
 const (
-	sendErrorDetailMaskReserved      = 1 << 0 // $reserved
-	sendErrorDetailMaskDNSErrorRCode = 1 << 1 // $dns_error_rcode
-	sendErrorDetailMaskDNSErrorInfo  = 1 << 2 // $dns_error_info_code
-	sendErrorDetailMaskTLSAlertID    = 1 << 3 // $tls_alert_id
-	sendErrorDetailMaskH2Error       = 1 << 4 // $h2_error
+	sendErrorDetailMaskReserved      sendErrorDetailMask = 1 << 0 // $reserved
+	sendErrorDetailMaskDNSErrorRCode sendErrorDetailMask = 1 << 1 // $dns_error_rcode
+	sendErrorDetailMaskDNSErrorInfo  sendErrorDetailMask = 1 << 2 // $dns_error_info_code
+	sendErrorDetailMaskTLSAlertID    sendErrorDetailMask = 1 << 3 // $tls_alert_id
+	sendErrorDetailMaskH2Error       sendErrorDetailMask = 1 << 4 // $h2_error
 )
 
 // witx:
