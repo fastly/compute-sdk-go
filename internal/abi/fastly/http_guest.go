@@ -111,12 +111,6 @@ func HandoffFanout(backend string) error {
 	return nil
 }
 
-// HTTPRequest represents an HTTP request.
-// The zero value is invalid.
-type HTTPRequest struct {
-	h requestHandle
-}
-
 // witx:
 //
 //	(@interface func (export "close")
@@ -2310,21 +2304,6 @@ func (r *HTTPRequest) Inspect(info *InspectInfo, b *HTTPBody) ([]byte, error) {
 
 // (module $fastly_http_body
 
-// HTTPBody represents the body of an HTTP request or response.
-// The zero value is invalid.
-type HTTPBody struct {
-	h bodyHandle
-
-	// Closing an HTTP body is only possible if the encapsulated body handle has
-	// its "streaming bit" set. The streaming bit is set when the handle is
-	// successfully passed to send_async_streaming or send_downstream with
-	// streaming set to 1. The streaming bit is unqueryable, and we need to be
-	// able to abstract over different concrete bodies. So we try to mirror that
-	// hidden state in the body handle with this visible state in the struct,
-	// and use it to check if it's safe to close the handle.
-	closable bool
-}
-
 // witx:
 //
 //	(@interface func (export "append")
@@ -2740,13 +2719,7 @@ func fastlyHTTPRespNew(
 	h prim.Pointer[responseHandle],
 ) FastlyStatus
 
-// HTTPResponse represents a response to an HTTP request.
-// The zero value is invalid.
-type HTTPResponse struct {
-	h responseHandle
-}
-
-// NewHTTPREsponse returns a valid, empty HTTP response.
+// NewHTTPResponse returns a valid, empty HTTP response.
 func NewHTTPResponse() (*HTTPResponse, error) {
 	respHandle := invalidResponseHandle
 

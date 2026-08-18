@@ -287,6 +287,21 @@ const (
 	invalidBodyHandle = bodyHandle(math.MaxUint32 - 1)
 )
 
+// HTTPBody represents the body of an HTTP request or response.
+// The zero value is invalid.
+type HTTPBody struct {
+	h bodyHandle
+
+	// Closing an HTTP body is only possible if the encapsulated body handle has
+	// its "streaming bit" set. The streaming bit is set when the handle is
+	// successfully passed to send_async_streaming or send_downstream with
+	// streaming set to 1. The streaming bit is unqueryable, and we need to be
+	// able to abstract over different concrete bodies. So we try to mirror that
+	// hidden state in the body handle with this visible state in the struct,
+	// and use it to check if it's safe to close the handle.
+	closable bool
+}
+
 // witx:
 //
 //	(typename $request_handle (handle))
@@ -296,6 +311,12 @@ const (
 	invalidRequestHandle = requestHandle(math.MaxUint32 - 1)
 )
 
+// HTTPRequest represents an HTTP request.
+// The zero value is invalid.
+type HTTPRequest struct {
+	h requestHandle
+}
+
 // witx:
 //
 //	(typename $response_handle (handle))
@@ -304,6 +325,12 @@ type responseHandle handle
 const (
 	invalidResponseHandle = responseHandle(math.MaxUint32 - 1)
 )
+
+// HTTPResponse represents a response to an HTTP request.
+// The zero value is invalid.
+type HTTPResponse struct {
+	h responseHandle
+}
 
 // witx:
 //

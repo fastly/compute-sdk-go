@@ -13,8 +13,6 @@ import (
 	"time"
 )
 
-type HTTPBody struct{}
-
 func (b *HTTPBody) Append(other *HTTPBody) error {
 	return fmt.Errorf("not implemented")
 }
@@ -68,8 +66,6 @@ func GetLogEndpoint(name string) (*LogEndpoint, error) {
 func (e *LogEndpoint) Write(p []byte) (n int, err error) {
 	return 0, fmt.Errorf("not implemented")
 }
-
-type HTTPRequest struct{}
 
 func BodyDownstreamGet() (*HTTPRequest, *HTTPBody, error) {
 	return nil, nil, fmt.Errorf("not implemented")
@@ -414,8 +410,6 @@ func BackendGetSSLMinVersion(name string) (TLSVersion, error) {
 func BackendGetSSLMaxVersion(name string) (TLSVersion, error) {
 	return 0, fmt.Errorf("not implemented")
 }
-
-type HTTPResponse struct{}
 
 func NewHTTPResponse() (*HTTPResponse, error) {
 	return nil, fmt.Errorf("not implemented")
