@@ -649,7 +649,7 @@ type KVStore struct {
 type kvLookupConfigMask prim.U32
 
 const (
-	kvLookupConfigFlagReserved kvLookupConfigMask = 1 << 0
+	kvLookupConfigMaskReserved kvLookupConfigMask = 1 << 0
 )
 
 type kvLookupConfig struct {
@@ -659,7 +659,7 @@ type kvLookupConfig struct {
 type kvDeleteConfigMask prim.U32
 
 const (
-	kvDeleteConfigFlagReserved = 1 << 0
+	kvDeleteConfigMaskReserved = 1 << 0
 )
 
 type kvDeleteConfig struct {
@@ -680,12 +680,12 @@ type kvInsertConfigMask prim.U32
 //	       ))
 
 const (
-	kvInsertConfigFlagReserved          kvInsertConfigMask = 1 << 0
-	kvInsertConfigFlagBackgroundFetch   kvInsertConfigMask = 1 << 1
-	kvInsertConfigFlagReserved2         kvInsertConfigMask = 1 << 2
-	kvInsertConfigFlagMetadata          kvInsertConfigMask = 1 << 3
-	kvInsertConfigFlagTTLSec            kvInsertConfigMask = 1 << 4
-	kvInsertConfigFlagIfGenerationMatch kvInsertConfigMask = 1 << 5
+	kvInsertConfigMaskReserved          kvInsertConfigMask = 1 << 0
+	kvInsertConfigMaskBackgroundFetch   kvInsertConfigMask = 1 << 1
+	kvInsertConfigMaskReserved2         kvInsertConfigMask = 1 << 2
+	kvInsertConfigMaskMetadata          kvInsertConfigMask = 1 << 3
+	kvInsertConfigMaskTTLSec            kvInsertConfigMask = 1 << 4
+	kvInsertConfigMaskIfGenerationMatch kvInsertConfigMask = 1 << 5
 )
 
 // witx:
@@ -736,23 +736,23 @@ func (c *KVInsertConfig) Mode(mode KVInsertMode) {
 }
 
 func (c *KVInsertConfig) BackgroundFetch() {
-	c.mask |= kvInsertConfigFlagBackgroundFetch
+	c.mask |= kvInsertConfigMaskBackgroundFetch
 }
 
 func (c *KVInsertConfig) Metadata(meta []byte) {
-	c.mask |= kvInsertConfigFlagMetadata
+	c.mask |= kvInsertConfigMaskMetadata
 	buf := prim.NewReadBufferFromBytes(meta)
 	c.opts.metadataPtr = prim.ToPointer(buf.Char8Pointer())
 	c.opts.metadataLen = prim.U32(buf.Len())
 }
 
 func (c *KVInsertConfig) TTLSec(seconds uint32) {
-	c.mask |= kvInsertConfigFlagTTLSec
+	c.mask |= kvInsertConfigMaskTTLSec
 	c.opts.ttlSec = prim.U32(seconds)
 }
 
 func (c *KVInsertConfig) IfGenerationMatch(generation uint64) {
-	c.mask |= kvInsertConfigFlagIfGenerationMatch
+	c.mask |= kvInsertConfigMaskIfGenerationMatch
 	c.opts.ifGenerationMatch = prim.U64(generation)
 }
 
@@ -768,10 +768,10 @@ func (c *KVInsertConfig) IfGenerationMatch(generation uint64) {
 type kvListConfigMask prim.U32
 
 const (
-	kvListConfigFlagReserved kvListConfigMask = (1 << 0)
-	kvListConfigFlagCursor   kvListConfigMask = (1 << 1)
-	kvListConfigFlagLimit    kvListConfigMask = (1 << 2)
-	kvListConfigFlagPrefix   kvListConfigMask = (1 << 3)
+	kvListConfigMaskReserved kvListConfigMask = (1 << 0)
+	kvListConfigMaskCursor   kvListConfigMask = (1 << 1)
+	kvListConfigMaskLimit    kvListConfigMask = (1 << 2)
+	kvListConfigMaskPrefix   kvListConfigMask = (1 << 3)
 )
 
 // witx:
@@ -819,19 +819,19 @@ func (c *KVListConfig) Mode(mode KVListMode) {
 }
 
 func (c *KVListConfig) Cursor(cursor string) {
-	c.mask |= kvListConfigFlagCursor
+	c.mask |= kvListConfigMaskCursor
 	buf := prim.NewReadBufferFromString(cursor)
 	c.opts.cursorPtr = prim.ToPointer(buf.Char8Pointer())
 	c.opts.cursorLen = prim.U32(buf.Len())
 }
 
 func (c *KVListConfig) Limit(limit uint32) {
-	c.mask |= kvListConfigFlagLimit
+	c.mask |= kvListConfigMaskLimit
 	c.opts.limit = prim.U32(limit)
 }
 
 func (c *KVListConfig) Prefix(cursor string) {
-	c.mask |= kvListConfigFlagPrefix
+	c.mask |= kvListConfigMaskPrefix
 	buf := prim.NewReadBufferFromString(cursor)
 	c.opts.prefixPtr = prim.ToPointer(buf.Char8Pointer())
 	c.opts.prefixLen = prim.U32(buf.Len())
@@ -2176,9 +2176,9 @@ type httpCacheLookupOptions struct {
 type httpCacheLookupOptionsMask prim.U32
 
 const (
-	httpCacheLookupOptionsFlagReserved    httpCacheLookupOptionsMask = 1 << 0
-	httpCacheLookupOptionsFlagOverrideKey httpCacheLookupOptionsMask = 1 << 1
-	httpCacheLookupOptionsFlagBackend     httpCacheLookupOptionsMask = 1 << 2
+	httpCacheLookupOptionsMaskReserved    httpCacheLookupOptionsMask = 1 << 0
+	httpCacheLookupOptionsMaskOverrideKey httpCacheLookupOptionsMask = 1 << 1
+	httpCacheLookupOptionsMaskBackend     httpCacheLookupOptionsMask = 1 << 2
 )
 
 type HTTPCacheLookupOptions struct {
@@ -2190,14 +2190,14 @@ func (o *HTTPCacheLookupOptions) OverrideKey(key string) {
 	buf := prim.NewReadBufferFromString(key)
 	o.opts.overrideKeyPtr = prim.ToPointer(buf.Char8Pointer())
 	o.opts.overrideKeyLen = buf.Len()
-	o.mask |= httpCacheLookupOptionsFlagOverrideKey
+	o.mask |= httpCacheLookupOptionsMaskOverrideKey
 }
 
 func (o *HTTPCacheLookupOptions) Backend(backend string) {
 	buf := prim.NewReadBufferFromString(backend)
 	o.opts.backendPtr = prim.ToPointer(buf.Char8Pointer())
 	o.opts.backendLen = buf.Len()
-	o.mask |= httpCacheLookupOptionsFlagBackend
+	o.mask |= httpCacheLookupOptionsMaskBackend
 }
 
 type (
@@ -2280,11 +2280,11 @@ func (o *HTTPCacheWriteOptions) SetVaryRule(rule string) {
 	o.vary = prim.NewWriteBufferFromBytes(b)
 	o.opts.varyRulePtr = prim.ToPointer(o.vary.Char8Pointer())
 	o.opts.varyRuleLen = o.vary.Len()
-	o.mask |= httpCacheWriteOptionsFlagVaryRule
+	o.mask |= httpCacheWriteOptionsMaskVaryRule
 }
 
 func (o *HTTPCacheWriteOptions) VaryRule() (string, bool) {
-	if o.mask&httpCacheWriteOptionsFlagVaryRule == 0 {
+	if o.mask&httpCacheWriteOptionsMaskVaryRule == 0 {
 		return "", false
 	}
 
@@ -2296,20 +2296,20 @@ func (o *HTTPCacheWriteOptions) VaryRule() (string, bool) {
 
 func (o *HTTPCacheWriteOptions) SetInitialAgeNs(initialAge uint64) {
 	o.opts.initialAgeNs = httpCacheDurationNs(initialAge)
-	o.mask |= httpCacheWriteOptionsFlagInitialAge
+	o.mask |= httpCacheWriteOptionsMaskInitialAge
 }
 
 func (o *HTTPCacheWriteOptions) InitialAgeNs() (uint64, bool) {
-	return uint64(o.opts.initialAgeNs), o.mask&httpCacheWriteOptionsFlagInitialAge == httpCacheWriteOptionsFlagInitialAge
+	return uint64(o.opts.initialAgeNs), o.mask&httpCacheWriteOptionsMaskInitialAge == httpCacheWriteOptionsMaskInitialAge
 }
 
 func (o *HTTPCacheWriteOptions) SetStaleWhileRevalidateNs(staleWhileRevalidateNs uint64) {
 	o.opts.staleWhileRevalidateNs = httpCacheDurationNs(staleWhileRevalidateNs)
-	o.mask |= httpCacheWriteOptionsFlagStaleWhileRevalidate
+	o.mask |= httpCacheWriteOptionsMaskStaleWhileRevalidate
 }
 
 func (o *HTTPCacheWriteOptions) StaleWhileRevalidateNs() (uint64, bool) {
-	return uint64(o.opts.staleWhileRevalidateNs), o.mask&httpCacheWriteOptionsFlagStaleWhileRevalidate == httpCacheWriteOptionsFlagStaleWhileRevalidate
+	return uint64(o.opts.staleWhileRevalidateNs), o.mask&httpCacheWriteOptionsMaskStaleWhileRevalidate == httpCacheWriteOptionsMaskStaleWhileRevalidate
 }
 
 func (o *HTTPCacheWriteOptions) SetSurrogateKeys(keys string) {
@@ -2317,11 +2317,11 @@ func (o *HTTPCacheWriteOptions) SetSurrogateKeys(keys string) {
 	o.surrogate = prim.NewWriteBufferFromBytes(b)
 	o.opts.surrogateKeysPtr = prim.ToPointer(o.surrogate.Char8Pointer())
 	o.opts.surrogateKeysLen = o.surrogate.Len()
-	o.mask |= httpCacheWriteOptionsFlagSurrogateKeys
+	o.mask |= httpCacheWriteOptionsMaskSurrogateKeys
 }
 
 func (o *HTTPCacheWriteOptions) SurrogateKeys() (string, bool) {
-	if o.mask&httpCacheWriteOptionsFlagSurrogateKeys == 0 {
+	if o.mask&httpCacheWriteOptionsMaskSurrogateKeys == 0 {
 		return "", false
 	}
 
@@ -2333,57 +2333,57 @@ func (o *HTTPCacheWriteOptions) SurrogateKeys() (string, bool) {
 
 func (o *HTTPCacheWriteOptions) SetLength(length uint64) {
 	o.opts.length = httpCacheObjectLength(length)
-	o.mask |= httpCacheWriteOptionsFlagLength
+	o.mask |= httpCacheWriteOptionsMaskLength
 }
 
 func (o *HTTPCacheWriteOptions) Length() (uint64, bool) {
-	return uint64(o.opts.length), o.mask&httpCacheWriteOptionsFlagLength == httpCacheWriteOptionsFlagLength
+	return uint64(o.opts.length), o.mask&httpCacheWriteOptionsMaskLength == httpCacheWriteOptionsMaskLength
 }
 
 func (o *HTTPCacheWriteOptions) SetSensitiveData(b bool) {
 	if b {
-		o.mask |= httpCacheWriteOptionsFlagSensitiveData
+		o.mask |= httpCacheWriteOptionsMaskSensitiveData
 	} else {
-		o.mask &^= httpCacheWriteOptionsFlagSensitiveData
+		o.mask &^= httpCacheWriteOptionsMaskSensitiveData
 	}
 }
 
 func (o *HTTPCacheWriteOptions) SensitiveData() bool {
-	return o.mask&httpCacheWriteOptionsFlagSensitiveData == httpCacheWriteOptionsFlagSensitiveData
+	return o.mask&httpCacheWriteOptionsMaskSensitiveData == httpCacheWriteOptionsMaskSensitiveData
 }
 
 func (o *HTTPCacheWriteOptions) SetStaleIfErrorNs(staleNs uint64) {
 	o.opts.staleIfErrorNs = httpCacheDurationNs(staleNs)
-	o.mask |= httpCacheWriteOptionsFlagStaleIfError
+	o.mask |= httpCacheWriteOptionsMaskStaleIfError
 }
 
 func (o *HTTPCacheWriteOptions) StaleIfErrorNs() (uint64, bool) {
-	return uint64(o.opts.staleIfErrorNs), o.mask&httpCacheWriteOptionsFlagStaleIfError == httpCacheWriteOptionsFlagStaleIfError
+	return uint64(o.opts.staleIfErrorNs), o.mask&httpCacheWriteOptionsMaskStaleIfError == httpCacheWriteOptionsMaskStaleIfError
 }
 
 func (o *HTTPCacheWriteOptions) FillConfigMask() {
 	o.mask = 0 |
-		httpCacheWriteOptionsFlagReserved |
-		httpCacheWriteOptionsFlagVaryRule |
-		httpCacheWriteOptionsFlagInitialAge |
-		httpCacheWriteOptionsFlagStaleWhileRevalidate |
-		httpCacheWriteOptionsFlagSurrogateKeys |
-		httpCacheWriteOptionsFlagLength |
-		httpCacheWriteOptionsFlagSensitiveData |
-		httpCacheWriteOptionsFlagStaleIfError
+		httpCacheWriteOptionsMaskReserved |
+		httpCacheWriteOptionsMaskVaryRule |
+		httpCacheWriteOptionsMaskInitialAge |
+		httpCacheWriteOptionsMaskStaleWhileRevalidate |
+		httpCacheWriteOptionsMaskSurrogateKeys |
+		httpCacheWriteOptionsMaskLength |
+		httpCacheWriteOptionsMaskSensitiveData |
+		httpCacheWriteOptionsMaskStaleIfError
 }
 
 type httpCacheWriteOptionsMask prim.U32
 
 const (
-	httpCacheWriteOptionsFlagReserved             httpCacheWriteOptionsMask = 1 << 0
-	httpCacheWriteOptionsFlagVaryRule             httpCacheWriteOptionsMask = 1 << 1
-	httpCacheWriteOptionsFlagInitialAge           httpCacheWriteOptionsMask = 1 << 2
-	httpCacheWriteOptionsFlagStaleWhileRevalidate httpCacheWriteOptionsMask = 1 << 3
-	httpCacheWriteOptionsFlagSurrogateKeys        httpCacheWriteOptionsMask = 1 << 4
-	httpCacheWriteOptionsFlagLength               httpCacheWriteOptionsMask = 1 << 5
-	httpCacheWriteOptionsFlagSensitiveData        httpCacheWriteOptionsMask = 1 << 6
-	httpCacheWriteOptionsFlagStaleIfError         httpCacheWriteOptionsMask = 1 << 7
+	httpCacheWriteOptionsMaskReserved             httpCacheWriteOptionsMask = 1 << 0
+	httpCacheWriteOptionsMaskVaryRule             httpCacheWriteOptionsMask = 1 << 1
+	httpCacheWriteOptionsMaskInitialAge           httpCacheWriteOptionsMask = 1 << 2
+	httpCacheWriteOptionsMaskStaleWhileRevalidate httpCacheWriteOptionsMask = 1 << 3
+	httpCacheWriteOptionsMaskSurrogateKeys        httpCacheWriteOptionsMask = 1 << 4
+	httpCacheWriteOptionsMaskLength               httpCacheWriteOptionsMask = 1 << 5
+	httpCacheWriteOptionsMaskSensitiveData        httpCacheWriteOptionsMask = 1 << 6
+	httpCacheWriteOptionsMaskStaleIfError         httpCacheWriteOptionsMask = 1 << 7
 )
 
 // shielding.witx
@@ -2391,10 +2391,10 @@ const (
 type shieldingBackendOptionsMask prim.U32
 
 const (
-	shieldingBackendOptionsFlagReserved            shieldingBackendOptionsMask = 1 << 0
-	shieldingBackendOptionsFlagUseCacheKey         shieldingBackendOptionsMask = 1 << 1
-	shieldingBackendOptionsFlagFirstByteTimeout    shieldingBackendOptionsMask = 1 << 2
-	shieldingBackendOptionsFlagBetweenBytesTimeout shieldingBackendOptionsMask = 1 << 3
+	shieldingBackendOptionsMaskReserved            shieldingBackendOptionsMask = 1 << 0
+	shieldingBackendOptionsMaskUseCacheKey         shieldingBackendOptionsMask = 1 << 1
+	shieldingBackendOptionsMaskFirstByteTimeout    shieldingBackendOptionsMask = 1 << 2
+	shieldingBackendOptionsMaskBetweenBytesTimeout shieldingBackendOptionsMask = 1 << 3
 )
 
 type shieldingBackendOptions struct {
@@ -2418,19 +2418,19 @@ type ShieldingBackendOptions struct {
 }
 
 func (s *ShieldingBackendOptions) CacheKey(key string) {
-	s.mask |= shieldingBackendOptionsFlagUseCacheKey
+	s.mask |= shieldingBackendOptionsMaskUseCacheKey
 	buf := prim.NewReadBufferFromString(key)
 	s.opts.cacheKeyPtr = prim.ToPointer(buf.Char8Pointer())
 	s.opts.cacheKeyLen = buf.Len()
 }
 
 func (s *ShieldingBackendOptions) FirstByteTimeout(t time.Duration) {
-	s.mask |= shieldingBackendOptionsFlagFirstByteTimeout
+	s.mask |= shieldingBackendOptionsMaskFirstByteTimeout
 	s.opts.firstByteTimeoutMs = prim.U32(t.Milliseconds())
 }
 
 func (s *ShieldingBackendOptions) BetweenBytesTimeout(t time.Duration) {
-	s.mask |= shieldingBackendOptionsFlagBetweenBytesTimeout
+	s.mask |= shieldingBackendOptionsMaskBetweenBytesTimeout
 	s.opts.betweenBytesTimeoutMs = prim.U32(t.Milliseconds())
 }
 
@@ -2492,21 +2492,21 @@ type InspectInfo struct {
 }
 
 func (o *InspectInfo) Corp(v string) {
-	o.mask |= inspectInfoFlagCorp
+	o.mask |= inspectInfoMaskCorp
 	buf := prim.NewReadBufferFromString(v)
 	o.opts.corpPtr = prim.ToPointer(buf.Char8Pointer())
 	o.opts.corpLen = prim.U32(buf.Len())
 }
 
 func (o *InspectInfo) Workspace(v string) {
-	o.mask |= inspectInfoFlagWorkspace
+	o.mask |= inspectInfoMaskWorkspace
 	buf := prim.NewReadBufferFromString(v)
 	o.opts.workspacePtr = prim.ToPointer(buf.Char8Pointer())
 	o.opts.workspaceLen = prim.U32(buf.Len())
 }
 
 func (o *InspectInfo) OverrideClientIP(v string) {
-	o.mask |= inspectInfoFlagOverrideClientIP
+	o.mask |= inspectInfoMaskOverrideClientIP
 	buf := prim.NewReadBufferFromString(v)
 	o.opts.overrideClientIPPtr = prim.ToPointer(buf.Char8Pointer())
 	o.opts.overrideClientIPLen = prim.U32(buf.Len())
@@ -2526,10 +2526,10 @@ func (o *InspectInfo) OverrideClientIP(v string) {
 type inspectInfoMask uint32
 
 const (
-	inspectInfoFlagReserved         inspectInfoMask = 1 << 0
-	inspectInfoFlagCorp             inspectInfoMask = 1 << 1
-	inspectInfoFlagWorkspace        inspectInfoMask = 1 << 2
-	inspectInfoFlagOverrideClientIP inspectInfoMask = 1 << 3
+	inspectInfoMaskReserved         inspectInfoMask = 1 << 0
+	inspectInfoMaskCorp             inspectInfoMask = 1 << 1
+	inspectInfoMaskWorkspace        inspectInfoMask = 1 << 2
+	inspectInfoMaskOverrideClientIP inspectInfoMask = 1 << 3
 )
 
 // witx:

@@ -4,7 +4,6 @@
 
 package fastly
 
-
 // witx:
 //
 //	(module $fastly_resvpnproxy
@@ -19,4 +18,3 @@ package fastly
 //
 // )
 //
-

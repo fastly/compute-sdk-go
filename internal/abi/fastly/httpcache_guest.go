@@ -539,7 +539,7 @@ func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts
 		if status == FastlyStatusBufLen {
 			// reallocate buffers in the output struct with their requested lengths
 
-			if out.mask&httpCacheWriteOptionsFlagVaryRule == httpCacheWriteOptionsFlagVaryRule {
+			if out.mask&httpCacheWriteOptionsMaskVaryRule == httpCacheWriteOptionsMaskVaryRule {
 				n := int(out.opts.varyRuleLen)
 				if n == 0 {
 					// handle empty?
@@ -550,7 +550,7 @@ func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts
 				opts.opts.varyRuleLen = out.vary.Cap()
 			}
 
-			if out.mask&httpCacheWriteOptionsFlagSurrogateKeys == httpCacheWriteOptionsFlagSurrogateKeys {
+			if out.mask&httpCacheWriteOptionsMaskSurrogateKeys == httpCacheWriteOptionsMaskSurrogateKeys {
 				n := int(out.opts.surrogateKeysLen)
 				out.surrogate = prim.NewWriteBuffer(n)
 				opts.opts.surrogateKeysPtr = prim.ToPointer(out.surrogate.Char8Pointer())
