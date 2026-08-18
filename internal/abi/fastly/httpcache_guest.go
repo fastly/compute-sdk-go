@@ -6,8 +6,6 @@ import (
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
 )
 
-const TRACE = true
-
 // (module $fastly_http_cache
 
 // witx;
