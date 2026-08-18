@@ -541,11 +541,6 @@ func (kv *KVStore) ListWait(listH kvstoreListHandle) (*HTTPBody, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-type (
-	SecretStore struct{}
-	Secret      struct{}
-)
-
 func OpenSecretStore(name string) (*SecretStore, error) {
 	return nil, fmt.Errorf("not implemented")
 }

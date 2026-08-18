@@ -6,18 +6,6 @@ package fastly
 
 import "github.com/fastly/compute-sdk-go/internal/abi/prim"
 
-// SecretStore represents a Fastly secret store, a collection of
-// key/value pairs for storing sensitive data.
-type SecretStore struct {
-	h secretStoreHandle
-}
-
-// Secret represents a secret value.  Data is encrypted at rest, and is
-// only decrypted upon the first call to the secret's Plaintext method.
-type Secret struct {
-	h secretHandle
-}
-
 // witx:
 //
 //   (module $fastly_secret_store

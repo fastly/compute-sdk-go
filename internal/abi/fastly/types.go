@@ -909,6 +909,18 @@ type (
 	secretHandle      handle
 )
 
+// SecretStore represents a Fastly secret store, a collection of
+// key/value pairs for storing sensitive data.
+type SecretStore struct {
+	h secretStoreHandle
+}
+
+// Secret represents a secret value.  Data is encrypted at rest, and is
+// only decrypted upon the first call to the secret's Plaintext method.
+type Secret struct {
+	h secretHandle
+}
+
 // witx:
 //
 //	;;; The outcome of a cache lookup (either bare or as part of a cache transaction)
