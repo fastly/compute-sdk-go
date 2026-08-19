@@ -125,7 +125,7 @@ func TestRequestUpstreamBody(t *testing.T) {
 }
 
 func requestUpstreamBody(t *testing.T, name string, body io.Reader, size int, chunked bool) {
-	req, err := fsthttp.NewRequest("POST", "https://http.edgecompute.app/anything/", body)
+	req, err := fsthttp.NewRequest("POST", "https://http-me.fastly.dev/anything/", body)
 	if err != nil {
 		t.Fatalf("NewRequest: %v", err)
 	}
