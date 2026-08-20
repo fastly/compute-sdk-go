@@ -485,18 +485,56 @@ func (b *BackendOptions) PreferIPV6(v bool) *BackendOptions {
 
 // Healthcheck sets the backend health check configuration
 func (b *BackendOptions) Healthcheck(h *BackendHealthcheckOptions) *BackendOptions {
+	if h == nil {
+		b.err = append(b.err, &backendValidationError{field: "Healthcheck", reason: "field cannot be nil"})
+		return b
+	}
+	if len(h.err) > 0 {
+		b.err = append(b.err, h.err...)
+		return b
+	}
 	b.abiOpts.Healthcheck(h.abiOpts)
 	return b
 }
 
+const (
+	healthcheckURLSizeLimit    = 8192
+	healthcheckMethodSizeLimit = 8192
+	healthcheckWindowLimit     = 15
+	healthcheckIntervalMin     = time.Second
+	healthcheckIntervalMax     = time.Hour
+	healthcheckTimeoutMin      = time.Second
+	healthcheckTimeoutMax      = time.Hour
+)
+
 type BackendHealthcheckOptions struct {
 	abiOpts *fastly.BackendHealthcheckConfig
+	err     []error
+
+	host      string
+	path      string
+	window    uint32
+	threshold uint32
+	initial   uint32
 }
 
 func NewBackendHealthcheck(host string) *BackendHealthcheckOptions {
-	return &BackendHealthcheckOptions{
-		abiOpts: fastly.NewBackendHealthConfig(host),
+	h := &BackendHealthcheckOptions{
+		abiOpts:   fastly.NewBackendHealthConfig(host),
+		host:      host,
+		path:      "/",
+		window:    5,
+		threshold: 3,
+		initial:   4,
 	}
+	if host == "" {
+		h.err = append(h.err, &backendValidationError{field: "Host", reason: "field cannot be blank"})
+		return h
+	}
+	if len(host)+len(h.path) > healthcheckURLSizeLimit {
+		h.err = append(h.err, &backendValidationError{field: "Host", reason: "host and path are too large"})
+	}
+	return h
 }
 
 // Interval sets the interval where a health check should be performed.
@@ -505,6 +543,10 @@ func NewBackendHealthcheck(host string) *BackendHealthcheckOptions {
 //
 // Defaults to 15 seconds.
 func (h *BackendHealthcheckOptions) Interval(t time.Duration) *BackendHealthcheckOptions {
+	if t < healthcheckIntervalMin || t >= healthcheckIntervalMax {
+		h.err = append(h.err, &backendValidationError{field: "Interval", reason: "not within 1 second and 1 hour"})
+		return h
+	}
 	h.abiOpts.Interval(t)
 	return h
 }
@@ -515,6 +557,10 @@ func (h *BackendHealthcheckOptions) Interval(t time.Duration) *BackendHealthchec
 //
 // Defaults to 5 seconds.
 func (h *BackendHealthcheckOptions) Timeout(t time.Duration) *BackendHealthcheckOptions {
+	if t < healthcheckTimeoutMin || t >= healthcheckTimeoutMax {
+		h.err = append(h.err, &backendValidationError{field: "Timeout", reason: "not within 1 second and 1 hour"})
+		return h
+	}
 	h.abiOpts.Timeout(t)
 	return h
 }
@@ -523,6 +569,10 @@ func (h *BackendHealthcheckOptions) Timeout(t time.Duration) *BackendHealthcheck
 //
 // Defaults to "GET".
 func (h *BackendHealthcheckOptions) Method(m string) *BackendHealthcheckOptions {
+	if len(m) > healthcheckMethodSizeLimit {
+		h.err = append(h.err, &backendValidationError{field: "Method", reason: "too large"})
+		return h
+	}
 	h.abiOpts.Method(m)
 	return h
 }
@@ -532,6 +582,11 @@ func (h *BackendHealthcheckOptions) Method(m string) *BackendHealthcheckOptions 
 //
 // Defaults to "/".
 func (h *BackendHealthcheckOptions) Path(p string) *BackendHealthcheckOptions {
+	if len(h.host)+len(p) > healthcheckURLSizeLimit {
+		h.err = append(h.err, &backendValidationError{field: "Path", reason: "host and path are too large"})
+		return h
+	}
+	h.path = p
 	h.abiOpts.Path(p)
 	return h
 }
@@ -549,6 +604,19 @@ func (h *BackendHealthcheckOptions) Status(status uint32) *BackendHealthcheckOpt
 //
 // Defaults to 5.
 func (h *BackendHealthcheckOptions) Window(w uint32) *BackendHealthcheckOptions {
+	if w > healthcheckWindowLimit {
+		h.err = append(h.err, &backendValidationError{field: "Window", reason: "too large"})
+		return h
+	}
+	if w < h.threshold {
+		h.err = append(h.err, &backendValidationError{field: "Window", reason: "threshold is greater than window"})
+		return h
+	}
+	if w < h.initial {
+		h.err = append(h.err, &backendValidationError{field: "Window", reason: "initial is greater than window"})
+		return h
+	}
+	h.window = w
 	h.abiOpts.Window(w)
 	return h
 }
@@ -558,6 +626,11 @@ func (h *BackendHealthcheckOptions) Window(w uint32) *BackendHealthcheckOptions 
 //
 // Defaults to 3.
 func (h *BackendHealthcheckOptions) Threshold(threshold uint32) *BackendHealthcheckOptions {
+	if threshold > h.window {
+		h.err = append(h.err, &backendValidationError{field: "Threshold", reason: "greater than window"})
+		return h
+	}
+	h.threshold = threshold
 	h.abiOpts.Threshold(threshold)
 	return h
 }
@@ -567,6 +640,11 @@ func (h *BackendHealthcheckOptions) Threshold(threshold uint32) *BackendHealthch
 //
 // Defaults to 4.
 func (h *BackendHealthcheckOptions) Initial(initial uint32) *BackendHealthcheckOptions {
+	if initial > h.window {
+		h.err = append(h.err, &backendValidationError{field: "Initial", reason: "greater than window"})
+		return h
+	}
+	h.initial = initial
 	h.abiOpts.Initial(initial)
 	return h
 }
