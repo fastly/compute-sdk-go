@@ -441,6 +441,48 @@ func (b *BackendOptions) UseGRPC(v bool) *BackendOptions {
 	return b
 }
 
+// MaxConnections sets how many connections to allow in the connection pool for this backend.
+//
+// `0` is treated as unlimited. The default is `200`.
+//
+// Note that this limit is best determined experimentally, since the total number of
+// connections to the backend will depend on POP sizes, HTTP keepalive limits, and the traffic
+// patterns for individual POPs.
+func (b *BackendOptions) MaxConnections(count uint32) *BackendOptions {
+	b.abiOpts.MaxConnections(count)
+	return b
+}
+
+// MaxUse sets how many times an HTTP keepalive connection can be reused in a connection pool.
+//
+// `0` is treated as unlimited. The default is `0`.
+func (b *BackendOptions) MaxUse(count uint32) *BackendOptions {
+	b.abiOpts.MaxUse(count)
+	return b
+}
+
+// MaxLifetime sets an upper bound for how long a pooled HTTP keepalive connection is allowed to have
+// been open before we stop trying to reuse it.
+//
+// 0ms is treated as unlimited. The default is 0ms.
+func (b *BackendOptions) MaxLifetime(t time.Duration) *BackendOptions {
+	if t > maxBackendTimeout {
+		b.err = append(b.err, &backendValidationError{field: "MaxLifetime", reason: "too large"})
+		return b
+	}
+	b.abiOpts.MaxLifetime(t)
+	return b
+}
+
+// PreferIPV6 sets whether to prefer trying IPv6 connections first before IPv4 when a hostname
+// has both A and AAAA records.
+//
+// This defaults to `true`.
+func (b *BackendOptions) PreferIPV6(v bool) *BackendOptions {
+	b.abiOpts.PreferIPV4(!v)
+	return b
+}
+
 // RegisterDynamicBackend registers a new dynamic backend.
 func RegisterDynamicBackend(name string, target string, options *BackendOptions) (*Backend, error) {
 	var abiOpts *fastly.BackendConfigOptions

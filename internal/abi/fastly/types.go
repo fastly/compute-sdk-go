@@ -1072,6 +1072,8 @@ const (
 	backendConfigOptionsMaskClientCert          backendConfigOptionsMask = 1 << 13 // $client_cert
 	backendConfigOptionsMaskGRPC                backendConfigOptionsMask = 1 << 14 // $grpc
 	backendConfigOptionsMaskKeepalive           backendConfigOptionsMask = 1 << 15 // $keepalive
+	backendConfigOptionsMaskPoolingLimits       backendConfigOptionsMask = 1 << 16 // $pooling_limits
+	backendConfigOptionsMaskPreferIPV4          backendConfigOptionsMask = 1 << 17 // $prefer_ipv4
 )
 
 // witx:
@@ -1127,6 +1129,9 @@ type backendConfigOptions struct {
 	tcpKeepaliveIntervalSecs prim.U32
 	tcpKeepaliveProbes       prim.U32
 	tcpKeepaliveTimeSecs     prim.U32
+	maxConnections           prim.U32
+	maxUse                   prim.U32
+	maxLifetimeMs            prim.U32
 }
 
 // witx:
@@ -1290,6 +1295,29 @@ func (b *BackendConfigOptions) TCPKeepaliveTime(t time.Duration) {
 	b.mask |= backendConfigOptionsMaskKeepalive
 	b.opts.tcpKeepaliveEnable = prim.U32(1)
 	b.opts.tcpKeepaliveTimeSecs = prim.U32(t.Seconds())
+}
+
+func (b *BackendConfigOptions) MaxConnections(n uint32) {
+	b.mask |= backendConfigOptionsMaskPoolingLimits
+	b.opts.maxConnections = prim.U32(n)
+}
+
+func (b *BackendConfigOptions) MaxUse(n uint32) {
+	b.mask |= backendConfigOptionsMaskPoolingLimits
+	b.opts.maxUse = prim.U32(n)
+}
+
+func (b *BackendConfigOptions) MaxLifetime(t time.Duration) {
+	b.mask |= backendConfigOptionsMaskPoolingLimits
+	b.opts.maxLifetimeMs = prim.U32(t.Milliseconds())
+}
+
+func (b *BackendConfigOptions) PreferIPV4(v bool) {
+	if v {
+		b.mask |= backendConfigOptionsMaskPreferIPV4
+	} else {
+		b.mask &^= backendConfigOptionsMaskPreferIPV4
+	}
 }
 
 // witx:
