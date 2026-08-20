@@ -6,61 +6,44 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"io"
 	"testing"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
-	"github.com/fastly/compute-sdk-go/fsttest"
 )
 
 func TestByteRepeater(t *testing.T) {
-	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		req, err := fsthttp.NewRequest("GET", "https://compute-sdk-test-backend.edgecompute.app/byte_repeater", nil)
-		if err != nil {
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
-			t.Errorf("NewRequest: %v", err)
-			return
-		}
-		req.CacheOptions.Pass = true
-
-		resp, err := req.Send(ctx, "TheOrigin")
-		if err != nil {
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
-			t.Errorf("Send: %v", err)
-			return
-		}
-
-		br := bufio.NewReader(resp.Body)
-		for {
-			b, err := br.ReadByte()
-			switch {
-			case err == nil: // normal case
-				w.Write([]byte{b, b})
-			case errors.Is(err, io.EOF): // done
-				return
-			default:
-				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
-				t.Errorf("ReadByte: %v", err)
-				return
-			}
-		}
-	}
-
-	r, err := fsthttp.NewRequest("GET", "/", nil)
+	req, err := fsthttp.NewRequest("GET", "https://compute-sdk-test-backend.edgecompute.app/byte_repeater", nil)
 	if err != nil {
 		t.Fatalf("NewRequest: %v", err)
 	}
-	w := fsttest.NewRecorder()
+	req.CacheOptions.Pass = true
 
-	handler(context.Background(), w, r)
+	resp, err := req.Send(context.Background(), "TheOrigin")
+	if err != nil {
+		t.Fatalf("Send: %v", err)
+	}
+	defer resp.Body.Close()
 
-	if got, want := w.Code, fsthttp.StatusOK; got != want {
-		t.Errorf("Code = %v; want %v", got, want)
+	var got bytes.Buffer
+	br := bufio.NewReader(resp.Body)
+loop:
+	for {
+		b, err := br.ReadByte()
+		switch {
+		case err == nil: // normal case
+			got.Write([]byte{b, b})
+		case errors.Is(err, io.EOF): // done
+			break loop
+		default: // error
+			t.Fatalf("ReadByte: %v", err)
+		}
 	}
 
-	if got, want := w.Body.String(), "112233445566778899001122\n\n"; got != want {
-		t.Errorf("Body = %q; want %q", got, want)
+	if want := "112233445566778899001122\n\n"; got.String() != want {
+		t.Errorf("Body = %q; want %q", got.String(), want)
 	}
 }

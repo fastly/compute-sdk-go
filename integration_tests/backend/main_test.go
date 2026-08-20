@@ -6,284 +6,145 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"testing"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/fsthttp"
-	"github.com/fastly/compute-sdk-go/fsttest"
 )
 
 func TestDynamicBackend(t *testing.T) {
-	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		b, err := fsthttp.RegisterDynamicBackend(
-			"dynamic",
-			"compute-sdk-test-backend.edgecompute.app",
-			fsthttp.NewBackendOptions().UseSSL(true),
-		)
-		if err != nil {
-			t.Errorf("RegisterDynamicBackend: %v", err)
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		if !b.IsDynamic() {
-			t.Errorf("IsDynamic() = false, want true")
-			fsthttp.Error(w, "IsDynamic() = false, want true", fsthttp.StatusInternalServerError)
-			return
-		}
-
-		if !b.IsSSL() {
-			t.Errorf("IsSSL() = false, want true")
-			fsthttp.Error(w, "IsSSL() = false, want true", fsthttp.StatusInternalServerError)
-			return
-		}
-
-		health, err := b.Health()
-		if err != nil {
-			t.Errorf("Health: %v", err)
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		// Viceroy doesn't support health checks, so the status will always be unknown
-		if health != fsthttp.BackendHealthUnknown {
-			t.Errorf("Health = %v, want %v", health, fsthttp.BackendHealthUnknown)
-			fsthttp.Error(w, fmt.Sprintf("Health = %v, want %v", health, fsthttp.BackendHealthUnknown), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		req, err := fsthttp.NewRequest("GET", "https://compute-sdk-test-backend.edgecompute.app/", nil)
-		if err != nil {
-			t.Errorf("NewRequest: %v", err)
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		req.CacheOptions.Pass = true
-
-		// Send to our newly-registered dynamic backend
-		resp, err := req.Send(ctx, "dynamic")
-		if err != nil {
-			t.Errorf("Send: %v", err)
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Reset(resp.Header.Clone())
-		w.WriteHeader(resp.StatusCode)
-		if _, err := io.Copy(w, resp.Body); err != nil {
-			t.Errorf("Copy: %v", err)
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-			return
-		}
+	b, err := fsthttp.RegisterDynamicBackend(
+		"dynamic",
+		"compute-sdk-test-backend.edgecompute.app",
+		fsthttp.NewBackendOptions().UseSSL(true),
+	)
+	if err != nil {
+		t.Fatalf("RegisterDynamicBackend: %v", err)
 	}
 
-	r, err := fsthttp.NewRequest("GET", "/", nil)
+	if !b.IsDynamic() {
+		t.Errorf("IsDynamic() = false, want true")
+	}
+
+	if !b.IsSSL() {
+		t.Errorf("IsSSL() = false, want true")
+	}
+
+	health, err := b.Health()
+	if err != nil {
+		t.Fatalf("Health: %v", err)
+	}
+
+	// Viceroy doesn't support health checks, so the status will always be unknown
+	if health != fsthttp.BackendHealthUnknown {
+		t.Errorf("Health = %v, want %v", health, fsthttp.BackendHealthUnknown)
+	}
+
+	req, err := fsthttp.NewRequest("GET", "https://compute-sdk-test-backend.edgecompute.app/", nil)
 	if err != nil {
 		t.Fatalf("NewRequest: %v", err)
 	}
-	w := fsttest.NewRecorder()
 
-	handler(context.Background(), w, r)
+	req.CacheOptions.Pass = true
 
-	if got, want := w.Code, fsthttp.StatusOK; got != want {
-		t.Errorf("Code = %d, want %d", got, want)
+	// Send to our newly-registered dynamic backend
+	resp, err := req.Send(context.Background(), "dynamic")
+	if err != nil {
+		t.Fatalf("Send: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if got, want := resp.StatusCode, fsthttp.StatusOK; got != want {
+		t.Errorf("StatusCode = %d, want %d", got, want)
 	}
 
-	if got, want := w.Body.String(), "Compute SDK Test Backend"; got != want {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("ReadAll: %v", err)
+	}
+
+	if got, want := string(body), "Compute SDK Test Backend"; got != want {
 		t.Errorf("Body = %q, want %q", got, want)
 	}
 }
 
 func TestDynamicBackendNilOptions(t *testing.T) {
-	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		b, err := fsthttp.RegisterDynamicBackend(
-			"dynamic-nil-opts",
-			"compute-sdk-test-backend.edgecompute.app",
-			nil,
-		)
-		if err != nil {
-			t.Errorf("RegisterDynamicBackend: %v", err)
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		if got, want := b.IsDynamic(), true; got != want {
-			t.Errorf("IsDynamic() = %v, want %v", got, want)
-			fsthttp.Error(w, "IsDynamic mismatch", fsthttp.StatusInternalServerError)
-			return
-		}
-
-		fmt.Fprint(w, "Ok")
-	}
-
-	r, err := fsthttp.NewRequest("GET", "/", nil)
+	b, err := fsthttp.RegisterDynamicBackend(
+		"dynamic-nil-opts",
+		"compute-sdk-test-backend.edgecompute.app",
+		nil,
+	)
 	if err != nil {
-		t.Fatalf("NewRequest: %v", err)
-	}
-	w := fsttest.NewRecorder()
-
-	handler(context.Background(), w, r)
-
-	if got, want := w.Code, fsthttp.StatusOK; got != want {
-		t.Errorf("Code = %d, want %d", got, want)
+		t.Fatalf("RegisterDynamicBackend: %v", err)
 	}
 
-	if got, want := w.Body.String(), "Ok"; got != want {
-		t.Errorf("Body = %q, want %q", got, want)
+	if got, want := b.IsDynamic(), true; got != want {
+		t.Errorf("IsDynamic() = %v, want %v", got, want)
 	}
 }
 
 func TestDynamicBackendHealthcheck(t *testing.T) {
-	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		hc := fsthttp.NewBackendHealthcheck("compute-sdk-test-backend.edgecompute.app").
-			Method("GET").
-			Path("/").
-			Status(200).
-			Window(10).
-			Threshold(5).
-			Initial(6).
-			Interval(20 * time.Second).
-			Timeout(10 * time.Second)
+	hc := fsthttp.NewBackendHealthcheck("compute-sdk-test-backend.edgecompute.app").
+		Method("GET").
+		Path("/").
+		Status(200).
+		Window(10).
+		Threshold(5).
+		Initial(6).
+		Interval(20 * time.Second).
+		Timeout(10 * time.Second)
 
-		b, err := fsthttp.RegisterDynamicBackend(
-			"dynamic-healthcheck",
-			"compute-sdk-test-backend.edgecompute.app",
-			fsthttp.NewBackendOptions().Healthcheck(hc),
-		)
-		if err != nil {
-			t.Errorf("RegisterDynamicBackend: %v", err)
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		if got, want := b.IsDynamic(), true; got != want {
-			t.Errorf("IsDynamic() = %v, want %v", got, want)
-			fsthttp.Error(w, "IsDynamic mismatch", fsthttp.StatusInternalServerError)
-			return
-		}
-
-		// Viceroy doesn't support health checks, so the status will always be unknown
-		health, err := b.Health()
-		if err != nil {
-			t.Errorf("Health: %v", err)
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		if health != fsthttp.BackendHealthUnknown {
-			t.Errorf("Health = %v, want %v", health, fsthttp.BackendHealthUnknown)
-			fsthttp.Error(w, fmt.Sprintf("Health = %v, want %v", health, fsthttp.BackendHealthUnknown), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		fmt.Fprint(w, "Ok")
-	}
-
-	r, err := fsthttp.NewRequest("GET", "/", nil)
+	b, err := fsthttp.RegisterDynamicBackend(
+		"dynamic-healthcheck",
+		"compute-sdk-test-backend.edgecompute.app",
+		fsthttp.NewBackendOptions().Healthcheck(hc),
+	)
 	if err != nil {
-		t.Fatalf("NewRequest: %v", err)
-	}
-	w := fsttest.NewRecorder()
-
-	handler(context.Background(), w, r)
-
-	if got, want := w.Code, fsthttp.StatusOK; got != want {
-		t.Errorf("Code = %d, want %d", got, want)
+		t.Errorf("RegisterDynamicBackend: %v", err)
 	}
 
-	if got, want := w.Body.String(), "Ok"; got != want {
-		t.Errorf("Body = %q, want %q", got, want)
+	if got, want := b.IsDynamic(), true; got != want {
+		t.Errorf("IsDynamic() = %v, want %v", got, want)
+	}
+
+	// Viceroy doesn't support health checks, so the status will always be unknown
+	health, err := b.Health()
+	if err != nil {
+		t.Errorf("Health: %v", err)
+	}
+
+	if health != fsthttp.BackendHealthUnknown {
+		t.Errorf("Health = %v, want %v", health, fsthttp.BackendHealthUnknown)
 	}
 }
 
 func TestOriginHealth(t *testing.T) {
-	handler := func(ctx context.Context, w fsthttp.ResponseWriter, r *fsthttp.Request) {
-		{
-			b, err := fsthttp.BackendFromName("healthy")
-			if err != nil {
-				t.Errorf("BackendFromName: %v", err)
-				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-				return
-			}
-
-			health, err := b.Health()
-			if err != nil {
-				t.Errorf("Health: %v", err)
-				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-				return
-			}
-
-			if health != fsthttp.BackendHealthHealthy {
-				want := fsthttp.BackendHealthHealthy
-				t.Errorf("Health = %v, want %v", health, want)
-				fsthttp.Error(w, fmt.Sprintf("Health = %v, want %v", health, want), fsthttp.StatusInternalServerError)
-				return
-			}
-
-		}
-
-		b, err := fsthttp.BackendFromName("unhealthy")
-		if err != nil {
-			t.Errorf("BackendFromName: %v", err)
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		health, err := b.Health()
-		if err != nil {
-			t.Errorf("Health: %v", err)
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		if health != fsthttp.BackendHealthUnhealthy {
-			want := fsthttp.BackendHealthUnhealthy
-			t.Errorf("Health = %v, want %v", health, want)
-			fsthttp.Error(w, fmt.Sprintf("Health = %v, want %v", health, want), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		req, err := fsthttp.NewRequest("GET", b.Target(), nil)
-		if err != nil {
-			t.Errorf("NewRequest: %v", err)
-			fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-			return
-		}
-
-		_ = req
-
-		/*
-			// Send to our unhealthy backend
-			_, err = req.Send(ctx, b.Name())
-			if err == nil {
-				t.Errorf("Send had nil error")
-				fsthttp.Error(w, "nil error", fsthttp.StatusInternalServerError)
-				return
-			} else {
-				fmt.Fprintf(w, "error from unhealthy send: %v", err)
-			}
-
-		*/
-
-		fmt.Fprintf(w, "Ok")
-	}
-
-	r, err := fsthttp.NewRequest("GET", "/", nil)
+	b, err := fsthttp.BackendFromName("healthy")
 	if err != nil {
-		t.Fatalf("NewRequest: %v", err)
-	}
-	w := fsttest.NewRecorder()
-
-	handler(context.Background(), w, r)
-
-	if got, want := w.Code, fsthttp.StatusOK; got != want {
-		t.Errorf("Code = %d, want %d", got, want)
+		t.Fatalf("BackendFromName: %v", err)
 	}
 
-	if got, want := w.Body.String(), "Ok"; got != want {
-		t.Errorf("Body = %q, want %q", got, want)
+	health, err := b.Health()
+	if err != nil {
+		t.Fatalf("Health: %v", err)
+	}
+
+	if health != fsthttp.BackendHealthHealthy {
+		t.Errorf("Health = %v, want %v", health, fsthttp.BackendHealthHealthy)
+	}
+
+	b, err = fsthttp.BackendFromName("unhealthy")
+	if err != nil {
+		t.Fatalf("BackendFromName: %v", err)
+	}
+
+	health, err = b.Health()
+	if err != nil {
+		t.Fatalf("Health: %v", err)
+	}
+
+	if health != fsthttp.BackendHealthUnhealthy {
+		t.Errorf("Health = %v, want %v", health, fsthttp.BackendHealthUnhealthy)
 	}
 }
