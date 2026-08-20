@@ -1074,6 +1074,7 @@ const (
 	backendConfigOptionsMaskKeepalive           backendConfigOptionsMask = 1 << 15 // $keepalive
 	backendConfigOptionsMaskPoolingLimits       backendConfigOptionsMask = 1 << 16 // $pooling_limits
 	backendConfigOptionsMaskPreferIPV4          backendConfigOptionsMask = 1 << 17 // $prefer_ipv4
+	backendConfigOptionsMaskHealthcheck         backendConfigOptionsMask = 1 << 18 // $healthcheck
 )
 
 // witx:
@@ -1132,6 +1133,22 @@ type backendConfigOptions struct {
 	maxConnections           prim.U32
 	maxUse                   prim.U32
 	maxLifetimeMs            prim.U32
+	healthcheck              prim.Pointer[BackendHealthcheckConfig]
+}
+
+type BackendHealthcheckConfig struct {
+	intervalMs prim.U64
+	timeoutMs  prim.U64
+	hostPtr    prim.Pointer[prim.U8]
+	hostLen    prim.Usize
+	methodPtr  prim.Pointer[prim.U8]
+	methodLen  prim.Usize
+	pathPtr    prim.Pointer[prim.U8]
+	pathLen    prim.Usize
+	status     prim.U32
+	window     prim.U32
+	threshold  prim.U32
+	initial    prim.U32
 }
 
 // witx:
@@ -1318,6 +1335,65 @@ func (b *BackendConfigOptions) PreferIPV4(v bool) {
 	} else {
 		b.mask &^= backendConfigOptionsMaskPreferIPV4
 	}
+}
+
+func (b *BackendConfigOptions) Healthcheck(healthcheck *BackendHealthcheckConfig) {
+	b.mask |= backendConfigOptionsMaskHealthcheck
+	b.opts.healthcheck = prim.ToPointer(healthcheck)
+}
+
+func NewBackendHealthConfig(h string) *BackendHealthcheckConfig {
+	host := prim.NewReadBufferFromString(h).Wstring()
+	method := prim.NewReadBufferFromString("GET").Wstring()
+	path := prim.NewReadBufferFromString("/").Wstring()
+
+	return &BackendHealthcheckConfig{
+		intervalMs: prim.U64(15000),
+		timeoutMs:  prim.U64(5000),
+		hostPtr:    host.Data, hostLen: host.Len,
+		methodPtr: method.Data, methodLen: method.Len,
+		pathPtr: path.Data, pathLen: path.Len,
+		status:    200,
+		window:    5,
+		threshold: 3,
+		initial:   4,
+	}
+}
+
+func (h *BackendHealthcheckConfig) Interval(t time.Duration) {
+	h.intervalMs = prim.U64(t.Milliseconds())
+}
+
+func (h *BackendHealthcheckConfig) Timeout(t time.Duration) {
+	h.timeoutMs = prim.U64(t.Milliseconds())
+}
+
+func (h *BackendHealthcheckConfig) Method(m string) {
+	method := prim.NewReadBufferFromString(m).Wstring()
+	h.methodPtr = method.Data
+	h.methodLen = method.Len
+}
+
+func (h *BackendHealthcheckConfig) Path(p string) {
+	path := prim.NewReadBufferFromString(p).Wstring()
+	h.pathPtr = path.Data
+	h.pathLen = path.Len
+}
+
+func (h *BackendHealthcheckConfig) Status(status uint32) {
+	h.status = prim.U32(status)
+}
+
+func (h *BackendHealthcheckConfig) Window(w uint32) {
+	h.window = prim.U32(w)
+}
+
+func (h *BackendHealthcheckConfig) Threshold(threshold uint32) {
+	h.threshold = prim.U32(threshold)
+}
+
+func (h *BackendHealthcheckConfig) Initial(initial uint32) {
+	h.initial = prim.U32(initial)
 }
 
 // witx:

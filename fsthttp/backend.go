@@ -483,6 +483,94 @@ func (b *BackendOptions) PreferIPV6(v bool) *BackendOptions {
 	return b
 }
 
+// Healthcheck sets the backend health check configuration
+func (b *BackendOptions) Healthcheck(h *BackendHealthcheckOptions) *BackendOptions {
+	b.abiOpts.Healthcheck(h.abiOpts)
+	return b
+}
+
+type BackendHealthcheckOptions struct {
+	abiOpts *fastly.BackendHealthcheckConfig
+}
+
+func NewBackendHealthcheck(host string) *BackendHealthcheckOptions {
+	return &BackendHealthcheckOptions{
+		abiOpts: fastly.NewBackendHealthConfig(host),
+	}
+}
+
+// Interval sets the interval where a health check should be performed.
+// Times must be 1 second to 1 hour inclusive. Must be less than the
+// current timeout.
+//
+// Defaults to 15 seconds.
+func (h *BackendHealthcheckOptions) Interval(t time.Duration) *BackendHealthcheckOptions {
+	h.abiOpts.Interval(t)
+	return h
+}
+
+// Timeout sets the time in which to perform the health check.
+// Note that querying the health check renews the timer. Must not be less
+// than the current interval.
+//
+// Defaults to 5 seconds.
+func (h *BackendHealthcheckOptions) Timeout(t time.Duration) *BackendHealthcheckOptions {
+	h.abiOpts.Timeout(t)
+	return h
+}
+
+// Method sets an HTTP verb (i.e., HEAD, GET, or POST) to use when performing the health check.
+//
+// Defaults to "GET".
+func (h *BackendHealthcheckOptions) Method(m string) *BackendHealthcheckOptions {
+	h.abiOpts.Method(m)
+	return h
+}
+
+// Path sets a path to visit on your origins when performing the check. Use a unique path.
+// For example, use /website-healthcheck.txt, not / or /healthcheck.
+//
+// Defaults to "/".
+func (h *BackendHealthcheckOptions) Path(p string) *BackendHealthcheckOptions {
+	h.abiOpts.Path(p)
+	return h
+}
+
+// Status sets the HTTP status code that signifies a healthy state.
+//
+// Defaults to 200.
+func (h *BackendHealthcheckOptions) Status(status uint32) *BackendHealthcheckOptions {
+	h.abiOpts.Status(status)
+	return h
+}
+
+// Window sets the number of most recent health check queries to keep.
+// Must not be greater than 15.
+//
+// Defaults to 5.
+func (h *BackendHealthcheckOptions) Window(w uint32) *BackendHealthcheckOptions {
+	h.abiOpts.Window(w)
+	return h
+}
+
+// Threshold sets the number of health checks that must be successful within the window
+// to be considered healthy. Must not be greater than the current window.
+//
+// Defaults to 3.
+func (h *BackendHealthcheckOptions) Threshold(threshold uint32) *BackendHealthcheckOptions {
+	h.abiOpts.Threshold(threshold)
+	return h
+}
+
+// Initial sets the number of successes to assume are successful when beginning a health check.
+// Must not be greater than the current window.
+//
+// Defaults to 4.
+func (h *BackendHealthcheckOptions) Initial(initial uint32) *BackendHealthcheckOptions {
+	h.abiOpts.Initial(initial)
+	return h
+}
+
 // RegisterDynamicBackend registers a new dynamic backend.
 func RegisterDynamicBackend(name string, target string, options *BackendOptions) (*Backend, error) {
 	var abiOpts *fastly.BackendConfigOptions
