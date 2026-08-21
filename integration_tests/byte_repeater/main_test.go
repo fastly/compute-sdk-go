@@ -7,6 +7,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"io"
 	"testing"
 
@@ -37,9 +38,9 @@ func TestByteRepeater(t *testing.T) {
 			switch {
 			case err == nil: // normal case
 				w.Write([]byte{b, b})
-			case err == io.EOF: // done
+			case errors.Is(err, io.EOF): // done
 				return
-			case err != nil: // error
+			default:
 				fsthttp.Error(w, fsthttp.StatusText(fsthttp.StatusBadGateway), fsthttp.StatusBadGateway)
 				t.Errorf("ReadByte: %v", err)
 				return
