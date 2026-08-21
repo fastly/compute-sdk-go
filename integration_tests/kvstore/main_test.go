@@ -115,6 +115,9 @@ func TestKVStore(t *testing.T) {
 
 	ctx := context.Background()
 	resp, err := req.Send(ctx, "httpme")
+	if err != nil {
+		t.Errorf("error during req.Send: err=%v", err)
+	}
 
 	if err := store.Insert("hello", resp.Body); err != nil {
 		t.Errorf("error during HTTPBody Insert: err=%v", err)

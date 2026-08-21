@@ -42,7 +42,7 @@ func TestACL(t *testing.T) {
 
 	}
 
-	store, err = acl.Open("does-not-exist")
+	_, err = acl.Open("does-not-exist")
 	if err != acl.ErrNotFound {
 		t.Errorf("Open(does-not-exist) err = %v, want %v\n", err, acl.ErrNotFound)
 	}
