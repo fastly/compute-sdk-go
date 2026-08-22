@@ -46,8 +46,14 @@ func TestAsyncSelect(t *testing.T) {
 				return
 			}
 
-			io.Copy(io.Discard, resp.Body)
-			resp.Body.Close()
+			if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+				t.Errorf("%s: read response body: %v", ri.url, err)
+				return
+			}
+			if err := resp.Body.Close(); err != nil {
+				t.Errorf("%s: close response body: %v", ri.url, err)
+				return
+			}
 
 			mu.Lock()
 			headers[ri.header] = resp.Header.Get(ri.header)
