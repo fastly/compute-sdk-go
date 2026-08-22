@@ -26,7 +26,7 @@ jobs:
         run: go mod download -modfile=tools.mod
 
       - name: vet
-        run: go vet ./...
+        run: GOOS=wasip1 GOARCH=wasm go vet -tags=fastlyinternaldebug ./...
 
       - name: staticcheck
         run: |
