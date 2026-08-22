@@ -30,12 +30,14 @@ func TestByteRepeater(t *testing.T) {
 
 	var got bytes.Buffer
 	br := bufio.NewReader(resp.Body)
+	out := make([]byte, 2)
 loop:
 	for {
 		b, err := br.ReadByte()
 		switch {
 		case err == nil: // normal case
-			got.Write([]byte{b, b})
+			out[0], out[1] = b, b
+			got.Write(out)
 		case errors.Is(err, io.EOF): // done
 			break loop
 		default: // error
