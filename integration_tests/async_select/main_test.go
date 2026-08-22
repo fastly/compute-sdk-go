@@ -21,7 +21,7 @@ func TestAsyncSelect(t *testing.T) {
 	}
 
 	var mu sync.Mutex
-	got := make(map[string]string)
+	headers := make(map[string]string)
 
 	// Send several requests in parallel.
 	var wg sync.WaitGroup
@@ -50,17 +50,17 @@ func TestAsyncSelect(t *testing.T) {
 			resp.Body.Close()
 
 			mu.Lock()
-			got[ri.header] = resp.Header.Get(ri.header)
+			headers[ri.header] = resp.Header.Get(ri.header)
 			mu.Unlock()
 		}(ri)
 	}
 	wg.Wait()
 
-	if got, want := got["fooname"], "FooValue"; got != want {
+	if got, want := headers["fooname"], "FooValue"; got != want {
 		t.Errorf("Header[fooname] = %q, want %q", got, want)
 	}
 
-	if got, want := got["barname"], "BarValue"; got != want {
+	if got, want := headers["barname"], "BarValue"; got != want {
 		t.Errorf("Header[barname] = %q, want %q", got, want)
 	}
 }
