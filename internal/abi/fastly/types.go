@@ -2040,8 +2040,10 @@ const (
 type shieldingBackendOptionsMask prim.U32
 
 const (
-	shieldingBackendOptionsFlagReserved    shieldingBackendOptionsMask = 1 << 0
-	shieldingBackendOptionsFlagUseCacheKey shieldingBackendOptionsMask = 1 << 1
+	shieldingBackendOptionsFlagReserved            shieldingBackendOptionsMask = 1 << 0
+	shieldingBackendOptionsFlagUseCacheKey         shieldingBackendOptionsMask = 1 << 1
+	shieldingBackendOptionsFlagFirstByteTimeout    shieldingBackendOptionsMask = 1 << 2
+	shieldingBackendOptionsFlagBetweenBytesTimeout shieldingBackendOptionsMask = 1 << 3
 )
 
 type shieldingBackendOptions struct {
@@ -2053,8 +2055,10 @@ type shieldingBackendOptions struct {
 	//
 	// If this field is not set, no surrogate keys will be associated with the response. This
 	// means that the response cannot be purged except via a purge-all operation.
-	cacheKeyPtr prim.Pointer[prim.Char8]
-	cacheKeyLen prim.Usize
+	cacheKeyPtr           prim.Pointer[prim.Char8]
+	cacheKeyLen           prim.Usize
+	firstByteTimeoutMs    prim.U32
+	betweenBytesTimeoutMs prim.U32
 }
 
 type ShieldingBackendOptions struct {
@@ -2067,6 +2071,16 @@ func (s *ShieldingBackendOptions) CacheKey(key string) {
 	buf := prim.NewReadBufferFromString(key)
 	s.opts.cacheKeyPtr = prim.ToPointer(buf.Char8Pointer())
 	s.opts.cacheKeyLen = buf.Len()
+}
+
+func (s *ShieldingBackendOptions) FirstByteTimeout(t time.Duration) {
+	s.mask |= shieldingBackendOptionsFlagFirstByteTimeout
+	s.opts.firstByteTimeoutMs = prim.U32(t.Milliseconds())
+}
+
+func (s *ShieldingBackendOptions) BetweenBytesTimeout(t time.Duration) {
+	s.mask |= shieldingBackendOptionsFlagBetweenBytesTimeout
+	s.opts.betweenBytesTimeoutMs = prim.U32(t.Milliseconds())
 }
 
 type ShieldInfo struct {

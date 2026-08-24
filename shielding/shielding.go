@@ -1,6 +1,8 @@
 package shielding
 
 import (
+	"time"
+
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
 
@@ -29,12 +31,24 @@ func (s *Shield) Name() string { return s.name }
 // IsRunningOn returns whether the Compute node is currently in the shielding site.
 func (s *Shield) IsRunningOn() bool { return s.runningOn }
 
-// BackendOptions
+// BackendOptions controls the options for a backend created for a shield.
 type BackendOptions struct {
+	abiOpts fastly.ShieldingBackendOptions
+}
+
+// FirstByteTimeout sets the first-byte timeout for a derived backend.
+func (b *BackendOptions) FirstByteTimeout(t time.Duration) *BackendOptions {
+	b.abiOpts.FirstByteTimeout(t)
+	return b
+}
+
+// BetweenBytesTimeout sets the between-bytes timeout for a derived backend.
+func (b *BackendOptions) BetweenBytesTimeout(t time.Duration) *BackendOptions {
+	b.abiOpts.BetweenBytesTimeout(t)
+	return b
 }
 
 // Backend returns a named backend for use with the fsthttp package.
 func (s *Shield) Backend(opts *BackendOptions) (string, error) {
-	var abiOpts fastly.ShieldingBackendOptions
-	return fastly.ShieldingBackendForShield(s.name, &abiOpts)
+	return fastly.ShieldingBackendForShield(s.name, &opts.abiOpts)
 }
