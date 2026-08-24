@@ -484,6 +484,8 @@ func (b *BackendOptions) PreferIPV6(v bool) *BackendOptions {
 }
 
 // Healthcheck sets the backend health check configuration
+//
+// NOTE: Support for this feature is experimental and may be removed at any time.
 func (b *BackendOptions) Healthcheck(h *BackendHealthcheckOptions) *BackendOptions {
 	if h == nil {
 		b.err = append(b.err, &backendValidationError{field: "Healthcheck", reason: "field cannot be nil"})
