@@ -413,7 +413,7 @@ type ConfigStore struct {
 }
 
 // Config Stores are limited to keys of length 255 character. By default, values are limited to 8000 character values,
-// but this can be adjust on a per-customer basis.
+// but this can be adjusted on a per-customer basis.
 // https://docs.fastly.com/en/guides/about-edge-dictionaries#limitations-and-considerations
 const configstoreMaxKeyLen = 255 * 3 // known maximum size for config store keys: 765 bytes, for 255 3-byte utf-8 encoded characters
 
