@@ -630,10 +630,7 @@ func (candidateResponse *CandidateResponse) buildFreshSuggestedCacheWriteOptions
 }
 
 func httpCacheGetSuggestedCacheWriteOptions(cacheHandle *fastly.HTTPCacheHandle, resp *fastly.HTTPResponse) (*cacheWriteOptions, error) {
-	var opts cacheWriteOptions
-	opts.abiOpts.FillConfigMask()
-
-	newABIOpts, err := fastly.HTTPCacheGetSuggestedCacheOptions(cacheHandle, resp, &opts.abiOpts)
+	newABIOpts, err := fastly.HTTPCacheGetSuggestedCacheOptions(cacheHandle, resp)
 	if err != nil {
 		return nil, fmt.Errorf("get suggested cache options: %w", err)
 	}

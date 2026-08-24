@@ -515,16 +515,18 @@ func fastlyHTTPCacheGetSuggestedCacheOptions(
 	outOpts prim.Pointer[httpCacheWriteOptions],
 ) FastlyStatus
 
-func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPCacheWriteOptions, error) {
-	var out HTTPCacheWriteOptions
+func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse) (*HTTPCacheWriteOptions, error) {
+	var out, opts HTTPCacheWriteOptions
 
-	out.vary = prim.NewWriteBuffer(DefaultSmallBufLen)
-	opts.opts.varyRulePtr = prim.ToPointer(out.vary.Char8Pointer())
-	opts.opts.varyRuleLen = out.vary.Cap()
+	opts.fillConfigMask()
 
-	out.surrogate = prim.NewWriteBuffer(DefaultMediumBufLen)
-	opts.opts.surrogateKeysPtr = prim.ToPointer(out.surrogate.Char8Pointer())
-	opts.opts.surrogateKeysLen = out.surrogate.Cap()
+	opts.vary = prim.NewWriteBuffer(DefaultSmallBufLen)
+	opts.opts.varyRulePtr = prim.ToPointer(opts.vary.Char8Pointer())
+	opts.opts.varyRuleLen = opts.vary.Cap()
+
+	opts.surrogate = prim.NewWriteBuffer(DefaultMediumBufLen)
+	opts.opts.surrogateKeysPtr = prim.ToPointer(opts.surrogate.Char8Pointer())
+	opts.opts.surrogateKeysLen = opts.surrogate.Cap()
 
 	for {
 		status := fastlyHTTPCacheGetSuggestedCacheOptions(
@@ -545,16 +547,16 @@ func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts
 					// handle empty?
 					n = 1
 				}
-				out.vary = prim.NewWriteBuffer(n)
-				opts.opts.varyRulePtr = prim.ToPointer(out.vary.Char8Pointer())
-				opts.opts.varyRuleLen = out.vary.Cap()
+				opts.vary = prim.NewWriteBuffer(n)
+				opts.opts.varyRulePtr = prim.ToPointer(opts.vary.Char8Pointer())
+				opts.opts.varyRuleLen = opts.vary.Cap()
 			}
 
 			if out.mask&httpCacheWriteOptionsMaskSurrogateKeys == httpCacheWriteOptionsMaskSurrogateKeys {
 				n := int(out.opts.surrogateKeysLen)
-				out.surrogate = prim.NewWriteBuffer(n)
-				opts.opts.surrogateKeysPtr = prim.ToPointer(out.surrogate.Char8Pointer())
-				opts.opts.surrogateKeysLen = out.surrogate.Cap()
+				opts.surrogate = prim.NewWriteBuffer(n)
+				opts.opts.surrogateKeysPtr = prim.ToPointer(opts.surrogate.Char8Pointer())
+				opts.opts.surrogateKeysLen = opts.surrogate.Cap()
 			}
 
 			// reset out.mask for next call
@@ -572,6 +574,20 @@ func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts
 
 	// make sure out.mask is set correctly for current filled in options
 	out.mask = opts.mask
+
+	// Set write buffer lengths where needed
+	if out.mask&httpCacheWriteOptionsMaskVaryRule == httpCacheWriteOptionsMaskVaryRule {
+		out.vary = opts.vary
+		p := out.vary.NPointer()
+		*p = out.opts.varyRuleLen
+	}
+
+	if out.mask&httpCacheWriteOptionsMaskSurrogateKeys == httpCacheWriteOptionsMaskSurrogateKeys {
+		out.surrogate = opts.surrogate
+		p := out.surrogate.NPointer()
+		*p = out.opts.surrogateKeysLen
+	}
+
 	return &out, nil
 }
 

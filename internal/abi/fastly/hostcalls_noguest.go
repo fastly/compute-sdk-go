@@ -708,7 +708,7 @@ func HTTPCacheGetSuggestedBackendRequest(h *HTTPCacheHandle) (*HTTPRequest, erro
 	return nil, fmt.Errorf("not implemented")
 }
 
-func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPCacheWriteOptions, error) {
+func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse) (*HTTPCacheWriteOptions, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

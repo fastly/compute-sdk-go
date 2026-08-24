@@ -2288,9 +2288,6 @@ func (o *HTTPCacheWriteOptions) VaryRule() (string, bool) {
 		return "", false
 	}
 
-	p := o.vary.NPointer()
-	*p = o.opts.varyRuleLen
-
 	return o.vary.ToString(), true
 }
 
@@ -2325,9 +2322,6 @@ func (o *HTTPCacheWriteOptions) SurrogateKeys() (string, bool) {
 		return "", false
 	}
 
-	p := o.surrogate.NPointer()
-	*p = o.opts.surrogateKeysLen
-
 	return o.surrogate.ToString(), true
 }
 
@@ -2361,7 +2355,7 @@ func (o *HTTPCacheWriteOptions) StaleIfErrorNs() (uint64, bool) {
 	return uint64(o.opts.staleIfErrorNs), o.mask&httpCacheWriteOptionsMaskStaleIfError == httpCacheWriteOptionsMaskStaleIfError
 }
 
-func (o *HTTPCacheWriteOptions) FillConfigMask() {
+func (o *HTTPCacheWriteOptions) fillConfigMask() {
 	o.mask = 0 |
 		httpCacheWriteOptionsMaskReserved |
 		httpCacheWriteOptionsMaskVaryRule |
