@@ -205,7 +205,23 @@ func (s *Store) InsertWithConfig(key string, value io.Reader, config *InsertConf
 
 // Delete removes a key from the associated KV store.
 func (s *Store) Delete(key string) error {
-	h, err := s.kvstore.Delete(key)
+	return s.DeleteWithConfig(key, nil)
+}
+
+type DeleteConfig struct {
+	IfGenerationMatch uint64
+}
+
+// DeleteWithConfig removes a key from the associated KV store.
+func (s *Store) DeleteWithConfig(key string, config *DeleteConfig) error {
+	var abiConf fastly.KVDeleteConfig
+	if config != nil {
+		if config.IfGenerationMatch != 0 {
+			abiConf.IfGenerationMatch(config.IfGenerationMatch)
+		}
+	}
+
+	h, err := s.kvstore.Delete(key, &abiConf)
 	if err != nil {
 		return mapFastlyErr(err)
 	}

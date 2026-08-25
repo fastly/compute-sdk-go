@@ -266,19 +266,20 @@ func fastlyKVStoreDelete(
 ) FastlyStatus
 
 // Delete returns a handle to a pending key/value removal.
-func (kv *KVStore) Delete(key string) (kvstoreDeleteHandle, error) {
-	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
+func (kv *KVStore) Delete(key string, config *KVDeleteConfig) (kvstoreDeleteHandle, error) {
+	if config == nil {
+		config = &KVDeleteConfig{}
+	}
 
-	var mask kvDeleteConfigMask
-	var config kvDeleteConfig
+	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
 
 	var deleteHandle kvstoreDeleteHandle = invalidKVDeleteHandle
 
 	if err := fastlyKVStoreDelete(
 		kv.h,
 		keyBuffer.Data, keyBuffer.Len,
-		mask,
-		prim.ToPointer(&config),
+		config.mask,
+		prim.ToPointer(&config.opts),
 		prim.ToPointer(&deleteHandle),
 	).toError(); err != nil {
 		return 0, err

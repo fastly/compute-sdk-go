@@ -540,7 +540,7 @@ func (o *KVStore) InsertWait(h kvstoreInsertHandle) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (o *KVStore) Delete(key string) (kvstoreDeleteHandle, error) {
+func (o *KVStore) Delete(key string, config *KVDeleteConfig) (kvstoreDeleteHandle, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
