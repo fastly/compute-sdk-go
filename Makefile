@@ -53,6 +53,7 @@ defaults-tinygo:
 TINYGO_TEST_FLAGS = $(GO_TEST_FLAGS)
 TINYGO_PACKAGES   = $(GO_PACKAGES)
 TINYGO_BUILD_TAGS = $(GO_BUILD_TAGS)
+TINYGO_TARGET ?= ./targets/fastly-compute-wasip1.json
 
 # With the defaults arranged, each type of test (unit, integration, end-to-end)
 # needs specific modifications. Integration tests use `test -exec viceroy`,
@@ -72,7 +73,6 @@ test-e2e-%: 		 GO_PACKAGES   := ./end_to_end_tests/...
 test-%-go:       	   EXEC_ARGS := viceroy run -C fastly.toml
 test-%-tinygo:   	   TINYGO_TARGET := ./targets/fastly-compute-wasip1.json
 test-e2e-tinygo: 	   TINYGO_TARGET := ./targets/fastly-compute-wasip1-serve.json
-build-examples-tinygo: TINYGO_TARGET ?= ./targets/fastly-compute-wasip1.json
 
 # Run e2e tests sequentially to avoid port conflicts:
 test-e2e-%: GO_TEST_FLAGS += -p 1
@@ -84,6 +84,7 @@ test-e2e-%: export PATH := $(PWD)/end_to_end_tests:$(PATH)
 # lines in recipes below to avoid hiding them in the environment.
 test-%-go:     GOFLAGS     = $(GO_TEST_FLAGS) -tags=$(subst $(space),$(comma),$(GO_BUILD_TAGS))
 test-%-tinygo: TINYGOFLAGS = $(TINYGO_TEST_FLAGS) -target=$(TINYGO_TARGET) -tags=$(subst $(space),$(comma),$(TINYGO_BUILD_TAGS))
+build-examples-tinygo-%: TINYGOFLAGS = -target=$(TINYGO_TARGET) -tags=$(subst $(space),$(comma),$(TINYGO_BUILD_TAGS))
 
 ## Run only [unit] tests using Go
 .PHONY: test-unit-go

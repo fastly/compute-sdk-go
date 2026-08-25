@@ -5,60 +5,19 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"testing"
 
 	"github.com/fastly/compute-sdk-go/device"
-	"github.com/fastly/compute-sdk-go/fsthttp"
-	"github.com/fastly/compute-sdk-go/fsttest"
 )
 
-func assert[T comparable](res fsthttp.ResponseWriter, field string, got, want T) {
+func assert[T comparable](t *testing.T, field string, got, want T) {
+	t.Helper()
 	if got != want {
-		fsthttp.Error(res, fmt.Sprintf("%s: got %v, want %v", field, got, want), fsthttp.StatusInternalServerError)
+		t.Errorf("%s: got %v, want %v", field, got, want)
 	}
 }
 
 func TestDeviceDetection(t *testing.T) {
-	handler := func(ctx context.Context, res fsthttp.ResponseWriter, req *fsthttp.Request) {
-		d, err := device.Lookup(req.Header.Get("User-Agent"))
-
-		switch req.URL.Path {
-		case "/iPhone":
-			if err != nil {
-				fsthttp.Error(res, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-				return
-			}
-
-			assert(res, "Name", d.Name(), "iPhone")
-			assert(res, "Brand", d.Brand(), "Apple")
-			assert(res, "Model", d.Model(), "iPhone4,1")
-			assert(res, "HWType", d.HWType(), "Mobile Phone")
-			assert(res, "IsMobile", d.IsMobile(), true)
-			assert(res, "IsTouchscreen", d.IsTouchscreen(), true)
-
-		case "/AsusTeK":
-			if err != nil {
-				fsthttp.Error(res, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-				return
-			}
-
-			assert(res, "Name", d.Name(), "Asus TeK")
-			assert(res, "Brand", d.Brand(), "Asus")
-			assert(res, "Model", d.Model(), "TeK")
-
-		case "/unknown":
-			if err != device.ErrDeviceNotFound {
-				fsthttp.Error(res, fsthttp.StatusText(fsthttp.StatusInternalServerError), fsthttp.StatusInternalServerError)
-				return
-			}
-
-		default:
-			fsthttp.Error(res, "not found", fsthttp.StatusNotFound)
-		}
-	}
-
 	testcases := []struct {
 		name      string
 		userAgent string
@@ -81,18 +40,34 @@ func TestDeviceDetection(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			r, err := fsthttp.NewRequest("GET", "/"+tc.name, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			r.Header.Set("User-Agent", tc.userAgent)
-			w := fsttest.NewRecorder()
+			d, err := device.Lookup(tc.userAgent)
 
-			handler(context.Background(), w, r)
+			switch tc.name {
+			case "iPhone":
+				if err != nil {
+					t.Fatalf("Lookup: %v", err)
+				}
 
-			if got, want := w.Code, fsthttp.StatusOK; got != want {
-				t.Errorf("got %v, want %v", got, want)
-				t.Error(w.Body.String())
+				assert(t, "Name", d.Name(), "iPhone")
+				assert(t, "Brand", d.Brand(), "Apple")
+				assert(t, "Model", d.Model(), "iPhone4,1")
+				assert(t, "HWType", d.HWType(), "Mobile Phone")
+				assert(t, "IsMobile", d.IsMobile(), true)
+				assert(t, "IsTouchscreen", d.IsTouchscreen(), true)
+
+			case "AsusTeK":
+				if err != nil {
+					t.Fatalf("Lookup: %v", err)
+				}
+
+				assert(t, "Name", d.Name(), "Asus TeK")
+				assert(t, "Brand", d.Brand(), "Asus")
+				assert(t, "Model", d.Model(), "TeK")
+
+			case "unknown":
+				if err != device.ErrDeviceNotFound {
+					t.Errorf("Lookup: got err %v, want %v", err, device.ErrDeviceNotFound)
+				}
 			}
 		})
 	}
