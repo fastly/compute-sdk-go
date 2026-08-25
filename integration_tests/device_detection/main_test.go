@@ -11,6 +11,7 @@ import (
 )
 
 func assert[T comparable](t *testing.T, field string, got, want T) {
+	t.Helper()
 	if got != want {
 		t.Errorf("%s: got %v, want %v", field, got, want)
 	}
