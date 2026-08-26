@@ -27,7 +27,12 @@ func TestSendErrorWrapped(t *testing.T) {
 		t.Fatal("errors.As() failed to extract SendError")
 	}
 
-	if serr.Cause() != SendErrorConnectionTimeout {
-		t.Errorf("Cause() = %v, want %v", serr.Cause(), SendErrorConnectionTimeout)
+	checkCause(t, serr, SendErrorConnectionTimeout)
+}
+
+func checkCause(t *testing.T, serr SendError, want SendErrorTag) {
+	t.Helper()
+	if serr.Cause() != want {
+		t.Errorf("Cause() = %v, want %v", serr.Cause(), want)
 	}
 }
