@@ -32,6 +32,7 @@ import (
 //	    }
 //	}
 type SendError = fastly.SendErrorDetail
+type SendErrorTag = fastly.SendErrorDetailTag
 
 const (
 	// SendErrorDNSTimeout indicates the system encountered a timeout when trying to
