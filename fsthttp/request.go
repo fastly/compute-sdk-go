@@ -413,6 +413,24 @@ func (req *Request) FastlyMeta() (*FastlyMeta, error) {
 		if err != nil {
 			return nil, fmt.Errorf("get fastly key is valid: %w", err)
 		}
+
+		headerCount, err := req.downstream.req.DownstreamOriginalHeaderCount()
+		if err != nil {
+			return nil, fmt.Errorf("get original headers: %w", err)
+		}
+		if headerCount != 0 {
+			headers := make([]string, 0, headerCount)
+			vals := req.downstream.req.DownstreamOriginalHeaderNames()
+			for vals.Next() {
+				v := string(vals.Bytes())
+				headers = append(headers, v)
+			}
+			if err := vals.Err(); err != nil {
+				return nil, fmt.Errorf("read original headers: %w", err)
+			}
+			fastlyMeta.RawHeaders = headers
+		}
+
 	}
 
 	req.fastlyMeta = fastlyMeta
@@ -1182,6 +1200,9 @@ type FastlyMeta struct {
 	// For example, if this is were 3, it means that this is the 3rd request handled by the sandbox.
 	// This will be zero if this is not a client request.
 	SandboxRequests int
+
+	// RawHeaders is the set of original, unmodified headers from the request in the order they were provided.
+	RawHeaders []string
 }
 
 // DecompressResponseOptions control the auto decompress response behaviour.
