@@ -30,12 +30,6 @@ func fastlyKVStoreOpen(
 	h prim.Pointer[kvstoreHandle],
 ) FastlyStatus
 
-// KVStore represents a Fastly kv store, a collection of key/value pairs.
-// For convenience, keys and values are both modelled as Go strings.
-type KVStore struct {
-	h kvstoreHandle
-}
-
 // KVStoreOpen returns a reference to the named kv store, if it exists.
 func OpenKVStore(name string) (*KVStore, error) {
 	var kv KVStore = KVStore{h: invalidKVStoreHandle}
@@ -128,7 +122,7 @@ func fastlyKVStoreLookupWait(
 ) FastlyStatus
 
 // LookupWait returns a lookup response for a pending lookup handle
-func (kv *KVStore) LookupWait(lookupH kvstoreLookupHandle) (KVLookupResult, error) {
+func (kv *KVStore) LookupWait(h kvstoreLookupHandle) (KVLookupResult, error) {
 	body := HTTPBody{h: invalidBodyHandle}
 
 	meta := prim.NewWriteBuffer(kvstoreMetadataMaxBufLen)
@@ -137,7 +131,7 @@ func (kv *KVStore) LookupWait(lookupH kvstoreLookupHandle) (KVLookupResult, erro
 	var kvErr KVError = KVErrorUninitialized
 
 	if err := fastlyKVStoreLookupWait(
-		lookupH,
+		h,
 		prim.ToPointer(&body.h),
 		prim.ToPointer(meta.U8Pointer()), meta.Cap(),
 		prim.ToPointer(meta.NPointer()),
@@ -227,11 +221,11 @@ func fastlyKVStoreInsertWait(
 ) FastlyStatus
 
 // InsertWait returns the status of the given pending insertion handle.
-func (kv *KVStore) InsertWait(insertH kvstoreInsertHandle) error {
+func (kv *KVStore) InsertWait(h kvstoreInsertHandle) error {
 	var kvErr KVError = KVErrorUninitialized
 
 	if err := fastlyKVStoreInsertWait(
-		insertH,
+		h,
 		prim.ToPointer(&kvErr),
 	).toError(); err != nil {
 		return err
@@ -308,11 +302,11 @@ func fastlyKVStoreDeleteWait(
 ) FastlyStatus
 
 // DeleteWait completes the pending deletion for the given handle.
-func (kv *KVStore) DeleteWait(deleteH kvstoreDeleteHandle) error {
+func (kv *KVStore) DeleteWait(h kvstoreDeleteHandle) error {
 	var kvErr KVError = KVErrorUninitialized
 
 	if err := fastlyKVStoreDeleteWait(
-		deleteH,
+		h,
 		prim.ToPointer(&kvErr),
 	).toError(); err != nil {
 		return err

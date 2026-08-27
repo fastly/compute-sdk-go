@@ -6,142 +6,6 @@ import (
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
 )
 
-const TRACE = true
-
-type HTTPCacheLookupOptions struct {
-	mask httpCacheLookupOptionsMask
-	opts httpCacheLookupOptions
-}
-
-func (o *HTTPCacheLookupOptions) OverrideKey(key string) {
-	buf := prim.NewReadBufferFromString(key)
-	o.opts.overrideKeyPtr = prim.ToPointer(buf.Char8Pointer())
-	o.opts.overrideKeyLen = buf.Len()
-	o.mask |= httpCacheLookupOptionsFlagOverrideKey
-}
-
-func (o *HTTPCacheLookupOptions) Backend(backend string) {
-	buf := prim.NewReadBufferFromString(backend)
-	o.opts.backendPtr = prim.ToPointer(buf.Char8Pointer())
-	o.opts.backendLen = buf.Len()
-	o.mask |= httpCacheLookupOptionsFlagBackend
-}
-
-type HTTPCacheWriteOptions struct {
-	mask httpCacheWriteOptionsMask
-	opts httpCacheWriteOptions
-
-	vary      *prim.WriteBuffer
-	surrogate *prim.WriteBuffer
-}
-
-func (o *HTTPCacheWriteOptions) SetMaxAgeNs(maxAge uint64) {
-	o.opts.maxAgeNs = httpCacheDurationNs(maxAge)
-	// This field is required; there is no mask bit set.
-}
-
-func (o *HTTPCacheWriteOptions) MaxAgeNs() uint64 {
-	return uint64(o.opts.maxAgeNs)
-}
-
-func (o *HTTPCacheWriteOptions) SetVaryRule(rule string) {
-	b := []byte(rule)
-	o.vary = prim.NewWriteBufferFromBytes(b)
-	o.opts.varyRulePtr = prim.ToPointer(o.vary.Char8Pointer())
-	o.opts.varyRuleLen = o.vary.Len()
-	o.mask |= httpCacheWriteOptionsFlagVaryRule
-}
-
-func (o *HTTPCacheWriteOptions) VaryRule() (string, bool) {
-	if o.mask&httpCacheWriteOptionsFlagVaryRule == 0 {
-		return "", false
-	}
-
-	p := o.vary.NPointer()
-	*p = o.opts.varyRuleLen
-
-	return o.vary.ToString(), true
-}
-
-func (o *HTTPCacheWriteOptions) SetInitialAgeNs(initialAge uint64) {
-	o.opts.initialAgeNs = httpCacheDurationNs(initialAge)
-	o.mask |= httpCacheWriteOptionsFlagInitialAge
-}
-
-func (o *HTTPCacheWriteOptions) InitialAgeNs() (uint64, bool) {
-	return uint64(o.opts.initialAgeNs), o.mask&httpCacheWriteOptionsFlagInitialAge == httpCacheWriteOptionsFlagInitialAge
-}
-
-func (o *HTTPCacheWriteOptions) SetStaleWhileRevalidateNs(staleWhileRevalidateNs uint64) {
-	o.opts.staleWhileRevalidateNs = httpCacheDurationNs(staleWhileRevalidateNs)
-	o.mask |= httpCacheWriteOptionsFlagStaleWhileRevalidate
-}
-
-func (o *HTTPCacheWriteOptions) StaleWhileRevalidateNs() (uint64, bool) {
-	return uint64(o.opts.staleWhileRevalidateNs), o.mask&httpCacheWriteOptionsFlagStaleWhileRevalidate == httpCacheWriteOptionsFlagStaleWhileRevalidate
-}
-
-func (o *HTTPCacheWriteOptions) SetSurrogateKeys(keys string) {
-	b := []byte(keys)
-	o.surrogate = prim.NewWriteBufferFromBytes(b)
-	o.opts.surrogateKeysPtr = prim.ToPointer(o.surrogate.Char8Pointer())
-	o.opts.surrogateKeysLen = o.surrogate.Len()
-	o.mask |= httpCacheWriteOptionsFlagSurrogateKeys
-}
-
-func (o *HTTPCacheWriteOptions) SurrogateKeys() (string, bool) {
-	if o.mask&httpCacheWriteOptionsFlagSurrogateKeys == 0 {
-		return "", false
-	}
-
-	p := o.surrogate.NPointer()
-	*p = o.opts.surrogateKeysLen
-
-	return o.surrogate.ToString(), true
-}
-
-func (o *HTTPCacheWriteOptions) SetLength(length uint64) {
-	o.opts.length = httpCacheObjectLength(length)
-	o.mask |= httpCacheWriteOptionsFlagLength
-}
-
-func (o *HTTPCacheWriteOptions) Length() (uint64, bool) {
-	return uint64(o.opts.length), o.mask&httpCacheWriteOptionsFlagLength == httpCacheWriteOptionsFlagLength
-}
-
-func (o *HTTPCacheWriteOptions) SetSensitiveData(b bool) {
-	if b {
-		o.mask |= httpCacheWriteOptionsFlagSensitiveData
-	} else {
-		o.mask &^= httpCacheWriteOptionsFlagSensitiveData
-	}
-}
-
-func (o *HTTPCacheWriteOptions) SensitiveData() bool {
-	return o.mask&httpCacheWriteOptionsFlagSensitiveData == httpCacheWriteOptionsFlagSensitiveData
-}
-
-func (o *HTTPCacheWriteOptions) SetStaleIfErrorNs(staleNs uint64) {
-	o.opts.staleIfErrorNs = httpCacheDurationNs(staleNs)
-	o.mask |= httpCacheWriteOptionsFlagStaleIfError
-}
-
-func (o *HTTPCacheWriteOptions) StaleIfErrorNs() (uint64, bool) {
-	return uint64(o.opts.staleIfErrorNs), o.mask&httpCacheWriteOptionsFlagStaleIfError == httpCacheWriteOptionsFlagStaleIfError
-}
-
-func (o *HTTPCacheWriteOptions) FillConfigMask() {
-	o.mask = 0 |
-		httpCacheWriteOptionsFlagReserved |
-		httpCacheWriteOptionsFlagVaryRule |
-		httpCacheWriteOptionsFlagInitialAge |
-		httpCacheWriteOptionsFlagStaleWhileRevalidate |
-		httpCacheWriteOptionsFlagSurrogateKeys |
-		httpCacheWriteOptionsFlagLength |
-		httpCacheWriteOptionsFlagSensitiveData |
-		httpCacheWriteOptionsFlagStaleIfError
-}
-
 // (module $fastly_http_cache
 
 // witx;
@@ -223,10 +87,6 @@ func HTTPCacheGetSuggestedCacheKey(req *HTTPRequest) ([]byte, error) {
 		return nil, err
 	}
 	return value.AsBytes(), nil
-}
-
-type HTTPCacheHandle struct {
-	h httpCacheHandle
 }
 
 // witx:
@@ -655,16 +515,18 @@ func fastlyHTTPCacheGetSuggestedCacheOptions(
 	outOpts prim.Pointer[httpCacheWriteOptions],
 ) FastlyStatus
 
-func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPCacheWriteOptions, error) {
-	var out HTTPCacheWriteOptions
+func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse) (*HTTPCacheWriteOptions, error) {
+	var out, opts HTTPCacheWriteOptions
 
-	out.vary = prim.NewWriteBuffer(DefaultSmallBufLen)
-	opts.opts.varyRulePtr = prim.ToPointer(out.vary.Char8Pointer())
-	opts.opts.varyRuleLen = out.vary.Cap()
+	opts.fillConfigMask()
 
-	out.surrogate = prim.NewWriteBuffer(DefaultMediumBufLen)
-	opts.opts.surrogateKeysPtr = prim.ToPointer(out.surrogate.Char8Pointer())
-	opts.opts.surrogateKeysLen = out.surrogate.Cap()
+	opts.vary = prim.NewWriteBuffer(DefaultSmallBufLen)
+	opts.opts.varyRulePtr = prim.ToPointer(opts.vary.Char8Pointer())
+	opts.opts.varyRuleLen = opts.vary.Cap()
+
+	opts.surrogate = prim.NewWriteBuffer(DefaultMediumBufLen)
+	opts.opts.surrogateKeysPtr = prim.ToPointer(opts.surrogate.Char8Pointer())
+	opts.opts.surrogateKeysLen = opts.surrogate.Cap()
 
 	for {
 		status := fastlyHTTPCacheGetSuggestedCacheOptions(
@@ -679,22 +541,22 @@ func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts
 		if status == FastlyStatusBufLen {
 			// reallocate buffers in the output struct with their requested lengths
 
-			if out.mask&httpCacheWriteOptionsFlagVaryRule == httpCacheWriteOptionsFlagVaryRule {
+			if out.mask&httpCacheWriteOptionsMaskVaryRule == httpCacheWriteOptionsMaskVaryRule {
 				n := int(out.opts.varyRuleLen)
 				if n == 0 {
 					// handle empty?
 					n = 1
 				}
-				out.vary = prim.NewWriteBuffer(n)
-				opts.opts.varyRulePtr = prim.ToPointer(out.vary.Char8Pointer())
-				opts.opts.varyRuleLen = out.vary.Cap()
+				opts.vary = prim.NewWriteBuffer(n)
+				opts.opts.varyRulePtr = prim.ToPointer(opts.vary.Char8Pointer())
+				opts.opts.varyRuleLen = opts.vary.Cap()
 			}
 
-			if out.mask&httpCacheWriteOptionsFlagSurrogateKeys == httpCacheWriteOptionsFlagSurrogateKeys {
+			if out.mask&httpCacheWriteOptionsMaskSurrogateKeys == httpCacheWriteOptionsMaskSurrogateKeys {
 				n := int(out.opts.surrogateKeysLen)
-				out.surrogate = prim.NewWriteBuffer(n)
-				opts.opts.surrogateKeysPtr = prim.ToPointer(out.surrogate.Char8Pointer())
-				opts.opts.surrogateKeysLen = out.surrogate.Cap()
+				opts.surrogate = prim.NewWriteBuffer(n)
+				opts.opts.surrogateKeysPtr = prim.ToPointer(opts.surrogate.Char8Pointer())
+				opts.opts.surrogateKeysLen = opts.surrogate.Cap()
 			}
 
 			// reset out.mask for next call
@@ -712,6 +574,20 @@ func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts
 
 	// make sure out.mask is set correctly for current filled in options
 	out.mask = opts.mask
+
+	// Set write buffer lengths where needed
+	if out.mask&httpCacheWriteOptionsMaskVaryRule == httpCacheWriteOptionsMaskVaryRule {
+		out.vary = opts.vary
+		p := out.vary.NPointer()
+		*p = out.opts.varyRuleLen
+	}
+
+	if out.mask&httpCacheWriteOptionsMaskSurrogateKeys == httpCacheWriteOptionsMaskSurrogateKeys {
+		out.surrogate = opts.surrogate
+		p := out.surrogate.NPointer()
+		*p = out.opts.surrogateKeysLen
+	}
+
 	return &out, nil
 }
 

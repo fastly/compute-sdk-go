@@ -5,7 +5,6 @@
 package fastly
 
 import (
-	"io"
 	"net"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
@@ -24,11 +23,6 @@ func fastlyACLOpen(
 	nameData prim.Pointer[prim.U8], nameLen prim.Usize,
 	h prim.Pointer[aclHandle],
 ) FastlyStatus
-
-// ACL is a handle to the ACL subsystem.
-type ACLHandle struct {
-	h aclHandle
-}
 
 // OpenACL returns a handle to the named ACL set.
 func OpenACL(name string) (*ACLHandle, error) {
@@ -67,7 +61,7 @@ func fastlyACLLookup(
 ) FastlyStatus
 
 // Lookup returns the entry for the IP, if it exists.
-func (a *ACLHandle) Lookup(ip net.IP) (io.Reader, error) {
+func (a *ACLHandle) Lookup(ip net.IP) (*HTTPBody, error) {
 	body := HTTPBody{h: invalidBodyHandle}
 
 	var ipBytes []byte

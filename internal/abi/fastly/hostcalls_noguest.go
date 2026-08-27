@@ -8,12 +8,9 @@ package fastly
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"time"
 )
-
-type HTTPBody struct{}
 
 func (b *HTTPBody) Append(other *HTTPBody) error {
 	return fmt.Errorf("not implemented")
@@ -51,15 +48,13 @@ func (b *HTTPBody) GetTrailerNames() *Values {
 	return nil
 }
 
-func (b *HTTPBody) GetTrailerValue(name string, maxHeaderValueLen int) (string, error) {
+func (b *HTTPBody) GetTrailerValue(name string) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
 func (b *HTTPBody) GetTrailerValues(name string) *Values {
 	return nil
 }
-
-type LogEndpoint struct{}
 
 func GetLogEndpoint(name string) (*LogEndpoint, error) {
 	return nil, fmt.Errorf("not implemented")
@@ -68,8 +63,6 @@ func GetLogEndpoint(name string) (*LogEndpoint, error) {
 func (e *LogEndpoint) Write(p []byte) (n int, err error) {
 	return 0, fmt.Errorf("not implemented")
 }
-
-type HTTPRequest struct{}
 
 func BodyDownstreamGet() (*HTTPRequest, *HTTPBody, error) {
 	return nil, nil, fmt.Errorf("not implemented")
@@ -231,7 +224,7 @@ func (r *HTTPRequest) DownstreamOriginalHeaderCount() (int, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-func (r *HTTPRequest) GetHeaderValue(name string, maxHeaderValueLen int) (string, error) {
+func (r *HTTPRequest) GetHeaderValue(name string) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
@@ -291,8 +284,6 @@ func (r *HTTPRequest) Inspect(info *InspectInfo, b *HTTPBody) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-type PendingRequest struct{}
-
 func (r *HTTPRequest) SendAsync(requestBody *HTTPBody, backend string) (*PendingRequest, error) {
 	return nil, fmt.Errorf("not implemented")
 }
@@ -333,17 +324,15 @@ func (r *HTTPRequest) HandoffFanout(backend string) error {
 	return fmt.Errorf("not implemented")
 }
 
-type HTTPRequestPromise struct{}
-
 func DownstreamNextRequest(opts *NextRequestOptions) (*HTTPRequestPromise, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (HTTPRequestPromise) Wait() (*HTTPRequest, *HTTPBody, error) {
+func (p *HTTPRequestPromise) Wait() (*HTTPRequest, *HTTPBody, error) {
 	return nil, nil, fmt.Errorf("not implemented")
 }
 
-func (HTTPRequestPromise) Abandon() error {
+func (p *HTTPRequestPromise) Abandon() error {
 	return fmt.Errorf("not implemented")
 }
 
@@ -415,8 +404,6 @@ func BackendGetSSLMaxVersion(name string) (TLSVersion, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-type HTTPResponse struct{}
-
 func NewHTTPResponse() (*HTTPResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
@@ -477,8 +464,6 @@ func (r *HTTPResponse) SetFramingHeadersMode(manual bool) error {
 	return fmt.Errorf("not implemented")
 }
 
-type Dictionary struct{}
-
 func OpenDictionary(name string) (*Dictionary, error) {
 	return nil, fmt.Errorf("not implemented")
 }
@@ -487,15 +472,9 @@ func (d *Dictionary) GetBytes(key string) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (d *Dictionary) Get(key string) (string, error) {
-	return "", fmt.Errorf("not implemented")
-}
-
 func (d *Dictionary) Has(key string) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
-
-type ConfigStore struct{}
 
 func OpenConfigStore(name string) (*ConfigStore, error) {
 	return nil, fmt.Errorf("not implemented")
@@ -505,10 +484,6 @@ func (d *ConfigStore) GetBytes(key string) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (d *ConfigStore) Get(key string) (string, error) {
-	return "", fmt.Errorf("not implemented")
-}
-
 func (d *ConfigStore) Has(key string) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
@@ -516,9 +491,6 @@ func (d *ConfigStore) Has(key string) (bool, error) {
 func GeoLookup(ip net.IP) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-
-type KVStore struct{}
 
 func OpenKVStore(name string) (*KVStore, error) {
 	return nil, fmt.Errorf("not implemented")
@@ -532,7 +504,7 @@ func (o *KVStore) LookupWait(h kvstoreLookupHandle) (KVLookupResult, error) {
 	return KVLookupResult{}, fmt.Errorf("not implemented")
 }
 
-func (o *KVStore) Insert(key string, value io.Reader, config *KVInsertConfig) (kvstoreInsertHandle, error) {
+func (o *KVStore) Insert(key string, body *HTTPBody, config *KVInsertConfig) (kvstoreInsertHandle, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
@@ -556,11 +528,6 @@ func (kv *KVStore) ListWait(listH kvstoreListHandle) (*HTTPBody, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-type (
-	SecretStore struct{}
-	Secret      struct{}
-)
-
 func OpenSecretStore(name string) (*SecretStore, error) {
 	return nil, fmt.Errorf("not implemented")
 }
@@ -579,65 +546,6 @@ func (s *Secret) Handle() secretHandle {
 
 func SecretFromBytes(b []byte) (*Secret, error) {
 	return nil, fmt.Errorf("not implemented")
-}
-
-type (
-	CacheEntry          struct{}
-	CacheLookupOptions  struct{}
-	CacheGetBodyOptions struct{}
-	CacheWriteOptions   struct{}
-)
-
-func (o *CacheLookupOptions) SetRequest(req *HTTPRequest) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheLookupOptions) SetAlwaysUseRequestedRange(alwaysUseRequestedRange bool) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheGetBodyOptions) From(from uint64) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheGetBodyOptions) To(to uint64) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) MaxAge(v time.Duration) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) SetRequest(req *HTTPRequest) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) Vary(v []string) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) InitialAge(v time.Duration) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) StaleWhileRevalidate(v time.Duration) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) SurrogateKeys(v []string) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) ContentLength(v uint64) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) UserMetadata(v []byte) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (o *CacheWriteOptions) SensitiveData(v bool) error {
-	return fmt.Errorf("not implemented")
 }
 
 func CacheLookup(key []byte, opts CacheLookupOptions) (*CacheEntry, error) {
@@ -704,12 +612,6 @@ func (c *CacheEntry) Hits() (uint64, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-type PurgeOptions struct{}
-
-func (o *PurgeOptions) SoftPurge(v bool) error {
-	return fmt.Errorf("not implemented")
-}
-
 func PurgeSurrogateKey(surrogateKey string, opts PurgeOptions) error {
 	return fmt.Errorf("not implemented")
 }
@@ -750,8 +652,6 @@ func GetHeapMiB() (uint32, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-type ACLHandle struct{}
-
 func OpenACL(name string) (*ACLHandle, error) {
 	return nil, fmt.Errorf("not implemented")
 }
@@ -759,15 +659,6 @@ func OpenACL(name string) (*ACLHandle, error) {
 func (acl *ACLHandle) Lookup(ip net.IP) (*HTTPBody, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-type HTTPCacheLookupOptions struct{}
-
-func (HTTPCacheLookupOptions) OverrideKey(key string) {
-}
-
-func (HTTPCacheLookupOptions) Backend(backend string) {
-}
-
 
 func HTTPCacheIsRequestCacheable(req *HTTPRequest) (bool, error) {
 	return false, fmt.Errorf("not implemented")
@@ -777,58 +668,9 @@ func HTTPCacheGetSuggestedCacheKey(req *HTTPRequest) ([]byte, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-type HTTPCacheHandle struct{}
-
-func HTTPCacheLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (*HTTPCacheHandle, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
 func HTTPCacheTransactionLookup(req *HTTPRequest, opts *HTTPCacheLookupOptions) (*HTTPCacheHandle, error) {
 	return nil, fmt.Errorf("not implemented")
 }
-
-type HTTPCacheWriteOptions struct{}
-
-func (o *HTTPCacheWriteOptions) FillConfigMask() {}
-
-func (o *HTTPCacheWriteOptions) SetMaxAgeNs(maxAge uint64) {}
-
-func (o *HTTPCacheWriteOptions) MaxAgeNs() uint64 { return 0 }
-
-func (o *HTTPCacheWriteOptions) SetVaryRule(rule string) {}
-
-func (o *HTTPCacheWriteOptions) VaryRule() (string, bool) { return "", false }
-
-func (o *HTTPCacheWriteOptions) SetInitialAgeNs(initialAge uint64) {}
-
-func (o *HTTPCacheWriteOptions) InitialAgeNs() (uint64, bool) {
-	return 0, false
-}
-
-func (o *HTTPCacheWriteOptions) SetStaleWhileRevalidateNs(staleWhileRevalidateNs uint64) {
-}
-
-func (o *HTTPCacheWriteOptions) StaleWhileRevalidateNs() (uint64, bool) {
-	return 0, false
-}
-
-func (o *HTTPCacheWriteOptions) SetSurrogateKeys(keys string) {}
-
-func (o *HTTPCacheWriteOptions) SurrogateKeys() (string, bool) {
-	return "", false
-}
-
-func (o *HTTPCacheWriteOptions) SetLength(length uint64) {}
-
-func (o *HTTPCacheWriteOptions) Length() (uint64, bool) { return 0, false }
-
-func (o *HTTPCacheWriteOptions) SetSensitiveData(sensitive bool) {}
-
-func (o *HTTPCacheWriteOptions) SensitiveData() bool { return false }
-
-func (o *HTTPCacheWriteOptions) SetStaleIfErrorNs(staleIfErrorNs uint64) {}
-
-func (o *HTTPCacheWriteOptions) StaleIfErrorNs() (uint64, bool) { return 0, false }
 
 func HTTPCacheTransactionInsert(h *HTTPCacheHandle, resp *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPBody, error) {
 	return nil, fmt.Errorf("not implemented")
@@ -866,7 +708,7 @@ func HTTPCacheGetSuggestedBackendRequest(h *HTTPCacheHandle) (*HTTPRequest, erro
 	return nil, fmt.Errorf("not implemented")
 }
 
-func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse, opts *HTTPCacheWriteOptions) (*HTTPCacheWriteOptions, error) {
+func HTTPCacheGetSuggestedCacheOptions(h *HTTPCacheHandle, r *HTTPResponse) (*HTTPCacheWriteOptions, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
