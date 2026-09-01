@@ -7,6 +7,5 @@ language = "go"
 manifest_version = 2
 name = "early-hints"
 
-[setup.backends.origin]
-address = "http-me.fastly.dev"
-port = 443
+[local_server]
+backends.httpme.url = "https://http-me.fastly.dev"
