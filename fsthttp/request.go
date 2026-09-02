@@ -404,6 +404,11 @@ func (req *Request) FastlyMeta() (*FastlyMeta, error) {
 			return nil, fmt.Errorf("get OH fingerprint: %w", err)
 		}
 
+		fastlyMeta.ComplianceRegion, err = req.downstream.req.DownstreamComplianceRegion()
+		if err != nil {
+			return nil, fmt.Errorf("get compliance region: %w", err)
+		}
+
 		fastlyMeta.DDOSDetected, err = req.downstream.req.DownstreamDDOSDetected()
 		if err != nil {
 			return nil, fmt.Errorf("get ddos detected: %w", err)
@@ -1188,6 +1193,9 @@ type FastlyMeta struct {
 
 	// OH is a fingerprint of the client request's original headers
 	OH []byte
+
+	// Compliance region is the compliance region in which this request is being processed.
+	ComplianceRegion string
 
 	// DDOSDetected is true if the request was determined to be part of a DDOS attack.
 	DDOSDetected bool
