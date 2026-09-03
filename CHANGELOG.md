@@ -1,5 +1,18 @@
 ## Unreleased
 
+## 1.10.0 (2026-09-03)
+
+- fsthttp: add ComplianceRegion and RawHeaders to FastlyMeta
+- fsthttp: fix reusing body and response handles with StatusEarlyHints
+- internal: clean up abi type definitions
+- fsthttp: export SendErrorDetailTag
+- integration_tests: remove extra http requests from tests
+- shielding: add first byte and between bytes timeouts
+- fsthttp: add support for dynamic backend healthchecks
+- Makefile,tools.mod: tooling upgrades, fixes
+- fsthttp: allow removing support for net/http
+- internal: reduce memory usage by removing []byte -> string -> []byte conversions
+
 ## 1.9.0 (2026-08-07)
 
 - fsthttp: add Headless bot type
