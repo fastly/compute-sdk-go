@@ -1207,7 +1207,10 @@ type FastlyMeta struct {
 	// This will be zero if this is not a client request.
 	SandboxRequests int
 
-	// RawHeaders is the list of header names in order they were provided.
+	// RawHeaders is the client request's header names exactly as they were originally received.
+	//
+	// This includes both the original header name characters' cases, as well as the original order of
+	// the received headers.
 	RawHeaders []string
 }
 
