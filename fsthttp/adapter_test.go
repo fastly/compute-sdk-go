@@ -1,4 +1,4 @@
-//go:build !fastlynonethttp
+//go:build !fsthttp_no_net_http
 
 // This test file is in its own test package to avoid a circular
 // dependency between fsthttp and fsttest.

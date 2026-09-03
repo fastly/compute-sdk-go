@@ -85,6 +85,17 @@ Customizing cache behaviour with the readthrough cache is an opt-in feature; ena
 build = "tinygo build -target=wasip1 -tags=fsthttp_guest_cache -o bin/main.wasm ."
 ```
 
+## Removing Go net/http support
+
+For services not requiring compatibility with the Go standard library `net/http` package, you can add `-tags=fsthttp_no_net_http` to the build line of your `fastly.toml`.
+
+Removing support for `net/http` reduces both the memory usage and the startup latency of your service.
+
+```
+[scripts]
+build = "tinygo build -target=wasip1 -tags=fsthttp_no_net_http -o bin/main.wasm ."
+```
+
 ## TinyGo Recommended Packages
 
 TinyGo is still a new project, which has yet to get a version `1.0.0`. Therefore, the project is incomplete, but in its current state can still handle a lot of tasks on Compute. However, [some languages features of Go are still missing](https://tinygo.org/docs/reference/lang-support/).
