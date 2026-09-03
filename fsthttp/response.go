@@ -99,8 +99,7 @@ func (resp *Response) Trailers() (Header, error) {
 		k := string(keys.Bytes())
 		vals := abiBody.GetTrailerValues(k)
 		for vals.Next() {
-			v := string(vals.Bytes())
-			trailers.Add(k, v)
+			trailers.Add(k, string(vals.Bytes()))
 		}
 		if err := vals.Err(); err != nil {
 			return nil, fmt.Errorf("read trailer key %q: %w", k, err)
@@ -150,8 +149,7 @@ func newResponse(req *Request, backend string, abiResp *fastly.HTTPResponse, abi
 		k := string(keys.Bytes())
 		vals := abiResp.GetHeaderValues(k)
 		for vals.Next() {
-			v := string(vals.Bytes())
-			header.Add(k, v)
+			header.Add(k, string(vals.Bytes()))
 		}
 		if err := vals.Err(); err != nil {
 			return nil, fmt.Errorf("read header key %q: %w", k, err)

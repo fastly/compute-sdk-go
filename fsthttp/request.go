@@ -183,8 +183,7 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		k := string(keys.Bytes())
 		vals := abiReq.GetHeaderValues(k)
 		for vals.Next() {
-			v := string(vals.Bytes())
-			header.Add(k, v)
+			header.Add(k, string(vals.Bytes()))
 		}
 		if err := vals.Err(); err != nil {
 			return nil, fmt.Errorf("read header key %q: %w", k, err)
@@ -427,8 +426,7 @@ func (req *Request) FastlyMeta() (*FastlyMeta, error) {
 			headers := make([]string, 0, headerCount)
 			vals := req.downstream.req.DownstreamOriginalHeaderNames()
 			for vals.Next() {
-				v := string(vals.Bytes())
-				headers = append(headers, v)
+				headers = append(headers, string(vals.Bytes()))
 			}
 			if err := vals.Err(); err != nil {
 				return nil, fmt.Errorf("read original headers: %w", err)
