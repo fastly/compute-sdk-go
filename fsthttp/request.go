@@ -183,8 +183,7 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		k := string(keys.Bytes())
 		vals := abiReq.GetHeaderValues(k)
 		for vals.Next() {
-			v := string(vals.Bytes())
-			header.Add(k, v)
+			header.Add(k, string(vals.Bytes()))
 		}
 		if err := vals.Err(); err != nil {
 			return nil, fmt.Errorf("read header key %q: %w", k, err)
@@ -404,6 +403,11 @@ func (req *Request) FastlyMeta() (*FastlyMeta, error) {
 			return nil, fmt.Errorf("get OH fingerprint: %w", err)
 		}
 
+		fastlyMeta.ComplianceRegion, err = req.downstream.req.DownstreamComplianceRegion()
+		if err != nil {
+			return nil, fmt.Errorf("get compliance region: %w", err)
+		}
+
 		fastlyMeta.DDOSDetected, err = req.downstream.req.DownstreamDDOSDetected()
 		if err != nil {
 			return nil, fmt.Errorf("get ddos detected: %w", err)
@@ -413,6 +417,23 @@ func (req *Request) FastlyMeta() (*FastlyMeta, error) {
 		if err != nil {
 			return nil, fmt.Errorf("get fastly key is valid: %w", err)
 		}
+
+		headerCount, err := req.downstream.req.DownstreamOriginalHeaderCount()
+		if err != nil {
+			return nil, fmt.Errorf("get original headers: %w", err)
+		}
+		if headerCount != 0 {
+			headers := make([]string, 0, headerCount)
+			vals := req.downstream.req.DownstreamOriginalHeaderNames()
+			for vals.Next() {
+				headers = append(headers, string(vals.Bytes()))
+			}
+			if err := vals.Err(); err != nil {
+				return nil, fmt.Errorf("read original headers: %w", err)
+			}
+			fastlyMeta.RawHeaders = headers
+		}
+
 	}
 
 	req.fastlyMeta = fastlyMeta
@@ -1171,6 +1192,9 @@ type FastlyMeta struct {
 	// OH is a fingerprint of the client request's original headers
 	OH []byte
 
+	// Compliance region is the compliance region in which this request is being processed.
+	ComplianceRegion string
+
 	// DDOSDetected is true if the request was determined to be part of a DDOS attack.
 	DDOSDetected bool
 
@@ -1182,6 +1206,12 @@ type FastlyMeta struct {
 	// For example, if this is were 3, it means that this is the 3rd request handled by the sandbox.
 	// This will be zero if this is not a client request.
 	SandboxRequests int
+
+	// RawHeaders is the client request's header names exactly as they were originally received.
+	//
+	// This includes both the original header name characters' cases, as well as the original order of
+	// the received headers.
+	RawHeaders []string
 }
 
 // DecompressResponseOptions control the auto decompress response behaviour.
