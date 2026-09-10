@@ -120,20 +120,42 @@ func Open(name string) (*Store, error) {
 	return &Store{kvstore: kv}, nil
 }
 
-// Lookup fetches a key from the associated KV store.  If the key does not
-// exist, Lookup returns the sentinel error [ErrKeyNotFound].
-func (s *Store) Lookup(key string) (*Entry, error) {
-	h, err := s.kvstore.Lookup(key)
-	if err != nil {
-		return nil, mapFastlyErr(err)
-	}
+// PendingEntry represents an in-progress Lookup operation.
+type PendingEntry struct {
+	kvstore *fastly.KVStore
+	h       fastly.KVStoreLookupHandle
+}
 
-	result, err := s.kvstore.LookupWait(h)
+// Wait blocks until the pending lookup completes, returning its result.
+func (p *PendingEntry) Wait() (*Entry, error) {
+	result, err := p.kvstore.LookupWait(p.h)
 	if err != nil {
 		return nil, mapFastlyErr(err)
 	}
 
 	return &Entry{Reader: result.Body, meta: result.Meta, generation: result.Generation}, nil
+}
+
+// LookupAsync begins fetching a key from the associated KV store, returning
+// a [PendingEntry] whose Wait method returns the eventual result.
+func (s *Store) LookupAsync(key string) (*PendingEntry, error) {
+	h, err := s.kvstore.Lookup(key)
+	if err != nil {
+		return nil, mapFastlyErr(err)
+	}
+
+	return &PendingEntry{kvstore: s.kvstore, h: h}, nil
+}
+
+// Lookup fetches a key from the associated KV store.  If the key does not
+// exist, Lookup returns the sentinel error [ErrKeyNotFound].
+func (s *Store) Lookup(key string) (*Entry, error) {
+	p, err := s.LookupAsync(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.Wait()
 }
 
 // Insert adds a key to the associated KV store.
@@ -158,8 +180,24 @@ type InsertConfig struct {
 	IfGenerationMatch uint64
 }
 
-// Insert adds a key to the associated KV store.
-func (s *Store) InsertWithConfig(key string, value io.Reader, config *InsertConfig) error {
+// PendingInsert represents an in-progress Insert operation.
+type PendingInsert struct {
+	kvstore *fastly.KVStore
+	h       fastly.KVStoreInsertHandle
+}
+
+// Wait blocks until the pending insert completes.
+func (p *PendingInsert) Wait() error {
+	if err := p.kvstore.InsertWait(p.h); err != nil {
+		return mapFastlyErr(err)
+	}
+	return nil
+}
+
+// InsertWithConfigAsync begins adding a key to the associated KV store,
+// returning a [PendingInsert] whose Wait method returns the eventual error,
+// if any.
+func (s *Store) InsertWithConfigAsync(key string, value io.Reader, config *InsertConfig) (*PendingInsert, error) {
 	var abiConf fastly.KVInsertConfig
 	if config != nil {
 		abiConf.Mode(config.Mode)
@@ -184,37 +222,64 @@ func (s *Store) InsertWithConfig(key string, value io.Reader, config *InsertConf
 		var err error
 		body, err = fastly.NewHTTPBody()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if _, err := io.Copy(body, value); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	h, err := s.kvstore.Insert(key, body, &abiConf)
 	if err != nil {
-		return mapFastlyErr(err)
+		return nil, mapFastlyErr(err)
 	}
 
-	err = s.kvstore.InsertWait(h)
+	return &PendingInsert{kvstore: s.kvstore, h: h}, nil
+}
+
+// Insert adds a key to the associated KV store.
+func (s *Store) InsertWithConfig(key string, value io.Reader, config *InsertConfig) error {
+	p, err := s.InsertWithConfigAsync(key, value, config)
 	if err != nil {
+		return err
+	}
+
+	return p.Wait()
+}
+
+// PendingDelete represents an in-progress Delete operation.
+type PendingDelete struct {
+	kvstore *fastly.KVStore
+	h       fastly.KVStoreDeleteHandle
+}
+
+// Wait blocks until the pending delete completes.
+func (p *PendingDelete) Wait() error {
+	if err := p.kvstore.DeleteWait(p.h); err != nil {
 		return mapFastlyErr(err)
 	}
 	return nil
 }
 
-// Delete removes a key from the associated KV store.
-func (s *Store) Delete(key string) error {
+// DeleteAsync begins removing a key from the associated KV store, returning
+// a [PendingDelete] whose Wait method returns the eventual error, if any.
+func (s *Store) DeleteAsync(key string) (*PendingDelete, error) {
 	h, err := s.kvstore.Delete(key)
 	if err != nil {
-		return mapFastlyErr(err)
+		return nil, mapFastlyErr(err)
 	}
 
-	err = s.kvstore.DeleteWait(h)
+	return &PendingDelete{kvstore: s.kvstore, h: h}, nil
+}
+
+// Delete removes a key from the associated KV store.
+func (s *Store) Delete(key string) error {
+	p, err := s.DeleteAsync(key)
 	if err != nil {
-		return mapFastlyErr(err)
+		return err
 	}
-	return nil
+
+	return p.Wait()
 }
 
 type ListConsistency = fastly.KVListMode
