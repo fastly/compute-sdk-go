@@ -1,5 +1,7 @@
 ## Unreleased
 
+- fsthttp: fall back to stale-if-error response when BeforeSend hook or suggested backend request fails
+
 ## 1.10.0 (2026-09-03)
 
 - fsthttp: add ComplianceRegion and RawHeaders to FastlyMeta
