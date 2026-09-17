@@ -724,6 +724,10 @@ func HTTPCacheGetState(h *HTTPCacheHandle) (CacheLookupState, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
+func HTTPCacheAwaitReady(h *HTTPCacheHandle, timeoutMs uint32) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
 func HTTPCacheGetLength(h *HTTPCacheHandle) (httpCacheObjectLength, error) {
 	return 0, fmt.Errorf("not implemented")
 }

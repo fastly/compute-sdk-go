@@ -658,7 +658,7 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 			fastly.HTTPCacheTransactionClose(cacheHandle)
 		}
 	}()
-	state, err := httpCacheWait(cacheHandle)
+	state, err := httpCacheWait(ctx, cacheHandle, req.CacheOptions.LookupTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -976,6 +976,7 @@ func (req *Request) setABIRequestOptions() error {
 		TTL:                  req.CacheOptions.TTL,
 		StaleWhileRevalidate: req.CacheOptions.StaleWhileRevalidate,
 		SurrogateKey:         req.CacheOptions.SurrogateKey,
+		LookupTimeout:        req.CacheOptions.LookupTimeout,
 	}
 
 	if err := abiReq.SetCacheOverride(cacheOpts); err != nil {
@@ -1057,6 +1058,10 @@ type CacheOptions struct {
 	// Cache key to use in lieu of the automatically-generated cache key based on the request's
 	// properties.
 	OverrideKey string
+
+	// LookupTimeout bounds how long this request will wait for a cache
+	// lookup to resolve.
+	LookupTimeout time.Duration
 
 	// Sets a callback to be invoked if a request is going all the way to a
 	// backend, allowing the request to be modified beforehand.

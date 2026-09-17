@@ -439,7 +439,8 @@ func (r multiValueCursorResult) toCursor() multiValueCursor { return multiValueC
 //		  $pass
 //		  $ttl
 //		  $stale_while_revalidate
-//		  $pci))
+//		  $pci
+//		  $lookup_timeout))
 type cacheOverrideTag uint32
 
 const (
@@ -448,6 +449,7 @@ const (
 	cacheOverrideTagTTL                  cacheOverrideTag = 0b0000_0010 // $ttl
 	cacheOverrideTagStaleWhileRevalidate cacheOverrideTag = 0b0000_0100 // $stale_while_revalidate
 	cacheOverrideTagPCI                  cacheOverrideTag = 0b0000_1000 // $pci
+	cacheOverrideTagLookupTimeout        cacheOverrideTag = 0b0001_0000 // $lookup_timeout
 )
 
 // CacheOverrideOptions collects specific, caching-related options for outbound
@@ -459,6 +461,7 @@ type CacheOverrideOptions struct {
 	TTL                  uint32 // seconds
 	StaleWhileRevalidate uint32 // seconds
 	SurrogateKey         string
+	LookupTimeout        time.Duration
 }
 
 // multiValueHostcall partially models hostcalls that provide an iterator-like

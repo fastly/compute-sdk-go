@@ -1,12 +1,18 @@
 package fsthttp
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/fastly"
 )
+
+// cacheLookupSelectTimeout bounds how long each wait for the cache lookup
+// to become ready blocks before re-checking the overall LookupTimeout
+// deadline and context cancellation.
+const cacheLookupSelectTimeout = 100 * time.Millisecond
 
 // CandidateResponse is a response from a backend that is a candidate for caching.
 type CandidateResponse struct {
@@ -159,7 +165,44 @@ const (
 	cacheStorageActionInvalid = 0xffff
 )
 
-func httpCacheWait(c *fastly.HTTPCacheHandle) (fastly.CacheLookupState, error) {
+func httpCacheWait(ctx context.Context, c *fastly.HTTPCacheHandle, timeout time.Duration) (fastly.CacheLookupState, error) {
+	if timeout > 0 {
+		deadline := time.Now().Add(timeout)
+
+		for {
+			remaining := time.Until(deadline)
+			if remaining <= 0 {
+				return 0, fastly.FastlyError{
+					Status: fastly.FastlyStatusError,
+					Detail: SendError{Tag: SendErrorHTTPResponseTimeout},
+				}
+			}
+
+			interval := cacheLookupSelectTimeout
+			if remaining < interval {
+				interval = remaining
+			}
+			intervalMs := interval.Milliseconds()
+			if intervalMs < 1 {
+				intervalMs = 1
+			}
+
+			ready, err := fastly.HTTPCacheAwaitReady(c, uint32(intervalMs))
+			if err != nil {
+				return 0, fmt.Errorf("await cache lookup: %w", err)
+			}
+			if ready {
+				break
+			}
+
+			select {
+			case <-ctx.Done():
+				return 0, ctx.Err()
+			default:
+			}
+		}
+	}
+
 	state, err := fastly.HTTPCacheGetState(c)
 	if err != nil {
 		return 0, fmt.Errorf("get state: %w", err)
