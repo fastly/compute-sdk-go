@@ -178,16 +178,8 @@ func httpCacheWait(ctx context.Context, c *fastly.HTTPCacheHandle, timeout time.
 				}
 			}
 
-			interval := cacheLookupSelectTimeout
-			if remaining < interval {
-				interval = remaining
-			}
-			intervalMs := interval.Milliseconds()
-			if intervalMs < 1 {
-				intervalMs = 1
-			}
-
-			ready, err := fastly.HTTPCacheAwaitReady(c, uint32(intervalMs))
+			intervalMs := min(remaining, cacheLookupSelectTimeout).Milliseconds()
+			ready, err := fastly.HTTPCacheAwaitReady(c, uint32(max(1, intervalMs))) // don't pass 0, that blocks until ready.
 			if err != nil {
 				return 0, fmt.Errorf("await cache lookup: %w", err)
 			}
