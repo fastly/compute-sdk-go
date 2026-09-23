@@ -623,6 +623,24 @@ func (req *Request) sendToImageOpto(ctx context.Context, backend string) (*Respo
 
 var guestCacheSWRPending sync.WaitGroup
 
+// serveStaleOnError substitutes the transaction's stale-if-error response, masking origErr on
+// it, when state indicates one is available. Otherwise it returns origErr unchanged.
+func serveStaleOnError(cacheHandle *fastly.HTTPCacheHandle, req *Request, backend string, state fastly.CacheLookupState, origErr error) (*Response, error) {
+	if !state.Has(fastly.CacheLookupStateUsableIfError) {
+		return nil, origErr
+	}
+
+	// Substitute stale-if-error response; let anyone else in the collapse know as well.
+	fastly.HTTPCacheTransactionChooseStale(cacheHandle)
+	resp, err := httpCacheGetFoundResponse(cacheHandle, req, backend, true, false)
+	if err != nil {
+		return nil, err
+	}
+	resp.maskedError = origErr
+	resp.updateFastlyCacheHeaders(req)
+	return resp, nil
+}
+
 func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Response, error) {
 	// use guest cache
 
@@ -722,25 +740,12 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 	if state.Has(fastly.CacheLookupStateMustInsertOrUpdate) {
 		pending, err := req.sendAsyncForCaching(ctx, cacheHandle, backend)
 		if err != nil {
-			return nil, err
+			return serveStaleOnError(cacheHandle, req, backend, state, err)
 		}
 
 		candidateResp, err := newCandidateFromPendingBackendCaching(pending)
 		if err != nil {
-			if state.Has(fastly.CacheLookupStateUsableIfError) {
-				// Substitute stale-if-error response; let anyone else in the collapse know as
-				// well.
-				fastly.HTTPCacheTransactionChooseStale(cacheHandle)
-				resp, foundErr := httpCacheGetFoundResponse(cacheHandle, req, backend, true, false)
-				if foundErr != nil {
-					return nil, foundErr
-				}
-				resp.maskedError = err
-				resp.updateFastlyCacheHeaders(req)
-				return resp, nil
-			}
-
-			return nil, err
+			return serveStaleOnError(cacheHandle, req, backend, state, err)
 		}
 
 		resp, err := candidateResp.applyAndStreamBack(req)

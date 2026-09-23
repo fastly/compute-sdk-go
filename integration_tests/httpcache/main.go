@@ -31,6 +31,7 @@ func main() {
 	}{
 		{"testSendStatus", testSendStatus},
 		{"testBeforeSendError", testBeforeSendError},
+		{"testBeforeSendStaleIfError", testBeforeSendStaleIfError},
 		{"testBeforeSendPass", testBeforeSendPass},
 		{"testAfterSendPass", testAfterSendPass},
 		{"testBeforeSendAddHeader", testBeforeSendAddHeader},
@@ -183,6 +184,62 @@ func testBeforeSendError(ctx context.Context) error {
 	_, err := r.Send(ctx, backend)
 	if !errors.Is(err, errBeforeSend) {
 		return fmt.Errorf("unexpected error: got %v, want %v", err, errBeforeSend)
+	}
+
+	return nil
+}
+
+// testBeforeSendStaleIfError verifies that a BeforeSend hook failure falls back to a
+// stale-if-error response, the same way an AfterSend hook failure does (see
+// testAfterSendError). Without the fix, Send returns the BeforeSend error directly even
+// though a usable stale response is available.
+func testBeforeSendStaleIfError(ctx context.Context) error {
+	r := getTestReq("", nil, nil)
+
+	r.CacheOptions.AfterSend = func(candidate *fsthttp.CandidateResponse) error {
+		candidate.SetTTL(1)
+		candidate.SetStaleIfError(3600)
+		candidate.SetCacheable()
+		return nil
+	}
+
+	r2 := r.Clone()
+
+	resp, err := r.Send(ctx, backend)
+	if err != nil {
+		return err
+	}
+
+	if got, want := resp.Header.Get("x-cache"), "MISS"; got != want {
+		return fmt.Errorf("resp.Header.Get(%v)=%v, want %v", "x-cache", got, want)
+	}
+
+	origBody := decodeBody(resp.Body)
+
+	// let the object go stale, but stay inside its stale-if-error window
+	time.Sleep(2 * time.Second)
+
+	errBeforeSend := errors.New("before send error")
+	r2.CacheOptions.BeforeSend = func(*fsthttp.Request) error {
+		return errBeforeSend
+	}
+
+	resp2, err := r2.Send(ctx, backend)
+	if err != nil {
+		return fmt.Errorf("unexpected Send error: %v, want stale-if-error fallback instead", err)
+	}
+
+	if got, want := resp2.MaskedError(), errBeforeSend; !errors.Is(got, want) {
+		return fmt.Errorf("resp2.MaskedError()=%v, want %v", got, want)
+	}
+
+	if got, want := resp2.StatusCode, resp.StatusCode; got != want {
+		return fmt.Errorf("resp2.StatusCode=%v, want %v", got, want)
+	}
+
+	staleBody := decodeBody(resp2.Body)
+	if got, want := staleBody.URL, origBody.URL; got != want {
+		return fmt.Errorf("resp2 body URL=%v, want stale body URL=%v", got, want)
 	}
 
 	return nil

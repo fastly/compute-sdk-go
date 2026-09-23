@@ -1,0 +1,20 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["t.bojer@shopware.com"]
+description = "Proxy gRPC requests to a backend service"
+language = "go"
+manifest_version = 3
+name = "example"
+service_id = ""
+
+[local_server]
+[local_server.backends]
+[local_server.backends.grpc_origin]
+url = "http://localhost:9999"
+grpc = true # needs to be set to true for gRPC backends
+
+[scripts]
+  build = "go build -o bin/main.wasm ."
+  env_vars = ["GOARCH=wasm", "GOOS=wasip1"]
+  post_init = "go get github.com/fastly/compute-sdk-go@latest"
