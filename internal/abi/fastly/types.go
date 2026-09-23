@@ -626,18 +626,18 @@ const (
 //	(typename $kv_store_list_handle (handle))
 type (
 	kvstoreHandle       handle
-	kvstoreLookupHandle handle
-	kvstoreInsertHandle handle
-	kvstoreDeleteHandle handle
-	kvstoreListHandle   handle
+	KVStoreLookupHandle handle
+	KVStoreInsertHandle handle
+	KVStoreDeleteHandle handle
+	KVStoreListHandle   handle
 )
 
 const (
 	invalidKVStoreHandle  = kvstoreHandle(math.MaxUint32 - 1)
-	invalidKVLookupHandle = kvstoreLookupHandle(math.MaxUint32 - 1)
-	invalidKVInsertHandle = kvstoreInsertHandle(math.MaxUint32 - 1)
-	invalidKVDeleteHandle = kvstoreDeleteHandle(math.MaxUint32 - 1)
-	invalidKVListHandle   = kvstoreListHandle(math.MaxUint32 - 1)
+	invalidKVLookupHandle = KVStoreLookupHandle(math.MaxUint32 - 1)
+	invalidKVInsertHandle = KVStoreInsertHandle(math.MaxUint32 - 1)
+	invalidKVDeleteHandle = KVStoreDeleteHandle(math.MaxUint32 - 1)
+	invalidKVListHandle   = KVStoreListHandle(math.MaxUint32 - 1)
 )
 
 // KVStore represents a Fastly kv store, a collection of key/value pairs.

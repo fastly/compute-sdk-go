@@ -496,35 +496,35 @@ func OpenKVStore(name string) (*KVStore, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (o *KVStore) Lookup(key string) (kvstoreLookupHandle, error) {
+func (o *KVStore) Lookup(key string) (KVStoreLookupHandle, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-func (o *KVStore) LookupWait(h kvstoreLookupHandle) (KVLookupResult, error) {
+func (o *KVStore) LookupWait(h KVStoreLookupHandle) (KVLookupResult, error) {
 	return KVLookupResult{}, fmt.Errorf("not implemented")
 }
 
-func (o *KVStore) Insert(key string, body *HTTPBody, config *KVInsertConfig) (kvstoreInsertHandle, error) {
+func (o *KVStore) Insert(key string, body *HTTPBody, config *KVInsertConfig) (KVStoreInsertHandle, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-func (o *KVStore) InsertWait(h kvstoreInsertHandle) error {
+func (o *KVStore) InsertWait(h KVStoreInsertHandle) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (o *KVStore) Delete(key string) (kvstoreDeleteHandle, error) {
+func (o *KVStore) Delete(key string) (KVStoreDeleteHandle, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-func (o *KVStore) DeleteWait(h kvstoreDeleteHandle) error {
+func (o *KVStore) DeleteWait(h KVStoreDeleteHandle) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (kv *KVStore) List(config *KVListConfig) (kvstoreListHandle, error) {
+func (kv *KVStore) List(config *KVListConfig) (KVStoreListHandle, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-func (kv *KVStore) ListWait(listH kvstoreListHandle) (*HTTPBody, error) {
+func (kv *KVStore) ListWait(listH KVStoreListHandle) (*HTTPBody, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
