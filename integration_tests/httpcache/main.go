@@ -35,6 +35,7 @@ func main() {
 		{"testBeforeSendPass", testBeforeSendPass},
 		{"testAfterSendPass", testAfterSendPass},
 		{"testBeforeSendAddHeader", testBeforeSendAddHeader},
+		{"testBeforeSendHeadersFromHostcall", testBeforeSendHeadersFromHostcall},
 		{"testAfterSendError", testAfterSendError},
 		{"testAfterSendCandidateResponsePropertiesUncached", testAfterSendCandidateResponsePropertiesUncached},
 		{"testAfterSendCandidateResponsePropertiesCached", testAfterSendCandidateResponsePropertiesCached},
@@ -296,6 +297,75 @@ func testBeforeSendAddHeader(ctx context.Context) error {
 
 	if got, want := j.Headers[headerKey], headerVal; got != want {
 		return fmt.Errorf("bad added test header: got=%v, want=%v", got, want)
+	}
+
+	return nil
+}
+
+func testBeforeSendHeadersFromHostcall(ctx context.Context) error {
+	r := getTestReq("", nil, nil)
+
+	const inm = `"abc123"`
+
+	// Forward a Range header and an If-None-Match header, the way a proxying
+	// service would.
+	r.Header.Set("range", "bytes=0-3")
+	r.Header.Set("if-none-match", inm)
+
+	var calledBeforeSend bool
+	sawRange := "not checked"
+	sawINM := "not checked"
+
+	r.CacheOptions.BeforeSend = func(breq *fsthttp.Request) error {
+		calledBeforeSend = true
+
+		sawRange = breq.Header.Get("range")
+		if sawRange == "" {
+			sawRange = "none"
+		}
+
+		sawINM = breq.Header.Get("if-none-match")
+		if sawINM == "" {
+			sawINM = "none"
+		}
+
+		breq.Header.Del("range")
+		breq.Header.Del("if-none-match")
+		return nil
+	}
+
+	resp, err := r.Send(ctx, backend)
+	if err != nil {
+		return fmt.Errorf("error during send: %v", err)
+	}
+
+	if !calledBeforeSend {
+		return errors.New("calledBeforeSend=false")
+	}
+
+	// BeforeSend must see the suggested backend request's actual headers, not
+	// the original outgoing request's. This is a cache miss with nothing
+	// stored to revalidate against, so the cache builds the suggested backend
+	// request from scratch: it strips Range (to fetch the full object) and
+	// does not carry over the guest's own If-None-Match (it only adds its own
+	// for an actual revalidation), so both must be absent here, not the
+	// values we set on the original request.
+	if got, want := sawRange, "none"; got != want {
+		return fmt.Errorf("BeforeSend saw range=%q, want %q (host should unrange the suggested backend request)", got, want)
+	}
+
+	if got, want := sawINM, "none"; got != want {
+		return fmt.Errorf("BeforeSend saw if-none-match=%q, want %q (host should not carry over the original request's If-None-Match on a cache miss)", got, want)
+	}
+
+	// Headers deleted inside BeforeSend must not reach the backend.
+	j := decodeBody(resp.Body)
+
+	if got, ok := j.Headers["range"]; ok {
+		return fmt.Errorf("backend received range=%q, want it removed", got)
+	}
+	if got, ok := j.Headers["if-none-match"]; ok {
+		return fmt.Errorf("backend received if-none-match=%q, want it removed", got)
 	}
 
 	return nil

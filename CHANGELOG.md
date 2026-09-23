@@ -1,5 +1,6 @@
 ## Unreleased
 
+- fsthttp: fix BeforeSend receiving the original request's headers instead of the suggested backend request's (#305)
 - fsthttp: fall back to stale-if-error response when BeforeSend hook or suggested backend request fails
 
 ## 1.10.0 (2026-09-03)

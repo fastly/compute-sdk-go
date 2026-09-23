@@ -156,6 +156,25 @@ func NewRequest(method string, uri string, body io.Reader) (*Request, error) {
 // _parseRequestURI can be set by SetParseRequestURI
 var _parseRequestURI func(string) (*url.URL, error) = url.ParseRequestURI
 
+func headersFromHandle(abiReq *fastly.HTTPRequest) (Header, error) {
+	header := NewHeader()
+	keys := abiReq.GetHeaderNames()
+	for keys.Next() {
+		k := string(keys.Bytes())
+		vals := abiReq.GetHeaderValues(k)
+		for vals.Next() {
+			header.Add(k, string(vals.Bytes()))
+		}
+		if err := vals.Err(); err != nil {
+			return nil, fmt.Errorf("read header key %q: %w", k, err)
+		}
+	}
+	if err := keys.Err(); err != nil {
+		return nil, fmt.Errorf("read header keys: %w", err)
+	}
+	return header, nil
+}
+
 func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (*Request, error) {
 	method, err := abiReq.GetMethod()
 	if err != nil {
@@ -177,20 +196,9 @@ func newClientRequest(abiReq *fastly.HTTPRequest, abiReqBody *fastly.HTTPBody) (
 		return nil, fmt.Errorf("get protocol version: %w", err)
 	}
 
-	header := NewHeader()
-	keys := abiReq.GetHeaderNames()
-	for keys.Next() {
-		k := string(keys.Bytes())
-		vals := abiReq.GetHeaderValues(k)
-		for vals.Next() {
-			header.Add(k, string(vals.Bytes()))
-		}
-		if err := vals.Err(); err != nil {
-			return nil, fmt.Errorf("read header key %q: %w", k, err)
-		}
-	}
-	if err := keys.Err(); err != nil {
-		return nil, fmt.Errorf("read header keys: %w", err)
+	header, err := headersFromHandle(abiReq)
+	if err != nil {
+		return nil, err
 	}
 
 	remoteAddr, err := abiReq.DownstreamClientIPAddr()
@@ -766,7 +774,7 @@ func (req *Request) sendWithGuestCache(ctx context.Context, backend string) (*Re
 	return resp, nil
 }
 
-func newRequestFromHandle(reqh *fastly.HTTPRequest, body io.ReadCloser, headers Header, options CacheOptions) (*Request, error) {
+func newRequestFromHandle(reqh *fastly.HTTPRequest, body io.ReadCloser, options CacheOptions) (*Request, error) {
 	method, err := reqh.GetMethod()
 	if err != nil {
 		return nil, err
@@ -778,9 +786,14 @@ func newRequestFromHandle(reqh *fastly.HTTPRequest, body io.ReadCloser, headers 
 
 	req, _ := NewRequest(method, url, body)
 	req.CacheOptions = options
-	req.Header = headers
 	req.abi.req = reqh
 	req.abi.body, _ = abiBodyFrom(body)
+
+	header, err := headersFromHandle(reqh)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = header
 
 	return req, nil
 }
@@ -799,15 +812,29 @@ func (req *Request) sendAsyncForCaching(ctx context.Context, cacheHandle *fastly
 		return nil, fmt.Errorf("get suggested backend request: %w", err)
 	}
 
-	suggReq, err := newRequestFromHandle(reqh, req.Body, req.Header, req.CacheOptions)
+	suggReq, err := newRequestFromHandle(reqh, req.Body, req.CacheOptions)
 	if err != nil {
 		return nil, err
 	}
 
 	if suggReq.CacheOptions.BeforeSend != nil {
+		beforeKeys := suggReq.Header.Keys()
+
 		if err := suggReq.CacheOptions.BeforeSend(suggReq); err != nil {
 			// TODO(dgryski): sentinel ErrReject ?
 			return nil, err
+		}
+
+		// setABIRequestOptions (below) can only add/overwrite headers on the
+		// suggested request's handle; it can't express a deletion. If BeforeSend
+		// removed a header the host had added (e.g. If-None-Match for
+		// revalidation), remove it from the handle too.
+		for _, k := range beforeKeys {
+			if len(suggReq.Header.Values(k)) == 0 {
+				if err := suggReq.abi.req.RemoveHeader(k); err != nil {
+					return nil, fmt.Errorf("remove header %q: %w", k, err)
+				}
+			}
 		}
 	}
 
