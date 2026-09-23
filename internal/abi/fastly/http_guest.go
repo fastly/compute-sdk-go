@@ -8,7 +8,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"net"
+	"time"
 
 	"github.com/fastly/compute-sdk-go/internal/abi/prim"
 )
@@ -165,43 +167,38 @@ func BodyDownstreamGet() (*HTTPRequest, *HTTPBody, error) {
 
 // witx:
 //
-//	(@interface func (export "cache_override_set")
-//	  (param $h $request_handle)
-//	  (param $tag $cache_override_tag)
-//	  (param $ttl u32)
-//	  (param $stale_while_revalidate u32)
-//	  (result $err $fastly_status)
+//	(typename $cache_override_config
+//	    (record
+//	        (field $ttl u32)
+//	        (field $stale_while_revalidate u32)
+//	        (field $surrogate_keys_data (@witx pointer u8))
+//	        (field $surrogate_keys_len u32)
+//	        (field $lookup_timeout_ms u32)
+//	    )
 //	)
-//
-//go:wasmimport fastly_http_req cache_override_set
-//go:noescape
-//lint:ignore U1000 deprecated in favor of V2
-func fastlyHTTPReqCacheOverrideSet(
-	h requestHandle,
-	tag cacheOverrideTag,
-	ttl prim.U32,
-	staleWhileRevalidate prim.U32,
-) FastlyStatus
+type cacheOverrideConfig struct {
+	ttl                  prim.U32
+	staleWhileRevalidate prim.U32
+	surrogateKeysData    prim.Pointer[prim.U8]
+	surrogateKeysLen     prim.Usize
+	lookupTimeoutMs      prim.U32
+}
 
 // witx:
 //
-//	(@interface func (export "cache_override_v2_set")
+//	(@interface func (export "cache_override_v3_set")
 //	  (param $h $request_handle)
 //	  (param $tag $cache_override_tag)
-//	  (param $ttl u32)
-//	  (param $stale_while_revalidate u32)
-//	  (param $sk (array u8))
+//	  (param $config (@witx pointer $cache_override_config))
 //	  (result $err $fastly_status)
 //	)
 //
-//go:wasmimport fastly_http_req cache_override_v2_set
+//go:wasmimport fastly_http_req cache_override_v3_set
 //go:noescape
-func fastlyHTTPReqCacheOverrideV2Set(
+func fastlyHTTPReqCacheOverrideV3Set(
 	h requestHandle,
 	tag cacheOverrideTag,
-	ttl prim.U32,
-	staleWhileRevalidate prim.U32,
-	skData prim.Pointer[prim.U8], skLen prim.Usize,
+	config prim.Pointer[cacheOverrideConfig],
 ) FastlyStatus
 
 // SetCacheOverride sets caching-related flags on the request.
@@ -224,15 +221,35 @@ func (r *HTTPRequest) SetCacheOverride(options CacheOverrideOptions) error {
 		tag |= cacheOverrideTagStaleWhileRevalidate
 	}
 
+	if options.LookupTimeout > 0 {
+		tag |= cacheOverrideTagLookupTimeout
+	}
+
 	options_SurrogateKeyBuffer := prim.NewReadBufferFromString(options.SurrogateKey).ArrayU8()
 
-	return fastlyHTTPReqCacheOverrideV2Set(
+	config := cacheOverrideConfig{
+		ttl:                  prim.U32(options.TTL),
+		staleWhileRevalidate: prim.U32(options.StaleWhileRevalidate),
+		surrogateKeysData:    options_SurrogateKeyBuffer.Data,
+		surrogateKeysLen:     options_SurrogateKeyBuffer.Len,
+		lookupTimeoutMs:      saturatingMillis(options.LookupTimeout),
+	}
+
+	return fastlyHTTPReqCacheOverrideV3Set(
 		r.h,
 		tag,
-		prim.U32(options.TTL),
-		prim.U32(options.StaleWhileRevalidate),
-		options_SurrogateKeyBuffer.Data, options_SurrogateKeyBuffer.Len,
+		prim.ToPointer(&config),
 	).toError()
+}
+
+// saturatingMillis converts d to whole milliseconds, clamping to
+// math.MaxUint32 instead of overflowing for very large durations.
+func saturatingMillis(d time.Duration) prim.U32 {
+	ms := d.Milliseconds()
+	if ms > math.MaxUint32 {
+		return math.MaxUint32
+	}
+	return prim.U32(ms)
 }
 
 // witx:
