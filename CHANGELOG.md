@@ -1,7 +1,9 @@
-## Unreleased
+## 1.11.0 (2026-10-06)
 
 - fsthttp: fix BeforeSend receiving the original request's headers instead of the suggested backend request's (#305)
 - fsthttp: fall back to stale-if-error response when BeforeSend hook or suggested backend request fails
+- fsthttp: support timeouts for http cache lookups
+- examples: add grpc-proxy example
 
 ## 1.10.0 (2026-09-03)
 
