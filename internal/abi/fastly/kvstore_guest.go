@@ -65,18 +65,18 @@ func fastlyKVStoreLookup(
 	keyData prim.Pointer[prim.U8], keyLen prim.Usize,
 	mask kvLookupConfigMask,
 	config prim.Pointer[kvLookupConfig],
-	lookupHandle prim.Pointer[kvstoreLookupHandle],
+	lookupHandle prim.Pointer[KVStoreLookupHandle],
 ) FastlyStatus
 
 // Lookup returns a handle to a pending lookup operation
-func (kv *KVStore) Lookup(key string) (kvstoreLookupHandle, error) {
+func (kv *KVStore) Lookup(key string) (KVStoreLookupHandle, error) {
 	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
 
 	// empty
 	var mask kvLookupConfigMask
 	var conf kvLookupConfig
 
-	var lookupHandle kvstoreLookupHandle = invalidKVLookupHandle
+	var lookupHandle KVStoreLookupHandle = invalidKVLookupHandle
 
 	if err := fastlyKVStoreLookup(
 		kv.h,
@@ -113,7 +113,7 @@ func (kv *KVStore) Lookup(key string) (kvstoreLookupHandle, error) {
 //go:wasmimport fastly_kv_store lookup_wait_v2
 //go:noescape
 func fastlyKVStoreLookupWait(
-	h kvstoreLookupHandle,
+	h KVStoreLookupHandle,
 	b prim.Pointer[bodyHandle],
 	metaData prim.Pointer[prim.U8], metaLen prim.Usize,
 	nwritten prim.Pointer[prim.Usize],
@@ -122,7 +122,7 @@ func fastlyKVStoreLookupWait(
 ) FastlyStatus
 
 // LookupWait returns a lookup response for a pending lookup handle
-func (kv *KVStore) LookupWait(h kvstoreLookupHandle) (KVLookupResult, error) {
+func (kv *KVStore) LookupWait(h KVStoreLookupHandle) (KVLookupResult, error) {
 	body := HTTPBody{h: invalidBodyHandle}
 
 	meta := prim.NewWriteBuffer(kvstoreMetadataMaxBufLen)
@@ -174,18 +174,18 @@ func fastlyKVStoreInsert(
 	b bodyHandle,
 	mask kvInsertConfigMask,
 	config prim.Pointer[kvInsertConfig],
-	insertHandle prim.Pointer[kvstoreInsertHandle],
+	insertHandle prim.Pointer[KVStoreInsertHandle],
 ) FastlyStatus
 
 // Insert returns a handle to a pending key/value pair insertion.
-func (k *KVStore) Insert(key string, body *HTTPBody, config *KVInsertConfig) (kvstoreInsertHandle, error) {
+func (k *KVStore) Insert(key string, body *HTTPBody, config *KVInsertConfig) (KVStoreInsertHandle, error) {
 	if config == nil {
 		config = &KVInsertConfig{}
 	}
 
 	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
 
-	var insertHandle kvstoreInsertHandle = invalidKVInsertHandle
+	var insertHandle KVStoreInsertHandle = invalidKVInsertHandle
 
 	if err := fastlyKVStoreInsert(
 		k.h,
@@ -216,12 +216,12 @@ func (k *KVStore) Insert(key string, body *HTTPBody, config *KVInsertConfig) (kv
 //go:wasmimport fastly_kv_store insert_wait
 //go:noescape
 func fastlyKVStoreInsertWait(
-	h kvstoreInsertHandle,
+	h KVStoreInsertHandle,
 	kvErr prim.Pointer[KVError],
 ) FastlyStatus
 
 // InsertWait returns the status of the given pending insertion handle.
-func (kv *KVStore) InsertWait(h kvstoreInsertHandle) error {
+func (kv *KVStore) InsertWait(h KVStoreInsertHandle) error {
 	var kvErr KVError = KVErrorUninitialized
 
 	if err := fastlyKVStoreInsertWait(
@@ -256,17 +256,17 @@ func fastlyKVStoreDelete(
 	keyData prim.Pointer[prim.U8], keyLen prim.Usize,
 	mask kvDeleteConfigMask,
 	config prim.Pointer[kvDeleteConfig],
-	deleteHandle prim.Pointer[kvstoreDeleteHandle],
+	deleteHandle prim.Pointer[KVStoreDeleteHandle],
 ) FastlyStatus
 
 // Delete returns a handle to a pending key/value removal.
-func (kv *KVStore) Delete(key string) (kvstoreDeleteHandle, error) {
+func (kv *KVStore) Delete(key string) (KVStoreDeleteHandle, error) {
 	keyBuffer := prim.NewReadBufferFromString(key).Wstring()
 
 	var mask kvDeleteConfigMask
 	var config kvDeleteConfig
 
-	var deleteHandle kvstoreDeleteHandle = invalidKVDeleteHandle
+	var deleteHandle KVStoreDeleteHandle = invalidKVDeleteHandle
 
 	if err := fastlyKVStoreDelete(
 		kv.h,
@@ -297,12 +297,12 @@ func (kv *KVStore) Delete(key string) (kvstoreDeleteHandle, error) {
 //go:wasmimport fastly_kv_store delete_wait
 //go:noescape
 func fastlyKVStoreDeleteWait(
-	h kvstoreDeleteHandle,
+	h KVStoreDeleteHandle,
 	kvErr prim.Pointer[KVError],
 ) FastlyStatus
 
 // DeleteWait completes the pending deletion for the given handle.
-func (kv *KVStore) DeleteWait(h kvstoreDeleteHandle) error {
+func (kv *KVStore) DeleteWait(h KVStoreDeleteHandle) error {
 	var kvErr KVError = KVErrorUninitialized
 
 	if err := fastlyKVStoreDeleteWait(
@@ -335,11 +335,11 @@ func fastlyKVStoreList(
 	h kvstoreHandle,
 	mask kvListConfigMask,
 	config prim.Pointer[kvListConfig],
-	listHandle prim.Pointer[kvstoreListHandle],
+	listHandle prim.Pointer[KVStoreListHandle],
 ) FastlyStatus
 
-func (kv *KVStore) List(config *KVListConfig) (kvstoreListHandle, error) {
-	var listHandle kvstoreListHandle = invalidKVListHandle
+func (kv *KVStore) List(config *KVListConfig) (KVStoreListHandle, error) {
+	var listHandle KVStoreListHandle = invalidKVListHandle
 
 	if err := fastlyKVStoreList(
 		kv.h,
@@ -369,13 +369,13 @@ func (kv *KVStore) List(config *KVListConfig) (kvstoreListHandle, error) {
 //go:wasmimport fastly_kv_store list_wait
 //go:noescape
 func fastlyKVStoreListWait(
-	h kvstoreListHandle,
+	h KVStoreListHandle,
 	body prim.Pointer[bodyHandle],
 	kvErr prim.Pointer[KVError],
 ) FastlyStatus
 
 // ListWait completes the pending list operation for the given handle
-func (kv *KVStore) ListWait(listH kvstoreListHandle) (*HTTPBody, error) {
+func (kv *KVStore) ListWait(listH KVStoreListHandle) (*HTTPBody, error) {
 	var kvErr KVError = KVErrorUninitialized
 
 	var b = invalidBodyHandle
