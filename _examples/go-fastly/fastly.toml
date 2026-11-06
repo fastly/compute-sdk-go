@@ -1,0 +1,15 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["oss@fastly.com"]
+description = ""
+language = "go"
+manifest_version = 2
+name = "go-fastly"
+
+[scripts]
+build = "tinygo build -target=wasip1 -o bin/main.wasm ."
+
+[local_server]
+backends.fastly.url = "https://api.fastly.com"
+secret_stores.tokens = [{key = "fastly", env = "FASTLY_API_TOKEN" }]
