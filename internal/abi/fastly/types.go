@@ -662,11 +662,23 @@ type kvLookupConfig struct {
 type kvDeleteConfigMask prim.U32
 
 const (
-	kvDeleteConfigMaskReserved kvDeleteConfigMask = 1 << 0
+	kvDeleteConfigMaskReserved          kvDeleteConfigMask = 1 << 0
+	kvDeleteConfigMaskIfGenerationMatch kvDeleteConfigMask = 1 << 1
 )
 
 type kvDeleteConfig struct {
-	reserved prim.U32
+	reserved          prim.U32
+	ifGenerationMatch prim.U64
+}
+
+type KVDeleteConfig struct {
+	mask kvDeleteConfigMask
+	opts kvDeleteConfig
+}
+
+func (c *KVDeleteConfig) IfGenerationMatch(generation uint64) {
+	c.mask |= kvDeleteConfigMaskIfGenerationMatch
+	c.opts.ifGenerationMatch = prim.U64(generation)
 }
 
 type kvInsertConfigMask prim.U32
