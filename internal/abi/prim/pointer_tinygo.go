@@ -13,7 +13,7 @@ func ToPointer[T any](ptr *T) Pointer[T] {
 	return Pointer[T](unsafe.Pointer(ptr))
 }
 
-// NullPointer makes a null pointer to a byte buffer.
+// NullChar8Pointer makes a null pointer to a byte buffer.
 func NullChar8Pointer() Pointer[Char8] {
 	return nil
 }
