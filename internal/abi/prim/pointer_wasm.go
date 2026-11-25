@@ -1,4 +1,4 @@
-//go:build !tinygo
+//go:build wasm && !tinygo
 
 package prim
 
@@ -21,3 +21,7 @@ func NullChar8Pointer() Pointer[Char8] {
 func sliceDataPointer(b []byte) Pointer[U8] {
 	return Pointer[U8](uintptr(unsafe.Pointer(unsafe.SliceData(b))))
 }
+
+// The host expects 4-byte pointers.
+var _ [4 - unsafe.Sizeof(Pointer[U8](0))]struct{}
+var _ [unsafe.Sizeof(Pointer[U8](0)) - 4]struct{}
