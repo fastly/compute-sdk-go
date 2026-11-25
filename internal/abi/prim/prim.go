@@ -24,19 +24,6 @@ type U32 uint32
 // U64 is an unsigned 64 bit integer.
 type U64 uint64
 
-// Pointer is the type of a pointer
-type Pointer[_ any] uint32
-
-// ToPointer turns an arbitrary pointer into a Pointer
-func ToPointer[T any](ptr *T) Pointer[T] {
-	return Pointer[T](uintptr(unsafe.Pointer(ptr)))
-}
-
-// NullPointer makes a null pointer to a byte buffer.
-func NullChar8Pointer() Pointer[Char8] {
-	return Pointer[Char8](uintptr(unsafe.Pointer(nil)))
-}
-
 // Wstring is a header for a string.
 type Wstring struct {
 	Data Pointer[U8]
@@ -152,7 +139,7 @@ func NewReadBufferFromBytes(buf []byte) *ReadBuffer {
 // Wstring returns the buffers data as a Wstring.
 func (b *ReadBuffer) Wstring() Wstring {
 	return Wstring{
-		Data: Pointer[U8](uintptr(unsafe.Pointer(unsafe.SliceData(b.buf)))),
+		Data: sliceDataPointer(b.buf),
 		Len:  Usize(len(b.buf)),
 	}
 }
@@ -160,7 +147,7 @@ func (b *ReadBuffer) Wstring() Wstring {
 // ArrayU8 returns the buffers data as a ArrayU8.
 func (b *ReadBuffer) ArrayU8() ArrayU8 {
 	return ArrayU8{
-		Data: Pointer[U8](uintptr(unsafe.Pointer(unsafe.SliceData(b.buf)))),
+		Data: sliceDataPointer(b.buf),
 		Len:  Usize(len(b.buf)),
 	}
 }
@@ -168,7 +155,7 @@ func (b *ReadBuffer) ArrayU8() ArrayU8 {
 // ArrayChar8 returns the buffers data as a ArrayChar8.
 func (b *ReadBuffer) ArrayChar8() ArrayChar8 {
 	return ArrayChar8{
-		Data: Pointer[U8](uintptr(unsafe.Pointer(unsafe.SliceData(b.buf)))),
+		Data: sliceDataPointer(b.buf),
 		Len:  Usize(len(b.buf)),
 	}
 }
