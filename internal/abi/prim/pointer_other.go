@@ -1,0 +1,23 @@
+//go:build !wasm
+
+package prim
+
+import "unsafe"
+
+// Pointer is the type of a pointer passed to a hostcall. Hostcalls are only
+// available on wasm, so elsewhere it is a full-width unsafe.Pointer.
+type Pointer[_ any] unsafe.Pointer
+
+// ToPointer turns an arbitrary pointer into a Pointer
+func ToPointer[T any](ptr *T) Pointer[T] {
+	return Pointer[T](unsafe.Pointer(ptr))
+}
+
+// NullChar8Pointer makes a null pointer to a byte buffer.
+func NullChar8Pointer() Pointer[Char8] {
+	return nil
+}
+
+func sliceDataPointer(b []byte) Pointer[U8] {
+	return Pointer[U8](unsafe.Pointer(unsafe.SliceData(b)))
+}
